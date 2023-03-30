@@ -128,13 +128,16 @@ function PuzzleEntry(p) {
         if (localValue) { this.options[key] = localValue; }
     }
 
+    if (this.container.innerText) {
+        var json = JSON.parse(this.container.innerText);
+        for (const[key, value] of Object.entries(json)) { this.options[key] = value; }
+        this.container.innerText = "";
+    }
+
     this.dx = 1;
     this.dy = 0;
     this.mousedown = false;
     this.currentFill = null;
-
-    this.fillClasses = this.options["data-fill-classes"];
-    if (this.fillClasses) { this.fillClasses = this.fillClasses.split(" "); }
 
     this.locateScope = function(scopeId) {
         var ancestor = this.container;
@@ -256,16 +259,19 @@ function PuzzleEntry(p) {
         }
     }
 
-    var clueNumbers = this.options["data-clue-numbers"];
-    if (clueNumbers && clueNumbers != "auto") { clueNumbers = clueNumbers.split(" "); }
+    this.getOptionArray = function(option, splitchar, special) {
+        var val = this.options[option];
+        if (!val || Array.isArray(val) || val == special) { return val; }
+        return val.split(splitchar);
+    }
 
-    var shape = this.options["data-shape"].split("|");
-    var solution = this.options["data-solution"];
-    if (solution) { solution = solution.split("|"); }
-    var borders = this.options["data-custom-borders"];
-    if (borders) { borders = borders.split("|"); }
-    var extracts = this.options["data-extracts"];
-    if (extracts) { extracts = extracts.split(" "); }
+    this.fillClasses = this.getOptionArray("data-fill-classes", " ");
+
+    var clueNumbers = this.getOptionArray("data-clue-numbers", " ", "auto");
+    var shape = this.getOptionArray("data-shape", "|");
+    var solution = this.getOptionArray("data-solution", "|");
+    var borders = this.getOptionArray("data-custom-borders", "|");
+    var extracts = this.getOptionArray("data-extracts", " ");
     var unselectableGivens = this.options["data-unselectable-givens"];
 
     var table = document.createElement("table");
