@@ -1,4 +1,3 @@
-scope for undo: document scope by default, or declare a specific element
 scope for sharing as well
 word wrap on linear
 

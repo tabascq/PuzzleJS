@@ -37,34 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll(".puzzle-entry").forEach((p) => { new PuzzleEntry(p); });
 });
 
-function PuzzleEntry(p) {
-    this.container = p;
-    p.setAttribute("data-puzzle-entry", this);
-
-    // Assign all options by applying all properties from all modes. Modes specified earliest in data-mode get precedence.
-    var modes = p.getAttribute("data-mode");
-    modes = modes ? modes.split(" ") : [];
-    modes.push("default"); 
-    modes.reverse();
-
-    this.options = {};
-    modes.forEach(m => { for (const [key, value] of Object.entries(puzzleModes[m])) { this.options[key] = value; } });
-
-    // Finally, any explicitly-specified attributes win.
-    for (const [key, value] of Object.entries(this.options)) {
-        var localValue = this.container.getAttribute(key);
-        if (localValue) { this.options[key] = localValue; }
-    }
-
+function UndoManager() {
     this.undoStack = [];
     this.redoStack = [];
-    this.dx = 1;
-    this.dy = 0;
-    this.mousedown = false;
-    this.currentFill = null;
-
-    this.fillClasses = this.options["data-fill-classes"];
-    if (this.fillClasses) { this.fillClasses = this.fillClasses.split(" "); }
 
     // undo/redo support
     this.redoUnit = function(unit) {
@@ -132,6 +107,49 @@ function PuzzleEntry(p) {
     this.rebuildTransientState = function() {
         // TODO: raise event for any state that a special case chooses to update
     }
+}
+
+function PuzzleEntry(p) {
+    this.container = p;
+    p.setAttribute("data-puzzle-entry", this);
+
+    // Assign all options by applying all properties from all modes. Modes specified earliest in data-mode get precedence.
+    var modes = p.getAttribute("data-mode");
+    modes = modes ? modes.split(" ") : [];
+    modes.push("default"); 
+    modes.reverse();
+
+    this.options = {};
+    modes.forEach(m => { for (const [key, value] of Object.entries(puzzleModes[m])) { this.options[key] = value; } });
+
+    // Finally, any explicitly-specified attributes win.
+    for (const [key, value] of Object.entries(this.options)) {
+        var localValue = this.container.getAttribute(key);
+        if (localValue) { this.options[key] = localValue; }
+    }
+
+    this.dx = 1;
+    this.dy = 0;
+    this.mousedown = false;
+    this.currentFill = null;
+
+    this.fillClasses = this.options["data-fill-classes"];
+    if (this.fillClasses) { this.fillClasses = this.fillClasses.split(" "); }
+
+    this.locateScope = function(scopeId) {
+        var ancestor = this.container;
+
+        while (ancestor) {
+            if (ancestor.getAttribute(scopeId) != undefined) { return ancestor; }
+            ancestor = ancestor.parentElement;
+        }
+
+        return this.container;
+    }
+
+    var undoScope = this.locateScope("data-undo-scope");
+    this.undoManager = undoScope.puzzleUndoManager;
+    if (!this.undoManager) { this.undoManager = new UndoManager(); undoScope.puzzleUndoManager = this.undoManager; }
 
     // keyboard support
     this.move = function(elem, drow, dcol) {
@@ -179,7 +197,7 @@ function PuzzleEntry(p) {
     }
 
     this.setClassInCycle = function(td, classes, cls) {
-        if (classes && !td.classList.contains(cls)) { this.modify(td, [cls], classes); }
+        if (classes && !td.classList.contains(cls)) { this.undoManager.modify(td, [cls], classes); }
     }
 
     this.keyDown = function(e) {
@@ -188,8 +206,8 @@ function PuzzleEntry(p) {
         e.preventDefault();
         if (this.options["data-solution"]) { return; }
         
-        if (e.ctrlKey && e.keyCode == 90) { this.undo(); } // Ctrl-Z
-        else if (e.ctrlKey && e.keyCode == 89) { this.redo(); } // Ctrl-Y
+        if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
+        else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
         else if (e.keyCode == 37) { this.move(e.target, 0, -1); } // left
         else if (e.keyCode == 38) { this.move(e.target, -1, 0); } // up
         else if (e.keyCode == 39) { this.move(e.target, 0, 1); } // right
@@ -219,7 +237,7 @@ function PuzzleEntry(p) {
     }
 
     this.setText = function(target, adds, removes, text) {
-        if (target.value != text && !target.parentElement.classList.contains("given")) { this.modify(target, adds, removes, text); }
+        if (target.value != text && !target.parentElement.classList.contains("given")) { this.undoManager.modify(target, adds, removes, text); }
     }
 
     this.getText = function(target) {
