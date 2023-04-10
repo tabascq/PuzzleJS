@@ -6,8 +6,10 @@ puzzleModes["default"] = {
     "data-allowed-characters": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     "data-text-shift-key": "rebus",
     "data-fill-classes": null,
+    "data-fills": null,
     "data-clue-numbers": null,
     "data-shape": null,
+    "data-shape-replacements": null,
     "data-solution": null,
     "data-custom-borders": null,
     "data-unselectable-givens": false,
@@ -217,6 +219,7 @@ function PuzzleEntry(p) {
         else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
         else if (e.keyCode == 32) { // space
             this.dx = 1 - this.dx; this.dy = 1 - this.dy;
+            if (e.currentTarget.parentElement.classList.contains("given-fill")) return;
             this.cycleClasses(e.target.parentElement, this.fillClasses, e.shiftKey);
         } else if (e.keyCode == 8 || e.keyCode == 46) { // backspace/delete
             this.setText(e.target, [], [], "");
@@ -248,12 +251,13 @@ function PuzzleEntry(p) {
     }
 
     this.mouseDown = function(e) {
+        if (e.currentTarget.classList.contains("given-fill")) return;
         this.mousedown = true;
         this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || this.fShift);
     }
 
     this.mouseEnter = function(e) {
-        if (this.mousedown) {
+        if (this.mousedown && !e.currentTarget.classList.contains("given-fill")) {
             this.setClassInCycle(e.currentTarget, this.fillClasses, this.currentFill);
             e.currentTarget.querySelector("input").focus();
         }
@@ -265,10 +269,23 @@ function PuzzleEntry(p) {
         return val.split(splitchar);
     }
 
+    this.getOptionDict = function(option) {
+        var val = this.options[option];
+        // TODO attribute version
+        return val;
+    }
+
+    this.translate = function(ch, replacements) {
+        if (!replacements || !replacements[ch]) return ch;
+        return replacements[ch];
+    }
+
     this.fillClasses = this.getOptionArray("data-fill-classes", " ");
 
     var clueNumbers = this.getOptionArray("data-clue-numbers", " ", "auto");
     var shape = this.getOptionArray("data-shape", "|");
+    var shapeReplacements = this.getOptionDict("data-shape-replacements");
+    var fills = this.getOptionArray("data-fills", "|");
     var solution = this.getOptionArray("data-solution", "|");
     var borders = this.getOptionArray("data-custom-borders", "|");
     var extracts = this.getOptionArray("data-extracts", " ");
@@ -289,11 +306,11 @@ function PuzzleEntry(p) {
             cell.setAttribute("type", "text");
 
             if (shapeCh == '.') {
-                if (solution) { cell.value = solution[r][c]; }
+                if (solution) { cell.value = this.translate(solution[r][c], shapeReplacements); }
             }
             else if (shapeCh == '#') {
                 td.classList.add("extract");
-                if (solution) { cell.value = solution[r][c]; }
+                if (solution) { cell.value = this.translate(solution[r][c], shapeReplacements); }
                 if (extracts) {
                     var code = extracts[extractNum++];
                     var id = "extract-id-" + code;
@@ -311,7 +328,7 @@ function PuzzleEntry(p) {
                 if (unselectableGivens) { td.classList.add("unselectable"); }
             }
             else {
-                cell.value = shapeCh;
+                cell.value = this.translate(shapeCh, shapeReplacements);
                 td.classList.add("given");
                 if (unselectableGivens) { td.classList.add("unselectable"); }
             }
@@ -346,7 +363,14 @@ function PuzzleEntry(p) {
                 td.appendChild(clue);
             }
 
-            if (this.fillClasses) { td.classList.add(this.fillClasses[0]); }
+            if (this.fillClasses) {
+                if (fills && fills[r][c] != '.') {
+                    td.classList.add(this.fillClasses[parseInt(fills[r][c])]);
+                    td.classList.add("given-fill");
+                } else {
+                    td.classList.add(this.fillClasses[0]);
+                }
+            }
 
             tr.appendChild(td);
         }
