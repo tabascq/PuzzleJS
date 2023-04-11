@@ -254,6 +254,8 @@ function PuzzleEntry(p) {
         if (e.currentTarget.classList.contains("given-fill")) return;
         this.mousedown = true;
         this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || this.fShift);
+        e.currentTarget.querySelector("input").focus();
+        e.preventDefault();
     }
 
     this.mouseEnter = function(e) {
