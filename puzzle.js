@@ -338,21 +338,34 @@ function PuzzleEntry(p) {
             if (!td.classList.contains("unselectable")) {
                 cell.addEventListener("keydown",  e => { this.keyDown(e); });
 
-                if (this.fillClasses) {
-                    td.addEventListener("mousedown",  e => { this.mouseDown(e); });
-                    td.addEventListener("mouseenter",  e => { this.mouseEnter(e); });
-                }
+                td.addEventListener("mousedown",  e => { this.mouseDown(e); });
+                td.addEventListener("mouseenter",  e => { this.mouseEnter(e); });
                 td.addEventListener("contextmenu",  e => { e.preventDefault(); });
             }
 
             td.appendChild(cell);
 
             if (borders) {
-                var b = parseInt(borders[r][c], 16);
-                if (b & 1) { td.classList.add("border-top"); }
-                if (b & 2) { td.classList.add("border-bottom"); }
-                if (b & 4) { td.classList.add("border-left"); }
-                if (b & 8) { td.classList.add("border-right"); }
+                if (borders.length == shape.length) {
+                    var b = parseInt(borders[r][c], 16);
+                    if (b & 1) { td.classList.add("border-top"); }
+                    if (b & 2) { td.classList.add("border-bottom"); }
+                    if (b & 4) { td.classList.add("border-left"); }
+                    if (b & 8) { td.classList.add("border-right"); }
+                }
+                else if (borders.length == shape.length * 2 + 1) {
+                    var topRow = borders[r * 2];
+                    var midRow = borders[r * 2 + 1];
+                    var botRow = borders[r * 2 + 2];
+                    var chTop = (topRow.length == shape[r].length) ? topRow[c] : topRow[c * 2 + 1];
+                    var chLeft = (midRow.length == shape[r].length + 1) ? midRow[c] : midRow[c * 2];
+                    var chRight = (midRow.length == shape[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
+                    var chBottom = (botRow.length == shape[r].length) ? botRow[c] : botRow[c * 2 + 1];
+                    if (chTop != " " && chTop != ".") { td.classList.add("border-top"); }
+                    if (chBottom != " " && chBottom != ".") { td.classList.add("border-bottom"); }
+                    if (chLeft != " " && chLeft != ".") { td.classList.add("border-left"); }
+                    if (chRight != " " && chRight != ".") { td.classList.add("border-right"); }
+                }
             }
 
             if (clueNumbers && shape[r][c] != '@' && (
