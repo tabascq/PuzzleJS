@@ -413,8 +413,8 @@ function PuzzleEntry(p) {
             }
 
             if (clueNumbers && shape[r][c] != '@') {
-                var acrossClue = (c == 0 || shape[r][c-1] == '@') && c < shape[r].length - 1 && shape[r][c+1] != '@'; // block/edge left, letter right
-                var downClue = (r == 0 || shape[r-1][c] == '@') && r < shape.length - 1 && shape[r+1][c] != '@'; // block/edge above, letter below
+                var acrossClue = (c == 0 || shape[r][c-1] == '@' || td.classList.contains("border-left")) && c < shape[r].length - 1 && shape[r][c+1] != '@' && !td.classList.contains("border-right"); // block/edge left, letter right
+                var downClue = (r == 0 || shape[r-1][c] == '@' || td.classList.contains("border-top")) && r < shape.length - 1 && shape[r+1][c] != '@' && !td.classList.contains("border-bottom"); // block/edge above, letter below
                 if (acrossClue || downClue) {
                     var clueRealNum = (clueNumbers == "auto") ? ++clueNum : clueNumbers[clueNum++];
 
@@ -428,8 +428,8 @@ function PuzzleEntry(p) {
                     clue.innerText = clueRealNum;
                     td.appendChild(clue);
                 }
-                if (!acrossClue && c > 0 && shape[r][c-1] != '@') { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
-                if (!downClue && r > 0 && shape[r-1][1] != '@') { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
+                if (!acrossClue && c > 0 && shape[r][c-1] != '@' && !td.classList.contains("border-left")) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
+                if (!downClue && r > 0 && shape[r-1][1] != '@' && !td.classList.contains("border-top")) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
             }
 
             if (this.fillClasses) {
