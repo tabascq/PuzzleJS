@@ -6,7 +6,7 @@
         <style>
             .demo {
                 display: grid;
-                grid-template-columns: auto auto;
+                grid-template-columns: 30% 70%;
                 row-gap: 30px;
             }
 
@@ -25,17 +25,41 @@
             <div>Basic 2-D with auto clue numbers</div>
             <div class="puzzle-entry" data-mode="crossword" data-shape="@....|.#...|..@..|...#.|....@" data-extracts="2 5"></div>
             <div>Basic 2-D with custom clue numbers</div>
-            <div class="puzzle-entry" data-mode="crossword" data-clue-numbers="2 3 5 7 11 13 17 19 23 29" data-extracts="4 1">
+            <div class="puzzle-entry" data-mode="crossword" data-shape="@....|.#...|..@..|...#.|....@" data-clue-numbers="2 3 5 7 11 13 17 19 23 29" data-extracts="4 1"></div>
+
+            <div>2-D with clues</div>
+
+            <div class="puzzle-entry" data-mode="crossword">
                 {
                  "data-shape": [
                     "@....",
-                    ".#...",
+                    ".....",
                     "..@..",
-                    "...#.",
+                    ".....",
                     "....@"
                  ]   
                 }
+
+                <dl class="crossword-clues across">
+                    <dt>Across</dt>
+                    <dd>Each entry of this puzzle</dd>
+                    <dd>The third clue number in this grid</dd>
+                    <dd>A greeting</dd>
+                    <dd>A common article</dd>
+                    <dd>Components of a list</dd>
+                    <dd>Neural ____</dd>
+                </dl>
+                <dl class="crossword-clues down">
+                    <dt>Down</dt>
+                    <dd>Most common color in this grid</dd>
+                    <dd>A Boolean operator</dd>
+                    <dd>Quantities of paper</dd>
+                    <dd>Where bears live</dd>
+                    <dd>Flimsy</dd>
+                    <dd>It phoned home</dd>
+                </dl>
             </div>
+
             <div>Collection of all highlights above (minus solution)</div>
             <div class="puzzle-entry" data-mode="linear" data-shape="#####" data-extracts="1 2 3 4 5"></div>
             <div>Mini sudoku</div>
