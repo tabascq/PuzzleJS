@@ -10,9 +10,10 @@
                 row-gap: 30px;
             }
 
-            td.unknown { background: lightgray; }
-            td.island { background: lightgreen; }
-            td.water { background: #6666ff; }
+            .nurikabe-example .unknown { background: lightgray; }
+            .nurikabe-example .island { background: lightgreen; }
+            .nurikabe-example .water { background: #6666ff; }
+            .acrostic-example .puzzle-entry input { font-size: 20px; padding-bottom: 10px; }
         </style>
     </head>
     <body>
@@ -127,10 +128,24 @@
             <div class="puzzle-entry" data-mode="minidoku" data-shape=".O..|...R|W...|..D." data-allowed-characters="WORD"></div>
 
             <div>Nurikabe - click or spacebar, right/shift click/space cycles in opposite direction</div>
-            <div class="puzzle-entry" data-mode="notext" data-shape="...|.9.|..." data-fill-classes="unknown island water"></div>
+            <div class="puzzle-entry nurikabe-example" data-mode="notext" data-shape="...|.9.|..." data-fill-classes="unknown island water"></div>
             
             <div>Cryptogram</div>
             <div class="puzzle-entry" data-mode="linear" data-shape="#### ## #|##### ###" data-extracts="G O A T A T I T O N K G N Y M"></div>
+
+            <div>Acrostic</div>
+            <div class="acrostic-example">
+                <div class="puzzle-entry" data-mode="linear" data-shape="#####@#|#######" data-extracts="C1 A2 C3 C4 C5 B6 C7 B8 B9 B10 A11 C12 A13"></div>
+                <br/>
+                <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
+                    <div>Not new</div>
+                    <div class="puzzle-entry" data-shape="###" data-extracts="A11 A2 A13"></div>
+                    <div>Left, on a map</div>
+                    <div class="puzzle-entry" data-shape="####" data-extracts="B10 B6 B8 B9"></div>
+                    <div>Lights, Camera, ____!</div>
+                    <div class="puzzle-entry" data-shape="######" data-extracts="C7 C1 C5 C3 C12 C4"></div>
+                </div>
+            </div>
         </div>
     </body>
 </html>
