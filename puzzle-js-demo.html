@@ -20,12 +20,16 @@
         <div class="demo" data-undo-scope>
             <div>Basic 1-D</div>
             <div class="puzzle-entry" data-mode="linear" data-shape="A..#..G.." data-extracts="3"></div>
+
             <div>Basic 1-D Solution</div>
             <div class="puzzle-entry" data-mode="linear" data-shape="A..#..G.." data-solution="ABCDEFGHI"></div>
+
             <div>Basic 2-D with auto clue numbers</div>
             <div class="puzzle-entry" data-mode="crossword" data-shape="@....|.#...|..@..|...#.|....@" data-extracts="2 5"></div>
+
             <div>Basic 2-D with custom clue numbers</div>
             <div class="puzzle-entry" data-mode="crossword" data-shape="@....|.#...|..@..|...#.|....@" data-clue-numbers="2 3 5 7 11 13 17 19 23 29" data-extracts="4 1"></div>
+
             <div>Collection of all highlights above (minus solution)</div>
             <div class="puzzle-entry" data-mode="linear" data-shape="#####" data-extracts="1 2 3 4 5"></div>
 
@@ -62,14 +66,8 @@
             </div>
 
             <div>Barred with clues</div>
-            <div class="puzzle-entry" data-mode="crossword">
+            <div class="puzzle-entry" data-mode="crossword" data-shape="4x4">
                 {
-                 "data-shape": [
-                    "....",
-                    "....",
-                    "....",
-                    "...."
-                 ],
                  "data-custom-borders": [
                     "._._._._.",
                     "|.....|.|",
@@ -101,6 +99,7 @@
 
             <div>Mini sudoku</div>
             <div class="puzzle-entry" data-mode="minidoku" data-shape="..3.|2...|...1|.4.."></div>
+
             <div>Mini shape sudoku</div>
             <div class="puzzle-entry" data-mode="minidoku">
                 {
@@ -123,10 +122,13 @@
                     ]
                 }
             </div>
+
             <div>Mini wordoku</div>
             <div class="puzzle-entry" data-mode="minidoku" data-shape=".O..|...R|W...|..D." data-allowed-characters="WORD"></div>
+
             <div>Nurikabe - click or spacebar, right/shift click/space cycles in opposite direction</div>
             <div class="puzzle-entry" data-mode="notext" data-shape="...|.9.|..." data-fill-classes="unknown island water"></div>
+            
             <div>Cryptogram</div>
             <div class="puzzle-entry" data-mode="linear" data-shape="#### ## #|##### ###" data-extracts="G O A T A T I T O N K G N Y M"></div>
         </div>

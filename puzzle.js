@@ -337,6 +337,15 @@ function PuzzleEntry(p) {
     var downClues = this.container.querySelectorAll(".crossword-clues.down dd");
     var downClueIndex = 0;
 
+    if (shape.length == 1 && /^\d+x\d+$/.test(shape[0])) {
+        var dim = shape[0].split("x");
+        shape = [];
+        for (r = 0; r < dim[1]; r++) {
+            shape[r] = [];
+            for (c = 0; c < dim[0]; c++) { shape[r][c] = "."; }
+        }
+    }
+
     for (var r = 0; r < shape.length; r++) {
         var tr = document.createElement("tr");
 
