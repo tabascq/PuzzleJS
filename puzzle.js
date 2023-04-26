@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function UndoManager() {
     this.undoStack = [];
     this.redoStack = [];
+    this.activeGroup = null;
 
     // undo/redo support
     this.redoUnit = function(unit) {
@@ -63,8 +64,7 @@ function UndoManager() {
         elems.forEach(elem =>{
             if (unit.adds) { unit.adds.forEach((a) => { elem.classList.add(a); }); }
             if (unit.removes) { unit.removes.forEach((a) => { elem.classList.remove(a); }); }
-            if (unit.children) { unit.children.forEach((c) => { this.redoUnit(c) }); }
-            if (unit.oldValue || unit.newValue) { elem.value = unit.newValue; }
+            if (unit.attribute) { elem.setAttribute(unit.attribute, unit.newValue); }
         });
     }
 
@@ -75,51 +75,76 @@ function UndoManager() {
         elems.forEach(elem =>{
             if (unit.adds) { unit.adds.forEach((a) => { elem.classList.remove(a); }); }
             if (unit.removes) { unit.removes.forEach((a) => { elem.classList.add(a); }); }
-            if (unit.children) { unit.children.forEach((c) => { this.undoUnit(c) }); }
-            if (unit.oldValue || unit.newValue) { elem.value = unit.oldValue; }
+            if (unit.attribute) { elem.setAttribute(unit.attribute, unit.oldValue); }
         });
     }
 
     this.undo = function() {
+        if (this.activeGroup) { this.endGroup(); }
         if (this.undoStack.length == 0) { return; }
 
-        var unit = this.undoStack.pop();
-        this.undoUnit(unit);
-        this.redoStack.push(unit);
-        this.rebuildTransientState();
+        var group = this.undoStack.pop();
+        group.units.forEach((unit) => { this.undoUnit(unit); });
+        this.redoStack.push(group);
+        this.notify(group);
     }
 
     this.redo = function() {
+        if (this.activeGroup) { this.endGroup(); }
         if (this.redoStack.length == 0) { return; }
 
-        var unit = this.redoStack.pop();
-        this.redoUnit(unit);
-        this.undoStack.push(unit);
-        this.rebuildTransientState();
+        var group = this.redoStack.pop();
+        group.units.forEach((unit) => { this.redoUnit(unit); });
+        this.undoStack.push(group);
+        this.notify(group);
     }
 
-    this.modify = function(elem, adds, removes, newValue) {
+    this.startGroup = function(puzzleEntry) {
+        if (this.activeGroup) { this.endGroup(); }
+        this.activeGroup = { puzzleEntry: puzzleEntry, units: [] };
+    }
+
+    this.endGroup = function() {
+        if (!this.activeGroup) return;
+
+        if (this.activeGroup.units.length) {
+            this.undoStack.push(this.activeGroup);
+            this.redoStack = [];
+            this.notify(this.activeGroup);
+        }
+
+        this.activeGroup = null;
+    }
+
+    this.modifyClass = function(elem, adds, removes) {
         var trueAdds = [];
         var trueRemoves = [];
 
         adds.forEach((a) => { if (a && !elem.classList.contains(a)) { trueAdds.push(a); }});
         removes.forEach((r) => { if (r && elem.classList.contains(r)) { trueRemoves.push(r); }});
 
-        if (trueAdds.length == 0 && trueRemoves.length == 0 && newValue == null) { return; }
+        if (trueAdds.length == 0 && trueRemoves.length == 0) { return; }
 
         var unit = { "elem": elem };
         if (trueAdds.length > 0) { unit.adds = trueAdds; }
         if (trueRemoves.length > 0) { unit.removes = trueRemoves; }
-        if (newValue != null) { unit.oldValue = elem.value; unit.newValue = newValue; }
 
         this.redoUnit(unit);
-        this.undoStack.push(unit);
-        this.redoStack = [];
-        this.rebuildTransientState();
+        this.activeGroup.units.push(unit);
     }
 
-    this.rebuildTransientState = function() {
-        // TODO: raise event for any state that a special case chooses to update
+    this.modifyAttribute = function(elem, attribute, newValue) {
+        var oldValue = elem.getAttribute(attribute);
+        if (oldValue == newValue) { return; }
+
+        var unit = { "elem": elem, "attribute": attribute, "oldValue": oldValue, "newValue": newValue };
+
+        this.redoUnit(unit);
+        this.activeGroup.units.push(unit);
+    }
+
+    this.notify = function(group) {
+        group.puzzleEntry.onUndoRedo(group.units);
     }
 }
 
@@ -206,15 +231,17 @@ function PuzzleEntry(p) {
         var cls = this.findClassInList(td, classes);
 
         if (cls) {
+            this.undoManager.startGroup(this);
             cls = classes[(classes.indexOf(cls) + classes.length + (reverse ? -1 : 1)) % classes.length];
             this.setClassInCycle(td, classes, cls);
+            this.undoManager.endGroup();
         }
 
         return cls;
     }
 
     this.setClassInCycle = function(td, classes, cls) {
-        if (classes && !td.classList.contains(cls)) { this.undoManager.modify(td, [cls], classes); }
+        if (classes && !td.classList.contains(cls)) { this.undoManager.modifyClass(td, [cls], classes); }
     }
 
     this.keyDown = function(e) {
@@ -255,11 +282,20 @@ function PuzzleEntry(p) {
     }
 
     this.setText = function(target, adds, removes, text) {
-        if (target.value != text && !target.parentElement.classList.contains("given")) { this.undoManager.modify(target, adds, removes, text); }
+        if (target.value != text && !target.parentElement.classList.contains("given")) {
+            this.undoManager.startGroup(this);
+            this.undoManager.modifyClass(target, adds, removes);
+            this.undoManager.modifyAttribute(target, "value", text);
+            this.undoManager.endGroup();
+        }
     }
 
     this.getText = function(target) {
         return target.value;
+    }
+
+    this.onUndoRedo = function(units) {
+        units.forEach((u) => { if (u.attribute == "data-path-code") { this.updateSvg(u.elem); }});
     }
 
     this.mouseDown = function(e) {
@@ -280,6 +316,8 @@ function PuzzleEntry(p) {
 
         var canPaint = this.options["data-drag-paint-fill"];
 
+        this.undoManager.startGroup(this);
+
         if (this.options["data-drag-draw-path"]) {
             canPaint &= this.LinkCells(this.lastCell, e.currentTarget);
         }
@@ -287,6 +325,8 @@ function PuzzleEntry(p) {
         if (canPaint && !e.currentTarget.classList.contains("given-fill")) {
             this.setClassInCycle(e.currentTarget, this.fillClasses, this.currentFill);
         }
+
+        this.undoManager.endGroup();
 
         this.lastCell = e.currentTarget;
         e.currentTarget.querySelector("input").focus();
@@ -355,6 +395,8 @@ function PuzzleEntry(p) {
 
         while (svg.firstChild) { svg.removeChild(svg.firstChild); }
 
+        if (!pathCode) return;
+        
         var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
         use.classList.add("path");
         use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "path-" + this.options["data-path-style"] + ".svg#path-" + translatedData[0]);
@@ -372,22 +414,16 @@ function PuzzleEntry(p) {
         var codeFrom = cellFrom.getAttribute("data-path-code");
         var codeTo = cellTo.getAttribute("data-path-code");
         if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && !this.IsFullyLinked(codeFrom) && !this.IsFullyLinked(codeTo)) {
-            // TODO undoable
-            cellFrom.setAttribute("data-path-code", codeFrom | directionFrom);
-            cellTo.setAttribute("data-path-code", codeTo | directionTo);
-            this.updateSvg(cellFrom);
-            this.updateSvg(cellTo);
+            this.undoManager.modifyAttribute(cellFrom, "data-path-code", codeFrom | directionFrom);
+            this.undoManager.modifyAttribute(cellTo, "data-path-code", codeTo | directionTo);
             return true;
         }
         else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
             var givenCodeFrom = cellFrom.getAttribute("data-given-path-code");
             var givenCodeTo = cellTo.getAttribute("data-given-path-code");
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
-                // TODO undoable
-                cellFrom.setAttribute("data-path-code", codeFrom & ~directionFrom);
-                cellTo.setAttribute("data-path-code", codeTo & ~directionTo);
-                this.updateSvg(cellFrom);
-                this.updateSvg(cellTo);
+                this.undoManager.modifyAttribute(cellFrom, "data-path-code", codeFrom & ~directionFrom);
+                this.undoManager.modifyAttribute(cellTo, "data-path-code", codeTo & ~directionTo);
 
                 if (this.options["data-drag-paint-fill"]) {
                     if (cellFrom.getAttribute("data-path-code") == 0 && !cellFrom.classList.contains("given-fill")) {

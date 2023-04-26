@@ -3,12 +3,16 @@ word wrap on linear
 
 improve highlighting for crosswords
 
-borders, paths, etc
-special display for givens
+borders, etc
+mark x's for paths
 fix printing
+
+jigsaw pieces on cell grid
 
 validators
 
 save state
+
+mega-undo with shift-ctrl-z/y
 
 everything hex
