@@ -1,3 +1,5 @@
+var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
+
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
 // a puzzle can have multiple modes and multiple custom options.
@@ -313,23 +315,33 @@ function PuzzleEntry(p) {
 
     this.mouseEnter = function(e) {
         if (!this.mousedown) return;
+        if (this.lastCell === e.currentTarget) return;
 
-        var canPaint = this.options["data-drag-paint-fill"];
+        var wantPaint = this.options["data-drag-paint-fill"];
+        var canPaint = wantPaint;
 
         this.undoManager.startGroup(this);
 
         if (this.options["data-drag-draw-path"]) {
-            canPaint &= this.LinkCells(this.lastCell, e.currentTarget);
+            var targetFill = this.findClassInList(e.currentTarget, this.fillClasses);
+            var setLast = false; 
+            if (wantPaint && this.currentFill == this.fillClasses[0]) { this.currentFill = targetFill; setLast = true; }
+            if (wantPaint && targetFill != this.fillClasses[0] && targetFill != this.currentFill) { canPaint = false; }
+            else { canPaint &= this.LinkCells(this.lastCell, e.currentTarget); }
         }
 
         if (canPaint && !e.currentTarget.classList.contains("given-fill")) {
             this.setClassInCycle(e.currentTarget, this.fillClasses, this.currentFill);
         }
 
+        if (canPaint && setLast) { this.setClassInCycle(this.lastCell, this.fillClasses, this.currentFill); }
+
         this.undoManager.endGroup();
 
-        this.lastCell = e.currentTarget;
-        e.currentTarget.querySelector("input").focus();
+        if (!wantPaint || canPaint) {
+            this.lastCell = e.currentTarget;
+            e.currentTarget.querySelector("input").focus();
+        }
     }
 
     this.getOptionArray = function(option, splitchar, special) {
@@ -399,7 +411,7 @@ function PuzzleEntry(p) {
         
         var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
         use.classList.add("path");
-        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "path-" + this.options["data-path-style"] + ".svg#path-" + translatedData[0]);
+        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", puzzleJsFolderPath + "path-" + this.options["data-path-style"] + ".svg#path-" + translatedData[0]);
         if (translatedData[1] != "0") { use.setAttributeNS(null, "transform", "rotate(" + parseInt(translatedData[1] * 90) + ")"); }
         svg.appendChild(use);
     }
