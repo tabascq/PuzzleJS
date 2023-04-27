@@ -14,7 +14,7 @@ puzzleModes["default"] = {
     "data-shape": null,
     "data-shape-replacements": null,
     "data-solution": null,
-    "data-custom-borders": null,
+    "data-borders": null,
     "data-unselectable-givens": false,
     "data-paths": null,
     "data-path-style": "straight",
@@ -39,9 +39,9 @@ puzzleModes["notext"] = {
     "data-allowed-characters": ""
 }
 
-puzzleModes["minidoku"] = {
-    "data-allowed-characters": "1234",
-    "data-custom-borders": "5959|6a6a|5959|6a6a",
+puzzleModes["sudoku"] = {
+    "data-allowed-characters": "123456789",
+    "data-borders": "3x3",
     "data-text-shift-key": "candidates"
 };
 
@@ -510,7 +510,7 @@ function PuzzleEntry(p) {
     var shapeReplacements = this.getOptionDict("data-shape-replacements");
     var fills = this.getOptionArray("data-fills", "|");
     var solution = this.getOptionArray("data-solution", "|");
-    var borders = this.getOptionArray("data-custom-borders", "|");
+    var borders = this.getOptionArray("data-borders", "|");
     var paths = this.getOptionArray("data-paths", "|");
     var extracts = this.getOptionArray("data-extracts", " ");
     var unselectableGivens = this.options["data-unselectable-givens"];
@@ -533,6 +533,9 @@ function PuzzleEntry(p) {
     var downClues = this.container.querySelectorAll(".crossword-clues.down dd");
     var downClueIndex = 0;
 
+    var regularRowBorder = 0;
+    var regularColBorder = 0;
+
     if (shape.length == 1 && /^\d+x\d+$/.test(shape[0])) {
         var dim = shape[0].split("x");
         shape = [];
@@ -540,6 +543,13 @@ function PuzzleEntry(p) {
             shape[r] = [];
             for (c = 0; c < dim[0]; c++) { shape[r][c] = "."; }
         }
+    }
+
+    if (borders && borders.length == 1 && /^\d+x\d+$/.test(borders[0])) {
+        var dim = borders[0].split("x");
+        borders = null;
+        regularColBorder = dim[0];
+        regularRowBorder = dim[1];
     }
 
     for (var i = 0; i < this.topClueDepth; i++) {
@@ -605,6 +615,15 @@ function PuzzleEntry(p) {
             }
 
             td.appendChild(cell);
+
+            if (regularRowBorder) {
+                if ((r % regularRowBorder) == 0) { td.classList.add("border-top"); }
+                if (r == shape.length - 1) { td.classList.add("border-bottom"); }
+            }
+            if (regularColBorder) {
+                if ((c % regularColBorder) == 0) { td.classList.add("border-left"); }
+                if (c == shape[r].length - 1) { td.classList.add("border-right"); }
+            }
 
             if (borders) {
                 if (borders.length == shape.length) {
