@@ -70,6 +70,10 @@
     pointer-events: none;
 }
 
+.puzzle-entry td.top-clue, .puzzle-entry td.bottom-clue, .puzzle-entry td.left-clue, .puzzle-entry td.right-clue {
+    border: none;
+}
+
 .puzzle-entry .clue {
     position: absolute;
     top: 1px;

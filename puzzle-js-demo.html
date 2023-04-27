@@ -20,6 +20,11 @@
             .path-paint-example .yellow { background: yellow; }
             .path-paint-example .red { background: red; }
             .path-paint-example .path { stroke: #0000003f; }
+
+            .trains-example .unknown { background: white; }
+            .trains-example .trackbed { background: darkgoldenrod; }
+            .trains-example .grass { background: lightgreen; }
+            .trains-example td.interior:not([data-path-code="0"]) { background: darkgoldenrod; }
         </style>
     </head>
     <body>
@@ -52,7 +57,7 @@
                     "....@"
                  ]   
                 }
-                
+
                 <dl class="crossword-clues across">
                     <dt>Across</dt>
                     <dd>Each entry of this puzzle</dd>
@@ -181,8 +186,8 @@
                 }
             </div>
 
-            <div>Train playground</div>
-            <div class="puzzle-entry" data-shape="4x4" data-path-style="track" data-paths=".8c6|...3|...9|...."></div>
+            <div>Trains: drag a train path from A to B</div>
+            <div class="puzzle-entry trains-example" data-shape="5x5" data-mode="notext trains" data-fill-class="unknown trackbed grass" data-paths=".....|.....|.....|2..2.|5..3." data-top-clues="3|3|1|4|3" data-bottom-clues="|||B|" data-left-clues="||||A" data-right-clues="4|2|4|2|2"></div>
         </div>
     </body>
 </html>

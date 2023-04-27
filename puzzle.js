@@ -20,6 +20,10 @@ puzzleModes["default"] = {
     "data-path-style": "straight",
     "data-drag-paint-fill": true,
     "data-drag-draw-path": false,
+    "data-top-clues": null,
+    "data-bottom-clues": null,
+    "data-left-clues": null,
+    "data-right-clues": null,
     "data-extracts": null
 };
 
@@ -43,9 +47,14 @@ puzzleModes["minidoku"] = {
 
 puzzleModes["pathpaint"] = {
     "data-path-style": "curved",
-    "data-drag-paint-fill": true,
     "data-drag-draw-path": true,
     "data-fill-cycle": false
+}
+
+puzzleModes["trains"] = {
+    "data-path-style": "track",
+    "data-drag-paint-fill": false,
+    "data-drag-draw-path": true
 }
 
 // Go through all puzzles and give them a PuzzleEntry object
@@ -199,11 +208,11 @@ function PuzzleEntry(p) {
     // keyboard support
     this.move = function(elem, drow, dcol) {
         var td = elem.parentElement;
-        var col = dcol + Array.prototype.indexOf.call(td.parentElement.children, td);
-        var row = drow + Array.prototype.indexOf.call(td.parentElement.parentElement.children, td.parentElement);
+        var col = dcol + Array.prototype.indexOf.call(td.parentElement.children, td) - this.leftClueDepth;
+        var row = drow + Array.prototype.indexOf.call(td.parentElement.parentElement.children, td.parentElement) - this.topClueDepth;
 
         while (true) {
-            var td = this.container.querySelector("tr:nth-child(" + (row + 1) + ") td:nth-child(" + (col + 1) + ")");
+            var td = this.container.querySelector("tr:nth-child(" + (row + this.topClueDepth + 1) + ") td:nth-child(" + (col + this.leftClueDepth + 1) + ")");
 
             if (!td) {
                 return false;
@@ -454,10 +463,10 @@ function PuzzleEntry(p) {
 
     this.LinkCells = function(cellFrom, cellTo)
     {
-        var colFrom = Array.prototype.indexOf.call(cellFrom.parentElement.children, cellFrom);
-        var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement);
-        var colTo = Array.prototype.indexOf.call(cellTo.parentElement.children, cellTo);
-        var rowTo = Array.prototype.indexOf.call(cellTo.parentElement.parentElement.children, cellTo.parentElement);
+        var colFrom = Array.prototype.indexOf.call(cellFrom.parentElement.children, cellFrom) - this.leftClueDepth;
+        var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement) - this.topClueDepth;
+        var colTo = Array.prototype.indexOf.call(cellTo.parentElement.children, cellTo) - this.leftClueDepth;
+        var rowTo = Array.prototype.indexOf.call(cellTo.parentElement.parentElement.children, cellTo.parentElement) - this.topClueDepth;
 
         if (colFrom === colTo) {
             if (rowFrom === rowTo - 1) { return this.LinkCellsDirectional(cellFrom, 2, cellTo, 1); }
@@ -471,6 +480,29 @@ function PuzzleEntry(p) {
         return false;
     }
 
+    this.parseOuterClues = function(clues) {
+        var clueDepth = 0;
+        if (clues) { for (var i = 0; i < clues.length; i++) { clues[i] = clues[i].split(" "); clueDepth = Math.max(clues[i].length, clueDepth); } }
+        return clueDepth;    
+    }
+
+    this.addEmptyOuterCell = function(tr) {
+        var td = document.createElement("td");
+        td.classList.add("unselectable");
+        tr.appendChild(td);
+    }
+
+    this.addOuterClue = function(tr, clues, clueIndex, cls) {
+        var td = document.createElement("td");
+        if (clueIndex >= 0 && clueIndex < clues.length && clues[clueIndex]) {
+            td.textContent = clues[clueIndex];
+            td.classList.add(cls);
+            td.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
+        } else { td.classList.add("unselectable"); }
+
+        tr.appendChild(td);
+    }
+
     this.fillClasses = this.getOptionArray("data-fill-classes", " ");
 
     var clueNumbers = this.getOptionArray("data-clue-numbers", " ", "auto");
@@ -482,6 +514,15 @@ function PuzzleEntry(p) {
     var paths = this.getOptionArray("data-paths", "|");
     var extracts = this.getOptionArray("data-extracts", " ");
     var unselectableGivens = this.options["data-unselectable-givens"];
+    var topClues = this.getOptionArray("data-top-clues", "|");
+    var bottomClues = this.getOptionArray("data-bottom-clues", "|");
+    var leftClues = this.getOptionArray("data-left-clues", "|");
+    var rightClues = this.getOptionArray("data-right-clues", "|");
+
+    this.topClueDepth = this.parseOuterClues(topClues);
+    this.bottomClueDepth = this.parseOuterClues(bottomClues);
+    this.leftClueDepth = this.parseOuterClues(leftClues);
+    this.rightClueDepth = this.parseOuterClues(rightClues);
 
     var table = document.createElement("table");
     var clueNum = 0;
@@ -501,11 +542,23 @@ function PuzzleEntry(p) {
         }
     }
 
+    for (var i = 0; i < this.topClueDepth; i++) {
+        var tr = document.createElement("tr");
+        for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr); }
+        for (var j = 0; j < topClues.length; j++) { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + topClues[j].length, "top-clue"); }
+        for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr); }
+
+        table.appendChild(tr);
+    }
+
     for (var r = 0; r < shape.length; r++) {
         var tr = document.createElement("tr");
 
+        for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + leftClues[r].length, "left-clue"); }
+
         for (var c = 0; c < shape[r].length; c++) {
             var td = document.createElement("td");
+            td.classList.add("interior");
             var shapeCh = shape[r][c];
             
             var cell = document.createElement("input");
@@ -618,6 +671,17 @@ function PuzzleEntry(p) {
 
             tr.appendChild(td);
         }
+
+        for (var j = 0; j < this.rightClueDepth; j++) { this.addOuterClue(tr, rightClues[r], j, "right-clue"); }
+
+        table.appendChild(tr);
+    }
+
+    for (var i = 0; i < this.bottomClueDepth; i++) {
+        var tr = document.createElement("tr");
+        for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr); }
+        for (var j = 0; j < bottomClues.length; j++) { this.addOuterClue(tr, bottomClues[j], i, "bottom-clue"); }
+        for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr); }
 
         table.appendChild(tr);
     }
