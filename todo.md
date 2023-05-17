@@ -1,6 +1,8 @@
 scope for sharing as well
 word wrap on linear
 
+word searches with bubbles etc.
+
 improve highlighting for crosswords
 
 borders, etc
