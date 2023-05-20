@@ -4,8 +4,8 @@
     <path id="path-l" fill="none" stroke-width="2" d="M-4,10 V-10 M 4,10 V-10 M-7,10 H7 M-7,3.333 H7 M-7,-3.333 H7 M-7,-10 H7"></path>
     <g id="path-r">
         <path fill="none" stroke-width="2" d="M-4,10 A 14 14 0 0 1 10,-4 M4,10 A 6 6 0 0 1 10,4 M-7,10 H7 M10,-7 V7"></path>
-        <path fill="none" stroke-width="2" d="M-7,10 H7 M10,-7 V7" transform="rotate(30 10 10)"></path>
-        <path fill="none" stroke-width="2" d="M-7,10 H7 M10,-7 V7" transform="rotate(60 10 10)"></path>
+        <path fill="none" stroke-width="2" d="M-7,10 H7" transform="rotate(30 10 10)"></path>
+        <path fill="none" stroke-width="2" d="M-7,10 H7" transform="rotate(60 10 10)"></path>
     </g>
     <!-- todo: these two -->
     <path id="path-t" fill="none" stroke-width="2" d="M0,10 V0 M10,0 H-10"></path>

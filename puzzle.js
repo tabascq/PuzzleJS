@@ -18,6 +18,7 @@ puzzleModes["default"] = {
     "data-unselectable-givens": false,
     "data-paths": null,
     "data-path-style": "straight",
+    "data-edge-style": "box",
     "data-drag-paint-fill": true,
     "data-drag-draw-path": false,
     "data-top-clues": null,
@@ -55,6 +56,11 @@ puzzleModes["trains"] = {
     "data-path-style": "track",
     "data-drag-paint-fill": false,
     "data-drag-draw-path": true
+}
+
+puzzleModes["slitherlink"] = {
+    "data-drag-draw-edge" : true,
+    "data-edge-style": "dots"
 }
 
 // Go through all puzzles and give them a PuzzleEntry object
@@ -405,24 +411,45 @@ function PuzzleEntry(p) {
         if (downcluenumber) { this.container.querySelector("dd[data-down-cluenumber='" + downcluenumber + "']").classList.remove("marked"); }
     }
 
+    this.addEdgeToSvg = function(svg, edgeName) {
+        var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.classList.add(edgeName);
+        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", puzzleJsFolderPath + "edge-" + this.options["data-edge-style"] + ".svg#" + edgeName);
+        svg.appendChild(use);
+    }
+
     this.pathTranslate = ["o0", "i2", "i0", "l0", "i1", "r2", "r1", "t1", "i3", "r3", "r0", "t3", "l1", "t2", "t0", "x0"];
     this.updateSvg = function(td) {
         var svg = td.querySelector("svg");
-        if (!svg) { svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "-10 -10 20 20"); td.appendChild(svg); }
+        if (!svg) { svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "-15 -15 30 30"); td.appendChild(svg); }
 
         var pathCode = td.getAttribute("data-path-code");
         if (pathCode) { pathCode = parseInt(pathCode); } else { pathCode = 0; }
         var translatedData = this.pathTranslate[pathCode];
 
-        while (svg.firstChild) { svg.removeChild(svg.firstChild); }
+        svg.innerHTML = "";
 
-        if (!pathCode) return;
+        if (pathCode) {
+            var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            use.classList.add("path");
+            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", puzzleJsFolderPath + "path-" + this.options["data-path-style"] + ".svg#path-" + translatedData[0]);
+            if (translatedData[1] != "0") { use.setAttributeNS(null, "transform", "rotate(" + parseInt(translatedData[1] * 90) + ")"); }
+            svg.appendChild(use);
+        }
         
-        var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        use.classList.add("path");
-        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", puzzleJsFolderPath + "path-" + this.options["data-path-style"] + ".svg#path-" + translatedData[0]);
-        if (translatedData[1] != "0") { use.setAttributeNS(null, "transform", "rotate(" + parseInt(translatedData[1] * 90) + ")"); }
-        svg.appendChild(use);
+        if (!td.classList.contains("unselectable")) { this.addEdgeToSvg(svg, "edge-base"); }
+
+        var edgeCode = td.getAttribute("data-edge-code");
+        if (edgeCode & 1) { this.addEdgeToSvg(svg, "edge-top"); }
+        if (edgeCode & 2) { this.addEdgeToSvg(svg, "edge-bottom"); }
+        if (edgeCode & 4) { this.addEdgeToSvg(svg, "edge-left"); }
+        if (edgeCode & 8) { this.addEdgeToSvg(svg, "edge-right"); }
+
+        edgeCode = td.getAttribute("data-x-edge-code");
+        if (edgeCode & 1) { this.addEdgeToSvg(svg, "x-edge-top"); }
+        if (edgeCode & 2) { this.addEdgeToSvg(svg, "x-edge-bottom"); }
+        if (edgeCode & 4) { this.addEdgeToSvg(svg, "x-edge-left"); }
+        if (edgeCode & 8) { this.addEdgeToSvg(svg, "x-edge-right"); }
     }
 
     this.IsFullyLinked = function(code) {
@@ -616,22 +643,19 @@ function PuzzleEntry(p) {
 
             td.appendChild(cell);
 
+            var edgeCode = 0;
             if (regularRowBorder) {
-                if ((r % regularRowBorder) == 0) { td.classList.add("border-top"); }
-                if (r == shape.length - 1) { td.classList.add("border-bottom"); }
+                if ((r % regularRowBorder) == 0) { edgeCode |= 1; }
+                if (r == shape.length - 1) { edgeCode |= 2; }
             }
             if (regularColBorder) {
-                if ((c % regularColBorder) == 0) { td.classList.add("border-left"); }
-                if (c == shape[r].length - 1) { td.classList.add("border-right"); }
+                if ((c % regularColBorder) == 0) { edgeCode |= 4; }
+                if (c == shape[r].length - 1) { edgeCode |= 8; }
             }
 
             if (borders) {
                 if (borders.length == shape.length) {
-                    var b = parseInt(borders[r][c], 16);
-                    if (b & 1) { td.classList.add("border-top"); }
-                    if (b & 2) { td.classList.add("border-bottom"); }
-                    if (b & 4) { td.classList.add("border-left"); }
-                    if (b & 8) { td.classList.add("border-right"); }
+                    edgeCode |= parseInt(borders[r][c], 16);
                 }
                 else if (borders.length == shape.length * 2 + 1) {
                     var topRow = borders[r * 2];
@@ -641,12 +665,14 @@ function PuzzleEntry(p) {
                     var chLeft = (midRow.length == shape[r].length + 1) ? midRow[c] : midRow[c * 2];
                     var chRight = (midRow.length == shape[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
                     var chBottom = (botRow.length == shape[r].length) ? botRow[c] : botRow[c * 2 + 1];
-                    if (chTop != " " && chTop != ".") { td.classList.add("border-top"); }
-                    if (chBottom != " " && chBottom != ".") { td.classList.add("border-bottom"); }
-                    if (chLeft != " " && chLeft != ".") { td.classList.add("border-left"); }
-                    if (chRight != " " && chRight != ".") { td.classList.add("border-right"); }
+                    if (chTop != " " && chTop != ".") { edgeCode |= 1; }
+                    if (chBottom != " " && chBottom != ".") { edgeCode |= 2; }
+                    if (chLeft != " " && chLeft != ".") { edgeCode |= 4; }
+                    if (chRight != " " && chRight != ".") { edgeCode |= 8; }
                 }
             }
+
+            if (edgeCode) { td.setAttribute("data-edge-code", edgeCode); }
 
             if (paths) {
                 if (paths.length == shape.length) {
@@ -655,13 +681,11 @@ function PuzzleEntry(p) {
                     td.setAttribute("data-path-code", p);
                     td.setAttribute("data-given-path-code", p);
                 }
-
-                this.updateSvg(td);
             }
 
             if (clueNumbers && shape[r][c] != '@') {
-                var acrossClue = (c == 0 || shape[r][c-1] == '@' || td.classList.contains("border-left")) && c < shape[r].length - 1 && shape[r][c+1] != '@' && !td.classList.contains("border-right"); // block/edge left, letter right
-                var downClue = (r == 0 || shape[r-1][c] == '@' || td.classList.contains("border-top")) && r < shape.length - 1 && shape[r+1][c] != '@' && !td.classList.contains("border-bottom"); // block/edge above, letter below
+                var acrossClue = (c == 0 || shape[r][c-1] == '@' || (edgeCode & 4)) && c < shape[r].length - 1 && shape[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
+                var downClue = (r == 0 || shape[r-1][c] == '@' || (edgeCode & 1)) && r < shape.length - 1 && shape[r+1][c] != '@' && !(edgeCode & 2); // block/edge above, letter below
                 if (acrossClue || downClue) {
                     var clueRealNum = (clueNumbers == "auto") ? ++clueNum : clueNumbers[clueNum++];
 
@@ -675,8 +699,8 @@ function PuzzleEntry(p) {
                     clue.innerText = clueRealNum;
                     td.appendChild(clue);
                 }
-                if (!acrossClue && c > 0 && shape[r][c-1] != '@' && !td.classList.contains("border-left")) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
-                if (!downClue && r > 0 && shape[r-1][1] != '@' && !td.classList.contains("border-top")) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
+                if (!acrossClue && c > 0 && shape[r][c-1] != '@' && !(edgeCode & 4)) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
+                if (!downClue && r > 0 && shape[r-1][1] != '@' && !(edgeCode & 1)) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
             }
 
             if (this.fillClasses) {
@@ -688,6 +712,7 @@ function PuzzleEntry(p) {
                 }
             }
 
+            this.updateSvg(td);
             tr.appendChild(td);
         }
 

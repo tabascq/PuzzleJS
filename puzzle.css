@@ -14,13 +14,12 @@
     height: 40px;
     padding: 0px;
     position: relative;
-    border-bottom: none;
     background: transparent;
     text-align: center;
     font-size: 32px;
     font-weight: bold;
     font-family: monospace;
-    border: 1px solid black;
+    border: none;
     color: transparent;
     text-shadow: 0 0 0 black, -2px -2px 0 #fff, 0 -2px 0 #fff, 2px -2px 0 #fff, 2px 0 0 #fff, 2px 2px 0 #fff, 0 2px 0 #fff, -2px 2px 0 #fff, -2px 0 0 #fff;
 }
@@ -48,20 +47,8 @@
     text-shadow: 0 0 0 black, -2px -2px 0 #fff, 0 -2px 0 #fff, 2px -2px 0 #fff, 2px 0 0 #fff, 2px 2px 0 #fff, 0 2px 0 #fff, -2px 2px 0 #fff, -2px 0 0 #fff;
 }
 
-.puzzle-entry td.border-top {
-    border-top-width: 2px;
-}
-
-.puzzle-entry td.border-bottom {
-    border-bottom-width: 2px;
-}
-
-.puzzle-entry td.border-left {
-    border-left-width: 2px;
-}
-
-.puzzle-entry td.border-right {
-    border-right-width: 2px;
+.puzzle-entry svg {
+    pointer-events: none;
 }
 
 .puzzle-entry td.unselectable {
@@ -144,10 +131,10 @@
 
 .puzzle-entry svg {
     position: absolute;
-    left: 0px;
-    top: 0px;
-    width: 100%;
-    height: 100%;
+    left: -25%;
+    top: -25%;
+    width: 150%;
+    height: 150%;
 }
 
 .puzzle-entry use {
