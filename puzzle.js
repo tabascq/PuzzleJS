@@ -313,7 +313,7 @@ function PuzzleEntry(p) {
     }
 
     this.onUndoRedo = function(units) {
-        units.forEach((u) => { if (u.attribute == "data-path-code") { this.updateSvg(u.elem); }});
+        units.forEach((u) => { if (u.attribute == "data-path-code" || u.attribute == "data-edge-code" || u.attribute == "data-x-edge-code") { this.updateSvg(u.elem); }});
     }
 
     this.getEventEdgeState = function(e) {
