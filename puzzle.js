@@ -452,15 +452,15 @@ function PuzzleEntry(p) {
     this.clueMouseEnter = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("marked"); }); }
-        if (downcluenumber) { this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("marked"); }); }
+        if (acrosscluenumber) { this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
+        if (downcluenumber) { this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
     }
 
     this.clueMouseLeave = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("marked"); }); }
-        if (downcluenumber) { this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("marked"); }); }
+        if (acrosscluenumber) { this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("hovered"); }); }
+        if (downcluenumber) { this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("hovered"); }); }
     }
 
     this.clueClick = function(e) {
@@ -471,17 +471,41 @@ function PuzzleEntry(p) {
     }
 
     this.focus = function(e) {
+        // Strip highlighting on all cells.
+        this.container.querySelectorAll("td[data-across-cluenumber]").forEach(td => { td.classList.remove("marked"); });
+        this.container.querySelectorAll("td[data-down-cluenumber]").forEach(td => { td.classList.remove("marked"); });
+        // Now reapply the highlighting to relevant cells and clues.
         var acrosscluenumber = e.currentTarget.parentElement.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.parentElement.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.container.querySelector("dd[data-across-cluenumber='" + acrosscluenumber + "']").classList.add("marked"); }
-        if (downcluenumber) { this.container.querySelector("dd[data-down-cluenumber='" + downcluenumber + "']").classList.add("marked"); }
+        if (acrosscluenumber) {
+            this.container.querySelector("dd[data-across-cluenumber='" + acrosscluenumber + "']").classList.add("marked");
+            if (this.dx !== 0) {
+                this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("marked"); });
+            }
+        }
+        if (downcluenumber) {
+            this.container.querySelector("dd[data-down-cluenumber='" + downcluenumber + "']").classList.add("marked");
+            if (this.dy !== 0) {
+                this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("marked"); });
+            }
+        }
     }
 
     this.blur = function(e) {
         var acrosscluenumber = e.currentTarget.parentElement.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.parentElement.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.container.querySelector("dd[data-across-cluenumber='" + acrosscluenumber + "']").classList.remove("marked"); }
-        if (downcluenumber) { this.container.querySelector("dd[data-down-cluenumber='" + downcluenumber + "']").classList.remove("marked"); }
+        if (acrosscluenumber) {
+            this.container.querySelector("dd[data-across-cluenumber='" + acrosscluenumber + "']").classList.remove("marked");
+            if (this.dx !== 0) {
+                this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("marked"); });
+            }
+        }
+        if (downcluenumber) {
+            this.container.querySelector("dd[data-down-cluenumber='" + downcluenumber + "']").classList.remove("marked");
+            if (this.dy !== 0) {
+                this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("marked"); });
+            }
+        }
     }
 
     this.addEdgeToSvg = function(svg, edgeName) {
