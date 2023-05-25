@@ -103,6 +103,10 @@
     background-color: lightblue;
 }
 
+.puzzle-entry td.strikethrough {
+    text-decoration: line-through;
+}
+
 .puzzle-entry td.black-cell {
     background-color: black;
     box-shadow: inset 50px 50px black; /* Make black box print when background graphics are off. */
