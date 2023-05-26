@@ -377,8 +377,10 @@ function PuzzleEntry(p) {
             var edgeState = this.getEventEdgeState(e);
             this.lastEdgeState = null;
             this.toggleEdgeState(edgeState, (e.which != 1 || this.fShift));
-            e.preventDefault();
-            return;
+            if (edgeState.edgeCode != 0) {
+                e.preventDefault();
+                return;
+            }
         }
         else if (this.options["data-drag-paint-fill"]) {
             if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || this.fShift); }
