@@ -117,24 +117,11 @@
     vertical-align: top;
     margin-block-start: 0;
     margin-block-end: 0;
-    padding-left: 20px;
-    text-indent: -20px;
 }
-.crossword-clues dt {
-    font-weight: bold;
-}
-.crossword-clues dd {
-    margin: 0;
-    padding: 2px;
-}
-.crossword-clues dd:before {
-    content: attr(data-across-cluenumber)attr(data-down-cluenumber) '. ';
-    padding: 2px;
-}
-.crossword-clues dd.strikethrough {
+.crossword-clues li.strikethrough {
     text-decoration: line-through;
 }
-.crossword-clues dd:hover, .crossword-clues dd.marked, .crossword-clues dd:hover::before, .crossword-clues dd.marked::before {
+.crossword-clues li:hover, .crossword-clues li.marked, .crossword-clues li:hover::before, .crossword-clues li.marked::before {
     background-color: lightblue;
 }
 
