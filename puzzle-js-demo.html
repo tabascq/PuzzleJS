@@ -3,6 +3,7 @@
         <title>Puzzle.js Demo</title>
         <link rel="stylesheet" href="puzzle.css"/>
         <script type="text/javascript" src="puzzle.js"></script>
+        <script type="text/javascript" src="copyjack.js"></script>
         <style>
             .demo {
                 display: grid;
@@ -30,8 +31,27 @@
             .paint-by-numbers-example .black { background: black; }
             .paint-by-numbers-example .white { background: white; }
         </style>
+        <!-- Copyjack styles from https://github.com/galacticpuzzlehunt/gph-site/blob/master/puzzles/static/css/base.css -->
+        <style>
+            .copy-only {
+                display: none;
+            }
+
+            .clipboard-button {
+                border-radius: 1em;
+                bottom: 1.5em;
+                cursor: pointer;
+                font-size: 1em;
+                height: 2em;
+                padding: 0 0.8em;
+                position: fixed !important;
+                right: 1.5em;
+                z-index: 100; /* Needed so hover & click work even when button floats outside of its parent. */
+            }
+        </style>
     </head>
     <body>
+        <div class="clipboard-container">
         <h3>Puzzle.js Demo (with undo)</h3>
         
         <div class="demo" data-undo-scope>
@@ -205,6 +225,8 @@
 
             <div>Slitherlink</div>
             <div class="puzzle-entry slitherlink-example" data-shape="22122|2...2|1...1|2...2|22122" data-mode="notext slitherlink"></div>
+            <button class="clipboard-button"></button>
+        </div>
         </div>
     </body>
 </html>
