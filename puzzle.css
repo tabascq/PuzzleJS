@@ -6,6 +6,7 @@
 
 .puzzle-entry table {
     border-collapse: collapse;
+    display: inline-block;
     user-select: none;
 }
 

@@ -472,6 +472,14 @@ function PuzzleEntry(p) {
         if (downcluenumber) { this.container.querySelector("td[data-down-cluenumber='" + downcluenumber + "'] input").focus(); this.dx = 0; this.dy = 1; }
     }
 
+    this.scrollClue = function(li) {
+        const ol = li.parentElement;
+        if (li.offsetTop < ol.scrollTop ||
+                li.offsetTop + li.offsetHeight > ol.scrollTop + ol.clientHeight) {
+            ol.scrollTop = li.offsetTop + (li.offsetHeight - ol.clientHeight) / 2 - ol.offsetTop;
+      }
+    }
+
     this.focus = function(e) {
         // Strip highlighting on all cells.
         this.container.querySelectorAll("td[data-across-cluenumber]").forEach(td => { td.classList.remove("marked"); });
@@ -480,13 +488,17 @@ function PuzzleEntry(p) {
         var acrosscluenumber = e.currentTarget.parentElement.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.parentElement.getAttribute("data-down-cluenumber");
         if (acrosscluenumber) {
-            this.container.querySelector("li[data-across-cluenumber='" + acrosscluenumber + "']").classList.add("marked");
+            const li = this.container.querySelector("li[data-across-cluenumber='" + acrosscluenumber + "']");
+            li.classList.add("marked");
+            this.scrollClue(li);
             if (this.dx !== 0) {
                 this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("marked"); });
             }
         }
         if (downcluenumber) {
-            this.container.querySelector("li[data-down-cluenumber='" + downcluenumber + "']").classList.add("marked");
+            const li = this.container.querySelector("li[data-down-cluenumber='" + downcluenumber + "']");
+            li.classList.add("marked");
+            this.scrollClue(li);
             if (this.dy !== 0) {
                 this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("marked"); });
             }
@@ -790,20 +802,24 @@ function PuzzleEntry(p) {
             if (clueNumbers && shape[r][c] != '@') {
                 var acrossClue = (c == 0 || shape[r][c-1] == '@' || (edgeCode & 4)) && c < shape[r].length - 1 && shape[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
                 var downClue = (r == 0 || shape[r-1][c] == '@' || (edgeCode & 1)) && r < shape.length - 1 && shape[r+1][c] != '@' && !(edgeCode & 2); // block/edge above, letter below
+                
                 if (acrossClue || downClue) {
                     var clueRealNum = (clueNumbers == "auto") ? ++clueNum : clueNumbers[clueNum++];
+                    const isClueEmpty = String(clueRealNum).trim() === "";
 
-                    if (acrossClue) { td.setAttribute("data-across-cluenumber", clueRealNum); }
-                    if (downClue) { td.setAttribute("data-down-cluenumber", clueRealNum); }
-                    if (acrossClue && acrossClues[acrossClueIndex]) {
-                      acrossClues[acrossClueIndex].setAttribute("data-across-cluenumber", clueRealNum);
-                      acrossClues[acrossClueIndex].setAttribute("value", clueRealNum);
-                      acrossClueIndex++;
-                    }
-                    if (downClue && downClues[downClueIndex]) {
-                      downClues[downClueIndex].setAttribute("data-down-cluenumber", clueRealNum);
-                      downClues[downClueIndex].setAttribute("value", clueRealNum);
-                      downClueIndex++;
+                    if (!isClueEmpty) {
+                        if (acrossClue) { td.setAttribute("data-across-cluenumber", clueRealNum); }
+                        if (downClue) { td.setAttribute("data-down-cluenumber", clueRealNum); }
+                        if (acrossClue && acrossClues[acrossClueIndex]) {
+                          acrossClues[acrossClueIndex].setAttribute("data-across-cluenumber", clueRealNum);
+                          acrossClues[acrossClueIndex].setAttribute("value", clueRealNum);
+                          acrossClueIndex++;
+                        }
+                        if (downClue && downClues[downClueIndex]) {
+                          downClues[downClueIndex].setAttribute("data-down-cluenumber", clueRealNum);
+                          downClues[downClueIndex].setAttribute("value", clueRealNum);
+                          downClueIndex++;
+                        }
                     }
 
                     var clue = document.createElement("div");
