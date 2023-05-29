@@ -212,6 +212,10 @@ function PuzzleEntry(p) {
     this.undoManager = undoScope.puzzleUndoManager;
     if (!this.undoManager) { this.undoManager = new UndoManager(); undoScope.puzzleUndoManager = this.undoManager; }
 
+    // Assume that if a button with class 'clipboard-button' exists, we're using copyjack.
+    this.isUsingCopyjack = document.querySelector('button.clipboard-button') !== null;
+
+    // --- Functions to update state ---
     // keyboard support
     this.move = function(elem, drow, dcol) {
         var td = elem.parentElement;
@@ -219,7 +223,7 @@ function PuzzleEntry(p) {
         var row = drow + Array.prototype.indexOf.call(td.parentElement.parentElement.children, td.parentElement) - this.topClueDepth;
 
         while (true) {
-            var td = this.container.querySelector("tr:nth-child(" + (row + this.topClueDepth + 1) + ") td:nth-child(" + (col + this.leftClueDepth + 1) + ")");
+            var td = this.table.querySelector("tr:nth-child(" + (row + this.topClueDepth + 1) + ") td:nth-child(" + (col + this.leftClueDepth + 1) + ")");
 
             if (!td) {
                 return false;
@@ -259,7 +263,9 @@ function PuzzleEntry(p) {
     }
 
     this.setClassInCycle = function(td, classes, cls) {
-        if (classes && !td.classList.contains(cls)) { this.undoManager.modifyClass(td, [cls], classes); }
+        if (classes && !td.classList.contains(cls)) {
+            this.undoManager.modifyClass(td, [cls], classes);
+        }
     }
 
     this.keyDown = function(e) {
@@ -277,7 +283,7 @@ function PuzzleEntry(p) {
         else if (e.keyCode == 32) { // space
             this.dx = 1 - this.dx; this.dy = 1 - this.dy;
             if (e.currentTarget.parentElement.classList.contains("given-fill")) return;
-            if (this.options["data-fill-behavior"] == "cycle") { this.cycleClasses(e.target.parentElement, this.fillClasses, e.shiftKey); }
+            if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target.parentElement, this.fillClasses, e.shiftKey); }
         } else if (e.keyCode == 8 || e.keyCode == 46) { // backspace/delete
             this.setText(e.target, [], [], "");
             this.move(e.target, -this.dy, -this.dx);
@@ -313,7 +319,16 @@ function PuzzleEntry(p) {
     }
 
     this.onUndoRedo = function(units) {
-        units.forEach((u) => { if (u.attribute == "data-path-code" || u.attribute == "data-edge-code" || u.attribute == "data-x-edge-code") { this.updateSvg(u.elem); }});
+        units.forEach((u) => {
+            if (u.attribute == "data-path-code" || u.attribute == "data-edge-code" || u.attribute == "data-x-edge-code") {
+                this.updateSvg(u.elem);
+            }
+            if (u.elem instanceof HTMLTableCellElement) {
+                this.processTdForCopyjack(u.elem);
+            } else if (u.elem.parentElement instanceof HTMLTableCellElement) {
+                this.processTdForCopyjack(u.elem.parentElement);
+            }
+        });
     }
 
     this.getEventEdgeState = function(e) {
@@ -334,6 +349,11 @@ function PuzzleEntry(p) {
             cell = cell.parentElement.parentElement.children[row + this.topClueDepth].children[col + this.leftClueDepth];
         }
 
+        // edgecode is a "four-bit integer":
+        //  - The rightmost bit is 1 iff the top border is shaded.
+        //  - The 2nd-to-rightmost bit is 1 iff the bottom border is shaded.
+        //  - The 2nd-to-leftmost bit is 1 iff the left border is shaded.
+        //  - The leftmost bit is 1 iff the right border is shaded.
         var edgeCode = 0;
         if (closeTop && !closeLeft && !closeRight) { edgeCode = 1; }
         else if (closeBottom && !closeLeft && !closeRight) { edgeCode = 2; }
@@ -454,22 +474,22 @@ function PuzzleEntry(p) {
     this.clueMouseEnter = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
-        if (downcluenumber) { this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
+        if (acrosscluenumber) { this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
+        if (downcluenumber) { this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
     }
 
     this.clueMouseLeave = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("hovered"); }); }
-        if (downcluenumber) { this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("hovered"); }); }
+        if (acrosscluenumber) { this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("hovered"); }); }
+        if (downcluenumber) { this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("hovered"); }); }
     }
 
     this.clueClick = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.container.querySelector("td[data-across-cluenumber='" + acrosscluenumber + "'] input").focus(); this.dx = 1; this.dy = 0; }
-        if (downcluenumber) { this.container.querySelector("td[data-down-cluenumber='" + downcluenumber + "'] input").focus(); this.dx = 0; this.dy = 1; }
+        if (acrosscluenumber) { this.table.querySelector("td[data-across-cluenumber='" + acrosscluenumber + "'] input").focus(); this.dx = 1; this.dy = 0; }
+        if (downcluenumber) { this.table.querySelector("td[data-down-cluenumber='" + downcluenumber + "'] input").focus(); this.dx = 0; this.dy = 1; }
     }
 
     this.scrollClue = function(li) {
@@ -482,25 +502,29 @@ function PuzzleEntry(p) {
 
     this.focus = function(e) {
         // Strip highlighting on all cells.
-        this.container.querySelectorAll("td[data-across-cluenumber]").forEach(td => { td.classList.remove("marked"); });
-        this.container.querySelectorAll("td[data-down-cluenumber]").forEach(td => { td.classList.remove("marked"); });
+        this.table.querySelectorAll("td[data-across-cluenumber]").forEach(td => { td.classList.remove("marked"); });
+        this.table.querySelectorAll("td[data-down-cluenumber]").forEach(td => { td.classList.remove("marked"); });
         // Now reapply the highlighting to relevant cells and clues.
         var acrosscluenumber = e.currentTarget.parentElement.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.parentElement.getAttribute("data-down-cluenumber");
         if (acrosscluenumber) {
             const li = this.container.querySelector("li[data-across-cluenumber='" + acrosscluenumber + "']");
-            li.classList.add("marked");
-            this.scrollClue(li);
+            if (li) {
+                li.classList.add("marked");
+                this.scrollClue(li);
+            }
             if (this.dx !== 0) {
-                this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("marked"); });
+                this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("marked"); });
             }
         }
         if (downcluenumber) {
             const li = this.container.querySelector("li[data-down-cluenumber='" + downcluenumber + "']");
-            li.classList.add("marked");
-            this.scrollClue(li);
+            if (li) {
+                li.classList.add("marked");
+                this.scrollClue(li);
+            }
             if (this.dy !== 0) {
-                this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("marked"); });
+                this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("marked"); });
             }
         }
     }
@@ -509,15 +533,15 @@ function PuzzleEntry(p) {
         var acrosscluenumber = e.currentTarget.parentElement.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.parentElement.getAttribute("data-down-cluenumber");
         if (acrosscluenumber) {
-            this.container.querySelector("li[data-across-cluenumber='" + acrosscluenumber + "']").classList.remove("marked");
+            this.container.querySelector("li[data-across-cluenumber='" + acrosscluenumber + "']")?.classList.remove("marked");
             if (this.dx !== 0) {
-                this.container.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("marked"); });
+                this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("marked"); });
             }
         }
         if (downcluenumber) {
-            this.container.querySelector("li[data-down-cluenumber='" + downcluenumber + "']").classList.remove("marked");
+            this.container.querySelector("li[data-down-cluenumber='" + downcluenumber + "']")?.classList.remove("marked");
             if (this.dy !== 0) {
-                this.container.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("marked"); });
+                this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("marked"); });
             }
         }
     }
@@ -530,6 +554,8 @@ function PuzzleEntry(p) {
     }
 
     this.pathTranslate = ["o0", "i2", "i0", "l0", "i1", "r2", "r1", "t1", "i3", "r3", "r0", "t3", "l1", "t2", "t0", "x0"];
+    // TODO(jhimawan): validate these.
+    this.pathCopyjack = [" ", "╵", "╷", "│", "╴", "┘", "┐", "┬", "╶", "┘", "┌", "├", "─", "┴", "┬", "┼"];
     this.updateSvg = function(td) {
         var svg = td.querySelector("svg");
         if (!svg) { svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "-15 -15 30 30"); td.appendChild(svg); }
@@ -641,6 +667,54 @@ function PuzzleEntry(p) {
         tr.appendChild(td);
     }
 
+    // Copyjack support.
+    //
+    // Reads from inputTd, a td that's part of an interactive puzzle element.
+    // Expects that inputTd.dataset.copyjack is copyTd, a td that's part of this.copyjackVersion.
+    // Styles copyTd such that clipboard copies it correctly.
+    this.processTdForCopyjack = function(inputTd) {
+        if (!this.isUsingCopyjack) return;
+        const [i, j] = inputTd.dataset.coord.split(",")
+        const copyTd = this.copyjackVersion.getElementsByTagName('tr')[i].getElementsByTagName('td')[j];
+        // Set class names.
+        // Remove "transient" class names such as 'marked'.
+        copyTd.className = inputTd.className.replace(/marked/g, '');
+        // Reset the font size to avoid row overflow.
+        copyTd.style.fontSize = '1em';
+        // Copy any text inside the td. This includes text inside divs within the td.
+        copyTd.innerText = inputTd.innerText;
+        // If the td has a "value", overwrite the innertext.
+        // TODO(jhimawan): fix after no-input refactor.
+        const input = inputTd.getElementsByTagName('input')[0];
+        if (input?.value) {
+            copyTd.innerText = input.value;
+        }
+
+        // Do edges.
+        const edgeCode = inputTd.dataset.edgeCode;
+        if (edgeCode & 1) {
+            copyTd.style.borderTop = '3px solid black';
+        }
+        if (edgeCode & 2) {
+            copyTd.style.borderBottom = '3px solid black';
+        }
+        if (edgeCode & 4) {
+            copyTd.style.borderLeft = '3px solid black';
+        }
+        if (edgeCode & 8) {
+            copyTd.style.borderRight = '3px solid black';
+        }
+
+        // Do paths.
+        const pathCode = inputTd.dataset.pathCode;
+        if (!copyTd.innerText && pathCode) {
+            // If the cell has content, don't overwrite it.
+            copyTd.innerText = this.pathCopyjack[pathCode];
+        }
+    }
+
+
+    // --- Construct the interactive player. ---
     this.fillClasses = this.getOptionArray("data-fill-classes", " ");
 
     var clueNumbers = this.getOptionArray("data-clue-numbers", " ", "auto");
@@ -859,6 +933,32 @@ function PuzzleEntry(p) {
     }
 
     this.container.insertBefore(table, this.container.firstChild);
+    this.table = table;
+
+    // Copyjack support: initialize a copyjack version of the table.
+    // This table will be modified as the user takes actions.
+
+    // Put the table inside this.container to ensure that styling works.
+    if (this.isUsingCopyjack) {
+        // Set no-copy on this table.
+        table.classList.add('no-copy');
+        // Create a copy-only table and insert it.
+        this.copyjackVersion = document.createElement('table');
+        this.copyjackVersion.classList.add('copy-only');
+        this.copyjackVersion.style.userSelect = 'auto'; // Needed for Firefox compatibility.
+        this.container.insertBefore(this.copyjackVersion, this.table);
+        // Populate the copy-only table.
+        for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
+            const copyTr = document.createElement('tr');
+            this.copyjackVersion.appendChild(copyTr);
+            for (const [j, td] of Array.from(tr.getElementsByTagName('td')).entries()) {
+                td.dataset.coord = [i, j];
+                const copyTd = document.createElement('td');
+                copyTr.appendChild(copyTd);
+                this.processTdForCopyjack(td);
+            }
+        }
+    }
 
     this.container.querySelectorAll(".crossword-clues li").forEach((clue) => {
         clue.addEventListener("mouseenter", e => { this.clueMouseEnter(e); });
