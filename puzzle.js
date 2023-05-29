@@ -83,6 +83,7 @@ function UndoManager() {
             if (unit.adds) { unit.adds.forEach((a) => { elem.classList.add(a); }); }
             if (unit.removes) { unit.removes.forEach((a) => { elem.classList.remove(a); }); }
             if (unit.attribute) { elem.setAttribute(unit.attribute, unit.newValue); }
+            if (unit.oldText || unit.newText) { elem.innerText = unit.newText; }
         });
     }
 
@@ -94,6 +95,7 @@ function UndoManager() {
             if (unit.adds) { unit.adds.forEach((a) => { elem.classList.remove(a); }); }
             if (unit.removes) { unit.removes.forEach((a) => { elem.classList.add(a); }); }
             if (unit.attribute) { elem.setAttribute(unit.attribute, unit.oldValue); }
+            if (unit.oldText || unit.newText) { elem.innerText = unit.oldText; }
         });
     }
 
@@ -161,6 +163,16 @@ function UndoManager() {
         this.activeGroup.units.push(unit);
     }
 
+    this.modifyText = function(elem, newText) {
+        var oldText = elem.innerText;
+        if (oldText == newText) { return; }
+
+        var unit = { "elem": elem, "oldText": oldText, "newText": newText };
+
+        this.redoUnit(unit);
+        this.activeGroup.units.push(unit);
+    }
+
     this.notify = function(group) {
         group.puzzleEntry.onUndoRedo(group.units);
     }
@@ -217,8 +229,7 @@ function PuzzleEntry(p) {
 
     // --- Functions to update state ---
     // keyboard support
-    this.move = function(elem, drow, dcol) {
-        var td = elem.parentElement;
+    this.move = function(td, drow, dcol) {
         var col = dcol + Array.prototype.indexOf.call(td.parentElement.children, td) - this.leftClueDepth;
         var row = drow + Array.prototype.indexOf.call(td.parentElement.parentElement.children, td.parentElement) - this.topClueDepth;
 
@@ -229,12 +240,12 @@ function PuzzleEntry(p) {
                 return false;
             }
 
-            var input = td.querySelector("input");
+            var text = td.querySelector(".text");
 
-            if (input && !td.classList.contains("unselectable")) {
+            if (text && !td.classList.contains("unselectable")) {
                 this.dx = Math.abs(dcol);
                 this.dy = Math.abs(drow);
-                input.focus();
+                td.focus();
                 return true;
             }
 
@@ -282,8 +293,8 @@ function PuzzleEntry(p) {
         else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
         else if (e.keyCode == 32) { // space
             this.dx = 1 - this.dx; this.dy = 1 - this.dy;
-            if (e.currentTarget.parentElement.classList.contains("given-fill")) return;
-            if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target.parentElement, this.fillClasses, e.shiftKey); }
+            if (e.currentTarget.classList.contains("given-fill")) return;
+            if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, this.fillClasses, e.shiftKey); }
         } else if (e.keyCode == 8 || e.keyCode == 46) { // backspace/delete
             this.setText(e.target, [], [], "");
             this.move(e.target, -this.dy, -this.dx);
@@ -306,16 +317,17 @@ function PuzzleEntry(p) {
     }
 
     this.setText = function(target, adds, removes, text) {
-        if (target.value != text && !target.parentElement.classList.contains("given")) {
+        var textElement = target.querySelector(".text");
+        if (textElement.innerText != text && !target.classList.contains("given")) {
             this.undoManager.startGroup(this);
             this.undoManager.modifyClass(target, adds, removes);
-            this.undoManager.modifyAttribute(target, "value", text);
+            this.undoManager.modifyText(textElement, text);
             this.undoManager.endGroup();
         }
     }
 
     this.getText = function(target) {
-        return target.value;
+        return target.querySelector(".text").innerText;
     }
 
     this.onUndoRedo = function(units) {
@@ -407,7 +419,7 @@ function PuzzleEntry(p) {
             else { this.currentFill = this.findClassInList(e.currentTarget, this.fillClasses); }
         }
         
-        e.currentTarget.querySelector("input").focus();
+        e.currentTarget.focus();
         e.preventDefault();
     }
 
@@ -450,7 +462,7 @@ function PuzzleEntry(p) {
 
         if (!wantPaint || canPaint) {
             this.lastCell = e.currentTarget;
-            e.currentTarget.querySelector("input").focus();
+            e.currentTarget.focus();
         }
     }
 
@@ -488,8 +500,8 @@ function PuzzleEntry(p) {
     this.clueClick = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.table.querySelector("td[data-across-cluenumber='" + acrosscluenumber + "'] input").focus(); this.dx = 1; this.dy = 0; }
-        if (downcluenumber) { this.table.querySelector("td[data-down-cluenumber='" + downcluenumber + "'] input").focus(); this.dx = 0; this.dy = 1; }
+        if (acrosscluenumber) { this.table.querySelector("td[data-across-cluenumber='" + acrosscluenumber + "']").focus(); this.dx = 1; this.dy = 0; }
+        if (downcluenumber) { this.table.querySelector("td[data-down-cluenumber='" + downcluenumber + "']").focus(); this.dx = 0; this.dy = 1; }
     }
 
     this.scrollClue = function(li) {
@@ -505,8 +517,8 @@ function PuzzleEntry(p) {
         this.table.querySelectorAll("td[data-across-cluenumber]").forEach(td => { td.classList.remove("marked"); });
         this.table.querySelectorAll("td[data-down-cluenumber]").forEach(td => { td.classList.remove("marked"); });
         // Now reapply the highlighting to relevant cells and clues.
-        var acrosscluenumber = e.currentTarget.parentElement.getAttribute("data-across-cluenumber");
-        var downcluenumber = e.currentTarget.parentElement.getAttribute("data-down-cluenumber");
+        var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
+        var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
         if (acrosscluenumber) {
             const li = this.container.querySelector("li[data-across-cluenumber='" + acrosscluenumber + "']");
             if (li) {
@@ -530,8 +542,8 @@ function PuzzleEntry(p) {
     }
 
     this.blur = function(e) {
-        var acrosscluenumber = e.currentTarget.parentElement.getAttribute("data-across-cluenumber");
-        var downcluenumber = e.currentTarget.parentElement.getAttribute("data-down-cluenumber");
+        var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
+        var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
         if (acrosscluenumber) {
             this.container.querySelector("li[data-across-cluenumber='" + acrosscluenumber + "']")?.classList.remove("marked");
             if (this.dx !== 0) {
@@ -684,10 +696,9 @@ function PuzzleEntry(p) {
         // Copy any text inside the td. This includes text inside divs within the td.
         copyTd.innerText = inputTd.innerText;
         // If the td has a "value", overwrite the innertext.
-        // TODO(jhimawan): fix after no-input refactor.
-        const input = inputTd.getElementsByTagName('input')[0];
-        if (input?.value) {
-            copyTd.innerText = input.value;
+        const text = inputTd.querySelector('text');
+        if (text?.value) {
+            copyTd.innerText = text.value;
         }
 
         // Do edges.
@@ -787,20 +798,20 @@ function PuzzleEntry(p) {
             td.classList.add("interior");
             var shapeCh = shape[r][c];
             
-            var cell = document.createElement("input");
-            cell.setAttribute("type", "text");
+            var text = document.createElement("div");
+            text.classList.add("text");
 
             if (shapeCh == '.') {
-                if (solution) { cell.value = this.translate(solution[r][c], shapeReplacements); }
+                if (solution) { text.innerText = this.translate(solution[r][c], shapeReplacements); }
             }
             else if (shapeCh == '#') {
                 td.classList.add("extract");
-                if (solution) { cell.value = this.translate(solution[r][c], shapeReplacements); }
+                if (solution) { text.innerText = this.translate(solution[r][c], shapeReplacements); }
                 if (extracts) {
                     var code = extracts[extractNum++];
                     var id = "extract-id-" + code;
-                    cell.setAttribute("data-extract-id", id);
-                    cell.classList.add(id);
+                    text.setAttribute("data-extract-id", id);
+                    text.classList.add(id);
 
                     var extractCode = document.createElement("div");
                     extractCode.classList.add("extract-code");
@@ -813,25 +824,25 @@ function PuzzleEntry(p) {
                 if (unselectableGivens) { td.classList.add("unselectable"); }
             }
             else {
-                cell.value = this.translate(shapeCh, shapeReplacements);
+                text.innerText = this.translate(shapeCh, shapeReplacements);
                 td.classList.add("given");
                 if (unselectableGivens) { td.classList.add("unselectable"); }
             }
 
             if (!td.classList.contains("unselectable")) {
-                cell.addEventListener("keydown",  e => { this.keyDown(e); });
-
+                td.tabIndex = -1;
+                td.addEventListener("keydown",  e => { this.keyDown(e); });
                 td.addEventListener("mousedown",  e => { this.mouseDown(e); });
                 if (this.options["data-drag-draw-edge"]) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
                 td.addEventListener("mouseenter",  e => { this.mouseEnter(e); });
                 td.addEventListener("contextmenu",  e => { e.preventDefault(); });
                 if (clueNumbers) {
-                    cell.addEventListener("focus",  e => { this.focus(e); });
-                    cell.addEventListener("blur",  e => { this.blur(e); });
+                    td.addEventListener("focus",  e => { this.focus(e); });
+                    td.addEventListener("blur",  e => { this.blur(e); });
                 }
             }
 
-            td.appendChild(cell);
+            td.appendChild(text);
 
             var edgeCode = 0;
             if (regularRowBorder) {
