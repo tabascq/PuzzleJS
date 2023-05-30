@@ -25,7 +25,7 @@
             .trains-example .unknown { background: white; }
             .trains-example .trackbed { background: darkgoldenrod; }
             .trains-example .grass { background: lightgreen; }
-            .trains-example td.interior:not([data-path-code="0"]) { background: darkgoldenrod; }
+            .trains-example .inner-cell:not([data-path-code="0"]) { background: darkgoldenrod; }
 
             .paint-by-numbers-example .unknown { background: lightgray; }
             .paint-by-numbers-example .black { background: black; }
@@ -56,24 +56,24 @@
         
         <div class="demo" data-undo-scope>
             <div>Basic 1-D</div>
-            <div class="puzzle-entry" data-mode="linear" data-shape="A..#..G.." data-extracts="3"></div>
+            <div class="puzzle-entry" data-mode="linear" data-text="A..#..G.." data-extracts="3"></div>
 
             <div>Basic 1-D Solution</div>
-            <div class="puzzle-entry" data-mode="linear" data-shape="A..#..G.." data-solution="ABCDEFGHI"></div>
+            <div class="puzzle-entry" data-mode="linear" data-text="A..#..G.." data-text-solution="ABCDEFGHI"></div>
 
             <div>Basic 2-D with auto clue numbers</div>
-            <div class="puzzle-entry" data-mode="crossword" data-shape="@....|.#...|..@..|...#.|....@" data-extracts="2 5"></div>
+            <div class="puzzle-entry" data-mode="crossword" data-text="@....|.#...|..@..|...#.|....@" data-extracts="2 5"></div>
 
             <div>Basic 2-D with custom clue numbers</div>
-            <div class="puzzle-entry" data-mode="crossword" data-shape="@....|.#...|..@..|...#.|....@" data-clue-numbers="2 3 5 7 11 13 17 19 23 29" data-extracts="4 1"></div>
+            <div class="puzzle-entry" data-mode="crossword" data-text="@....|.#...|..@..|...#.|....@" data-clue-numbers="2 3 5 7 11 13 17 19 23 29" data-extracts="4 1"></div>
 
             <div>Collection of all highlights above (minus solution)</div>
-            <div class="puzzle-entry" data-mode="linear" data-shape="#####" data-extracts="1 2 3 4 5"></div>
+            <div class="puzzle-entry" data-mode="linear" data-text="#####" data-extracts="1 2 3 4 5"></div>
 
             <div>Crossword with clues</div>
             <div class="puzzle-entry" data-mode="crossword">
                 {
-                 "data-shape": [
+                 "data-text": [
                     "@....",
                     ".....",
                     "..@..",
@@ -106,9 +106,9 @@
             </div>
 
             <div>Barred with clues</div>
-            <div class="puzzle-entry" data-mode="crossword" data-shape="4x4">
+            <div class="puzzle-entry" data-mode="crossword" data-text="4x4">
                 {
-                 "data-borders": [
+                 "data-edges": [
                     "._._._._.",
                     "|.....|.|",
                     "..._.....",
@@ -142,18 +142,18 @@
             </div>
 
             <div>Mini sudoku</div>
-            <div class="puzzle-entry" data-mode="sudoku" data-shape="..3.|2...|...1|.4.." data-borders="2x2" data-allowed-characters="1234"></div>
+            <div class="puzzle-entry" data-mode="sudoku" data-text="..3.|2...|...1|.4.." data-edges="2x2" data-text-characters="1234"></div>
 
             <div>Mini shape sudoku</div>
-            <div class="puzzle-entry" data-mode="sudoku" data-allowed-characters="1234">
+            <div class="puzzle-entry" data-mode="sudoku" data-text-characters="1234">
                 {
-                    "data-shape": [
+                    "data-text": [
                     ".3..",
                     ".12.",
                     "..13",
                     "...."
                     ],
-                    "data-borders": [
+                    "data-edges": [
                     "._._._._.",
                     "|.|.....|",
                     "..._..._.",
@@ -168,34 +168,34 @@
             </div>
 
             <div>Mini wordoku</div>
-            <div class="puzzle-entry" data-mode="sudoku" data-shape=".O..|...R|W...|..D." data-borders="2x2" data-allowed-characters="WORD"></div>
+            <div class="puzzle-entry" data-mode="sudoku" data-text=".O..|...R|W...|..D." data-edges="2x2" data-text-characters="WORD"></div>
 
             <div>Nurikabe - click or spacebar, right/shift click/space cycles in opposite direction</div>
-            <div class="puzzle-entry nurikabe-example" data-mode="notext" data-shape="...|.9.|..." data-fill-classes="unknown island water"></div>
+            <div class="puzzle-entry nurikabe-example" data-mode="notext" data-text="...|.9.|..." data-fill-classes="unknown island water"></div>
             
             <div>Cryptogram</div>
-            <div class="puzzle-entry" data-mode="linear" data-shape="#### ## #|##### ###" data-extracts="G O A T A T I T O N K G N Y M"></div>
+            <div class="puzzle-entry" data-mode="linear" data-text="#### ## #|##### ###" data-extracts="G O A T A T I T O N K G N Y M"></div>
 
             <div>Acrostic</div>
             <div class="acrostic-example">
-                <div class="puzzle-entry" data-mode="linear" data-shape="#####@#|#######" data-extracts="C1 A2 C3 C4 C5 B6 C7 B8 B9 B10 A11 C12 A13"></div>
+                <div class="puzzle-entry" data-mode="linear" data-text="#####@#|#######" data-extracts="C1 A2 C3 C4 C5 B6 C7 B8 B9 B10 A11 C12 A13"></div>
                 <br/>
                 <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
                     <div>Not new</div>
-                    <div class="puzzle-entry" data-shape="###" data-extracts="A11 A2 A13"></div>
+                    <div class="puzzle-entry" data-text="###" data-extracts="A11 A2 A13"></div>
                     <div>Left, on a map</div>
-                    <div class="puzzle-entry" data-shape="####" data-extracts="B10 B6 B8 B9"></div>
+                    <div class="puzzle-entry" data-text="####" data-extracts="B10 B6 B8 B9"></div>
                     <div>Lights, Camera, ____!</div>
-                    <div class="puzzle-entry" data-shape="######" data-extracts="C7 C1 C5 C3 C12 C4"></div>
+                    <div class="puzzle-entry" data-text="######" data-extracts="C7 C1 C5 C3 C12 C4"></div>
                 </div>
             </div>
 
             <div>Path paint: drag from number to number with a path whose length matches the number. 1&rsquo;s do not get a path.</div>
-            <div class="puzzle-entry path-paint-example" data-mode="notext pathpaint" data-shape-replacements="M13" data-fill-classes="white yellow red">
+            <div class="puzzle-entry path-paint-example" data-mode="notext pathpaint" data-text-replacements="M13" data-fill-classes="white yellow red">
                 {
-                    "data-shape-replacements": {"M": 13},
+                    "data-text-replacements": {"M": 13},
 
-                    "data-shape": [
+                    "data-text": [
                     "..M.1..",
                     ".11.11.",
                     ".....4.",
@@ -218,13 +218,13 @@
             </div>
 
             <div>Trains: drag a train path from A to B (note: still needs to allow click to cycle fills, but not drag)</div>
-            <div class="puzzle-entry trains-example" data-shape="5x5" data-mode="notext trains" data-fill-classes="unknown trackbed grass" data-paths=".....|.....|.....|2..2.|5..3." data-top-clues="3|3|1|4|3" data-bottom-clues="|||B|" data-left-clues="||||A" data-right-clues="4|2|4|2|2"></div>
+            <div class="puzzle-entry trains-example" data-text="5x5" data-mode="notext trains" data-fill-classes="unknown trackbed grass" data-paths=".....|.....|.....|2..2.|5..3." data-top-clues="3|3|1|4|3" data-bottom-clues="|||B|" data-left-clues="||||A" data-right-clues="4|2|4|2|2"></div>
 
             <div>Paint by Numbers</div>
-            <div class="puzzle-entry paint-by-numbers-example" data-shape="10x10" data-borders="5x5" data-mode="notext" data-fill-classes="unknown black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
+            <div class="puzzle-entry paint-by-numbers-example" data-text="10x10" data-edges="5x5" data-mode="notext" data-fill-classes="unknown black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
 
             <div>Slitherlink</div>
-            <div class="puzzle-entry slitherlink-example" data-shape="22122|2...2|1...1|2...2|22122" data-mode="notext slitherlink"></div>
+            <div class="puzzle-entry slitherlink-example" data-text="22122|2...2|1...1|2...2|22122" data-mode="notext slitherlink"></div>
             <button class="clipboard-button"></button>
         </div>
         </div>
