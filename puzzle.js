@@ -5,27 +5,38 @@ var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 // a puzzle can have multiple modes and multiple custom options.
 var puzzleModes = {};
 puzzleModes["default"] = {
-    "data-allowed-characters": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    // text
+    "data-text": null,
+    "data-text-replacements": null,
+    "data-text-characters": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     "data-text-shift-key": "rebus",
+    "data-text-solution": null,
+
+    // fills
     "data-fill-classes": null,
     "data-fills": null,
     "data-fill-cycle": true,
-    "data-clue-numbers": null,
-    "data-shape": null,
-    "data-shape-replacements": null,
-    "data-solution": null,
-    "data-borders": null,
-    "data-unselectable-givens": false,
+
+    // paths
     "data-paths": null,
     "data-path-style": "straight",
+
+    // edges
+    "data-edges": null,
     "data-edge-style": "box",
-    "data-drag-paint-fill": true,
-    "data-drag-draw-path": false,
-    "data-drag-draw-edge": false,
+
+    // clues
+    "data-clue-numbers": null,
     "data-top-clues": null,
     "data-bottom-clues": null,
     "data-left-clues": null,
     "data-right-clues": null,
+
+    // misc
+    "data-drag-paint-fill": true,
+    "data-drag-draw-path": false,
+    "data-drag-draw-edge": false,
+    "data-unselectable-givens": false,
     "data-extracts": null
 };
 
@@ -38,12 +49,12 @@ puzzleModes["crossword"] = {
 };
 
 puzzleModes["notext"] = {
-    "data-allowed-characters": ""
+    "data-text-characters": ""
 }
 
 puzzleModes["sudoku"] = {
-    "data-allowed-characters": "123456789",
-    "data-borders": "3x3",
+    "data-text-characters": "123456789",
+    "data-edges": "3x3",
     "data-text-shift-key": "candidates"
 };
 
@@ -283,7 +294,7 @@ function PuzzleEntry(p) {
         if (e.keyCode == 9) return;
 
         e.preventDefault();
-        if (this.options["data-solution"]) { return; }
+        if (this.options["data-text-solution"]) { return; }
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
@@ -302,7 +313,7 @@ function PuzzleEntry(p) {
         } else {
             var ch = String.fromCharCode(e.keyCode);
 
-            if (this.options["data-allowed-characters"].includes(ch)) {
+            if (this.options["data-text-characters"].includes(ch)) {
                 if (e.shiftKey) {
                     var val = this.getText(e.target);
                     if (this.options["data-text-shift-key"] == "rebus" || !val.includes(ch)) { val = val + ch; }
@@ -730,11 +741,11 @@ function PuzzleEntry(p) {
     this.fillClasses = this.getOptionArray("data-fill-classes", " ");
 
     var clueNumbers = this.getOptionArray("data-clue-numbers", " ", "auto");
-    var shape = this.getOptionArray("data-shape", "|");
-    var shapeReplacements = this.getOptionDict("data-shape-replacements");
+    var textLines = this.getOptionArray("data-text", "|");
+    var textReplacements = this.getOptionDict("data-text-replacements");
     var fills = this.getOptionArray("data-fills", "|");
-    var solution = this.getOptionArray("data-solution", "|");
-    var borders = this.getOptionArray("data-borders", "|");
+    var solution = this.getOptionArray("data-text-solution", "|");
+    var edges = this.getOptionArray("data-edges", "|");
     var paths = this.getOptionArray("data-paths", "|");
     var extracts = this.getOptionArray("data-extracts", " ");
     var unselectableGivens = this.options["data-unselectable-givens"];
@@ -760,18 +771,18 @@ function PuzzleEntry(p) {
     var regularRowBorder = 0;
     var regularColBorder = 0;
 
-    if (shape.length == 1 && /^\d+x\d+$/.test(shape[0])) {
-        var dim = shape[0].split("x");
-        shape = [];
+    if (textLines.length == 1 && /^\d+x\d+$/.test(textLines[0])) {
+        var dim = textLines[0].split("x");
+        textLines = [];
         for (r = 0; r < dim[1]; r++) {
-            shape[r] = [];
-            for (c = 0; c < dim[0]; c++) { shape[r][c] = "."; }
+            textLines[r] = [];
+            for (c = 0; c < dim[0]; c++) { textLines[r][c] = "."; }
         }
     }
 
-    if (borders && borders.length == 1 && /^\d+x\d+$/.test(borders[0])) {
-        var dim = borders[0].split("x");
-        borders = null;
+    if (edges && edges.length == 1 && /^\d+x\d+$/.test(edges[0])) {
+        var dim = edges[0].split("x");
+        edges = null;
         regularColBorder = dim[0];
         regularRowBorder = dim[1];
     }
@@ -785,29 +796,29 @@ function PuzzleEntry(p) {
         table.appendChild(tr);
     }
 
-    this.numRows = shape.length;
+    this.numRows = textLines.length;
     this.numCols = 0;
 
-    for (var r = 0; r < shape.length; r++) {
+    for (var r = 0; r < textLines.length; r++) {
         var tr = document.createElement("tr");
 
         for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + leftClues[r].length, "left-clue"); }
 
-        this.numCols = Math.max(this.numCols, shape[r].length);
-        for (var c = 0; c < shape[r].length; c++) {
+        this.numCols = Math.max(this.numCols, textLines[r].length);
+        for (var c = 0; c < textLines[r].length; c++) {
             var td = document.createElement("td");
             td.classList.add("interior");
-            var shapeCh = shape[r][c];
+            var ch = textLines[r][c];
             
             var text = document.createElement("div");
             text.classList.add("text");
 
-            if (shapeCh == '.') {
-                if (solution) { text.innerText = this.translate(solution[r][c], shapeReplacements); }
+            if (ch == '.') {
+                if (solution) { text.innerText = this.translate(solution[r][c], textReplacements); }
             }
-            else if (shapeCh == '#') {
+            else if (ch == '#') {
                 td.classList.add("extract");
-                if (solution) { text.innerText = this.translate(solution[r][c], shapeReplacements); }
+                if (solution) { text.innerText = this.translate(solution[r][c], textReplacements); }
                 if (extracts) {
                     var code = extracts[extractNum++];
                     var id = "extract-id-" + code;
@@ -820,12 +831,12 @@ function PuzzleEntry(p) {
                     td.appendChild(extractCode);    
                 }
             }
-            else if (shapeCh == '@') {
+            else if (ch == '@') {
                 td.classList.add("black-cell");
                 if (unselectableGivens) { td.classList.add("unselectable"); }
             }
             else {
-                text.innerText = this.translate(shapeCh, shapeReplacements);
+                text.innerText = this.translate(ch, textReplacements);
                 td.classList.add("given");
                 if (unselectableGivens) { td.classList.add("unselectable"); }
             }
@@ -848,25 +859,25 @@ function PuzzleEntry(p) {
             var edgeCode = 0;
             if (regularRowBorder) {
                 if ((r % regularRowBorder) == 0) { edgeCode |= 1; }
-                if (r == shape.length - 1) { edgeCode |= 2; }
+                if (r == textLines.length - 1) { edgeCode |= 2; }
             }
             if (regularColBorder) {
                 if ((c % regularColBorder) == 0) { edgeCode |= 4; }
-                if (c == shape[r].length - 1) { edgeCode |= 8; }
+                if (c == textLines[r].length - 1) { edgeCode |= 8; }
             }
 
-            if (borders) {
-                if (borders.length == shape.length) {
-                    edgeCode |= parseInt(borders[r][c], 16);
+            if (edges) {
+                if (edges.length == textLines.length) {
+                    edgeCode |= parseInt(edges[r][c], 16);
                 }
-                else if (borders.length == shape.length * 2 + 1) {
-                    var topRow = borders[r * 2];
-                    var midRow = borders[r * 2 + 1];
-                    var botRow = borders[r * 2 + 2];
-                    var chTop = (topRow.length == shape[r].length) ? topRow[c] : topRow[c * 2 + 1];
-                    var chLeft = (midRow.length == shape[r].length + 1) ? midRow[c] : midRow[c * 2];
-                    var chRight = (midRow.length == shape[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
-                    var chBottom = (botRow.length == shape[r].length) ? botRow[c] : botRow[c * 2 + 1];
+                else if (edges.length == textLines.length * 2 + 1) {
+                    var topRow = edges[r * 2];
+                    var midRow = edges[r * 2 + 1];
+                    var botRow = edges[r * 2 + 2];
+                    var chTop = (topRow.length == textLines[r].length) ? topRow[c] : topRow[c * 2 + 1];
+                    var chLeft = (midRow.length == textLines[r].length + 1) ? midRow[c] : midRow[c * 2];
+                    var chRight = (midRow.length == textLines[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
+                    var chBottom = (botRow.length == textLines[r].length) ? botRow[c] : botRow[c * 2 + 1];
                     if (chTop != " " && chTop != ".") { edgeCode |= 1; }
                     if (chBottom != " " && chBottom != ".") { edgeCode |= 2; }
                     if (chLeft != " " && chLeft != ".") { edgeCode |= 4; }
@@ -877,7 +888,7 @@ function PuzzleEntry(p) {
             if (edgeCode) { td.setAttribute("data-edge-code", edgeCode); }
 
             if (paths) {
-                if (paths.length == shape.length) {
+                if (paths.length == textLines.length) {
                     var p = parseInt(paths[r][c], 16);
                     if (!p) { p = 0; }
                     td.setAttribute("data-path-code", p);
@@ -885,9 +896,9 @@ function PuzzleEntry(p) {
                 }
             }
 
-            if (clueNumbers && shape[r][c] != '@') {
-                var acrossClue = (c == 0 || shape[r][c-1] == '@' || (edgeCode & 4)) && c < shape[r].length - 1 && shape[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
-                var downClue = (r == 0 || shape[r-1][c] == '@' || (edgeCode & 1)) && r < shape.length - 1 && shape[r+1][c] != '@' && !(edgeCode & 2); // block/edge above, letter below
+            if (clueNumbers && textLines[r][c] != '@') {
+                var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
+                var downClue = (r == 0 || textLines[r-1][c] == '@' || (edgeCode & 1)) && r < textLines.length - 1 && textLines[r+1][c] != '@' && !(edgeCode & 2); // block/edge above, letter below
                 
                 if (acrossClue || downClue) {
                     var clueRealNum = (clueNumbers == "auto") ? ++clueNum : clueNumbers[clueNum++];
@@ -913,8 +924,8 @@ function PuzzleEntry(p) {
                     clue.innerText = clueRealNum;
                     td.appendChild(clue);
                 }
-                if (!acrossClue && c > 0 && shape[r][c-1] != '@' && !(edgeCode & 4)) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
-                if (!downClue && r > 0 && shape[r-1][c] != '@' && !(edgeCode & 1)) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
+                if (!acrossClue && c > 0 && textLines[r][c-1] != '@' && !(edgeCode & 4)) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
+                if (!downClue && r > 0 && textLines[r-1][c] != '@' && !(edgeCode & 1)) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
             }
 
             if (this.fillClasses) {
