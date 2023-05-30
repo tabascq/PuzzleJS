@@ -763,6 +763,8 @@ function PuzzleEntry(p) {
     this.leftClueDepth = this.parseOuterClues(leftClues);
     this.rightClueDepth = this.parseOuterClues(rightClues);
 
+    if (!textLines) { textLines = solution; }
+
     var table = document.createElement("table");
     var clueNum = 0;
     var extractNum = 0;
