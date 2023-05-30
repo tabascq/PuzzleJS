@@ -697,7 +697,7 @@ function PuzzleEntry(p) {
         // Copy any text inside the td. This includes text inside divs within the td.
         copyTd.innerText = inputTd.innerText;
         // If the td has a "value", overwrite the innertext.
-        const text = inputTd.querySelector('text');
+        const text = inputTd.querySelector('.text');
         if (text?.innerText) {
             copyTd.innerText = text.innerText;
         }
