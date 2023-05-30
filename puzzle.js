@@ -251,7 +251,7 @@ function PuzzleEntry(p) {
                 return false;
             }
 
-            var text = td.querySelector(".text");
+            var text = td.querySelector(".text span");
 
             if (text && !td.classList.contains("unselectable")) {
                 this.dx = Math.abs(dcol);
@@ -329,7 +329,7 @@ function PuzzleEntry(p) {
     }
 
     this.setText = function(target, adds, removes, text) {
-        var textElement = target.querySelector(".text");
+        var textElement = target.querySelector(".text span");
         if (textElement.innerText != text && !target.classList.contains("given")) {
             this.undoManager.startGroup(this);
             this.undoManager.modifyClass(target, adds, removes);
@@ -339,7 +339,7 @@ function PuzzleEntry(p) {
     }
 
     this.getText = function(target) {
-        return target.querySelector(".text").innerText;
+        return target.querySelector(".text span").innerText;
     }
 
     this.onUndoRedo = function(units) {
@@ -349,8 +349,8 @@ function PuzzleEntry(p) {
             }
             if (u.elem instanceof HTMLTableCellElement) {
                 this.processTdForCopyjack(u.elem);
-            } else if (u.elem.parentElement instanceof HTMLTableCellElement) {
-                this.processTdForCopyjack(u.elem.parentElement);
+            } else if (u.elem.parentElement.parentElement instanceof HTMLTableCellElement) {
+                this.processTdForCopyjack(u.elem.parentElement.parentElement);
             }
         });
     }
@@ -712,7 +712,7 @@ function PuzzleEntry(p) {
         // Copy any text inside the td. This includes text inside divs within the td.
         copyTd.innerText = inputTd.innerText;
         // If the td has a "value", overwrite the innertext.
-        const text = inputTd.querySelector('.text');
+        const text = inputTd.querySelector('.text span');
         if (text?.innerText) {
             copyTd.innerText = text.innerText;
         }
@@ -817,8 +817,11 @@ function PuzzleEntry(p) {
             td.classList.add("inner-cell");
             var ch = textLines[r][c];
             
-            var text = document.createElement("div");
-            text.classList.add("text");
+            var textwrapper = document.createElement("div");
+            textwrapper.classList.add("text");
+
+            var text = document.createElement("span");
+            textwrapper.appendChild(text);
 
             if (ch == '.') {
                 if (solution) { text.innerText = this.translate(solution[r][c], textReplacements); }
@@ -861,7 +864,7 @@ function PuzzleEntry(p) {
                 }
             }
 
-            td.appendChild(text);
+            td.appendChild(textwrapper);
 
             var edgeCode = 0;
             if (regularRowBorder) {
