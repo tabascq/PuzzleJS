@@ -676,12 +676,16 @@ function PuzzleEntry(p) {
 
     this.addEmptyOuterCell = function(tr) {
         var td = document.createElement("td");
+        td.classList.add("cell");
+        td.classList.add("outer-cell");
         td.classList.add("unselectable");
         tr.appendChild(td);
     }
 
     this.addOuterClue = function(tr, clues, clueIndex, cls) {
         var td = document.createElement("td");
+        td.classList.add("cell");
+        td.classList.add("outer-cell");
         if (clueIndex >= 0 && clueIndex < clues.length && clues[clueIndex]) {
             td.textContent = clues[clueIndex];
             td.classList.add(cls);
@@ -807,7 +811,8 @@ function PuzzleEntry(p) {
         this.numCols = Math.max(this.numCols, textLines[r].length);
         for (var c = 0; c < textLines[r].length; c++) {
             var td = document.createElement("td");
-            td.classList.add("interior");
+            td.classList.add("cell");
+            td.classList.add("inner-cell");
             var ch = textLines[r][c];
             
             var text = document.createElement("div");
