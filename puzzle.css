@@ -29,16 +29,11 @@
 }
 
 .puzzle-entry .text {
-    width: 100%;
-    height: 100%;
-    margin: 0px;
-    padding: 0px;
     z-index: 2;
     position: absolute;
-    top: 0px;
-    left: 0px;
-    border: none;
-    background: none;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     pointer-events: none;
 }
 
