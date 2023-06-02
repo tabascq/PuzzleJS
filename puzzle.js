@@ -244,6 +244,15 @@ function PuzzleEntry(p) {
         var col = dcol + Array.prototype.indexOf.call(td.parentElement.children, td) - this.leftClueDepth;
         var row = drow + Array.prototype.indexOf.call(td.parentElement.parentElement.children, td.parentElement) - this.topClueDepth;
 
+        if (this.fShift && this.options["data-drag-draw-path"]) {
+            var tdTo = this.table.querySelector("tr:nth-child(" + (row + this.topClueDepth + 1) + ") td:nth-child(" + (col + this.leftClueDepth + 1) + ")");
+            if (tdTo && tdTo.classList.contains("inner-cell")) {
+                this.lastCell = td;
+                this.currentFill = this.findClassInList(td, this.fillClasses);
+                this.dragPaintAndPath(tdTo);
+            }
+        }
+
         while (true) {
             var td = this.table.querySelector("tr:nth-child(" + (row + this.topClueDepth + 1) + ") td:nth-child(" + (col + this.leftClueDepth + 1) + ")");
 
@@ -291,6 +300,8 @@ function PuzzleEntry(p) {
     }
 
     this.keyDown = function(e) {
+        this.fShift = e.shiftKey;
+
         if (e.keyCode == 9) return;
 
         e.preventDefault();
@@ -446,26 +457,22 @@ function PuzzleEntry(p) {
         }
     }
 
-    this.mouseEnter = function(e) {
-        if (!this.mousedown) return;
-        if (this.lastCell === e.currentTarget) return;
-        if (this.options["data-drag-draw-edge"]) return;
-
+    this.dragPaintAndPath = function(to) {
         var wantPaint = this.options["data-drag-paint-fill"];
         var canPaint = wantPaint;
 
         this.undoManager.startGroup(this);
 
         if (this.options["data-drag-draw-path"]) {
-            var targetFill = this.findClassInList(e.currentTarget, this.fillClasses);
+            var targetFill = this.findClassInList(to, this.fillClasses);
             var setLast = false; 
             if (wantPaint && this.currentFill == this.fillClasses[0]) { this.currentFill = targetFill; setLast = true; }
             if (wantPaint && targetFill != this.fillClasses[0] && targetFill != this.currentFill) { canPaint = false; }
-            else { canPaint &= this.LinkCells(this.lastCell, e.currentTarget); }
+            else { canPaint &= this.LinkCells(this.lastCell, to); }
         }
 
-        if (canPaint && !e.currentTarget.classList.contains("given-fill")) {
-            this.setClassInCycle(e.currentTarget, this.fillClasses, this.currentFill);
+        if (canPaint && !to.classList.contains("given-fill")) {
+            this.setClassInCycle(to, this.fillClasses, this.currentFill);
         }
 
         if (canPaint && setLast) { this.setClassInCycle(this.lastCell, this.fillClasses, this.currentFill); }
@@ -473,9 +480,17 @@ function PuzzleEntry(p) {
         this.undoManager.endGroup();
 
         if (!wantPaint || canPaint) {
-            this.lastCell = e.currentTarget;
-            e.currentTarget.focus();
+            this.lastCell = to;
+            to.focus();
         }
+    }
+
+    this.mouseEnter = function(e) {
+        if (!this.mousedown) return;
+        if (this.lastCell === e.currentTarget) return;
+        if (this.options["data-drag-draw-edge"]) return;
+
+        this.dragPaintAndPath(e.currentTarget);
     }
 
     this.getOptionArray = function(option, splitchar, special) {
@@ -578,8 +593,7 @@ function PuzzleEntry(p) {
     }
 
     this.pathTranslate = ["o0", "i2", "i0", "l0", "i1", "r2", "r1", "t1", "i3", "r3", "r0", "t3", "l1", "t2", "t0", "x0"];
-    // TODO(jhimawan): validate these.
-    this.pathCopyjack = [" ", "╵", "╷", "│", "╴", "┘", "┐", "┬", "╶", "┘", "┌", "├", "─", "┴", "┬", "┼"];
+    this.pathCopyjack = [" ", "╵", "╷", "│", "╴", "┘", "┐", "┤", "╶", "└", "┌", "├", "─", "┴", "┬", "┼"];
     this.updateSvg = function(td) {
         var svg = td.querySelector("svg");
         if (!svg) { svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "-15 -15 30 30"); td.appendChild(svg); }
@@ -805,6 +819,8 @@ function PuzzleEntry(p) {
     this.numRows = textLines.length;
     this.numCols = 0;
 
+    var firstTabCell = true;
+
     for (var r = 0; r < textLines.length; r++) {
         var tr = document.createElement("tr");
 
@@ -843,7 +859,7 @@ function PuzzleEntry(p) {
             }
             else if (ch == '@') {
                 td.classList.add("black-cell");
-                if (unselectableGivens) { td.classList.add("unselectable"); }
+                td.classList.add("unselectable");
             }
             else {
                 text.innerText = this.translate(ch, textReplacements);
@@ -852,7 +868,8 @@ function PuzzleEntry(p) {
             }
 
             if (!td.classList.contains("unselectable")) {
-                td.tabIndex = (c == 0 && r == 0)? 0 : -1;
+                td.tabIndex = firstTabCell ? 0 : -1;
+                firstTabCell = false;
                 td.addEventListener("keydown",  e => { this.keyDown(e); });
                 td.addEventListener("mousedown",  e => { this.mouseDown(e); });
                 if (this.options["data-drag-draw-edge"]) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
@@ -1001,4 +1018,7 @@ function PuzzleEntry(p) {
     });
 
     window.addEventListener("mouseup", e => {this.mousedown = false; });
+
+    document.addEventListener("keyup", function(e) { this.fShift = e.shiftKey; });
+    document.addEventListener("keydown", function(e) { this.fShift = e.shiftKey; });
 }
