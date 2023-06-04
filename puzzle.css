@@ -4,6 +4,10 @@
     gap: 20px;
 }
 
+.puzzle-entry.no-input * {
+    cursor: default !important;
+}
+
 .puzzle-entry table {
     border-collapse: collapse;
     display: inline-block;

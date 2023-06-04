@@ -37,7 +37,8 @@ puzzleModes["default"] = {
     "data-drag-draw-path": false,
     "data-drag-draw-edge": false,
     "data-unselectable-givens": false,
-    "data-extracts": null
+    "data-extracts": null,
+    "data-no-input": false
 };
 
 puzzleModes["linear"] = {
@@ -73,6 +74,10 @@ puzzleModes["trains"] = {
 puzzleModes["slitherlink"] = {
     "data-drag-draw-edge" : true,
     "data-edge-style": "dots"
+}
+
+puzzleModes["solution"] = {
+    "data-no-input": true
 }
 
 // Go through all puzzles and give them a PuzzleEntry object
@@ -779,6 +784,7 @@ function PuzzleEntry(p) {
 
     if (!textLines) { textLines = solution; }
 
+    var allowInput = !this.options["data-no-input"];
     var table = document.createElement("table");
     var clueNum = 0;
     var extractNum = 0;
@@ -790,6 +796,10 @@ function PuzzleEntry(p) {
 
     var regularRowBorder = 0;
     var regularColBorder = 0;
+
+    if (!allowInput) {
+        this.container.classList.add("no-input");
+    }
 
     if (textLines.length == 1 && /^\d+x\d+$/.test(textLines[0])) {
         var dim = textLines[0].split("x");
@@ -868,16 +878,18 @@ function PuzzleEntry(p) {
             }
 
             if (!td.classList.contains("unselectable")) {
-                td.tabIndex = firstTabCell ? 0 : -1;
-                firstTabCell = false;
-                td.addEventListener("keydown",  e => { this.keyDown(e); });
-                td.addEventListener("mousedown",  e => { this.mouseDown(e); });
-                if (this.options["data-drag-draw-edge"]) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
-                td.addEventListener("mouseenter",  e => { this.mouseEnter(e); });
-                td.addEventListener("contextmenu",  e => { e.preventDefault(); });
-                if (clueNumbers) {
-                    td.addEventListener("focus",  e => { this.mark(e.target); });
-                    td.addEventListener("blur",  e => { this.unmark(e.target); });
+                if (allowInput) {
+                    td.tabIndex = firstTabCell ? 0 : -1;
+                    firstTabCell = false;
+                    td.addEventListener("keydown",  e => { this.keyDown(e); });
+                    td.addEventListener("mousedown",  e => { this.mouseDown(e); });
+                    if (this.options["data-drag-draw-edge"]) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
+                    td.addEventListener("mouseenter",  e => { this.mouseEnter(e); });
+                    td.addEventListener("contextmenu",  e => { e.preventDefault(); });
+                    if (clueNumbers) {
+                        td.addEventListener("focus",  e => { this.mark(e.target); });
+                        td.addEventListener("blur",  e => { this.unmark(e.target); });
+                    }
                 }
             }
 
@@ -1010,15 +1022,17 @@ function PuzzleEntry(p) {
         }
     }
 
-    this.container.querySelectorAll(".crossword-clues li").forEach((clue) => {
-        clue.addEventListener("mouseenter", e => { this.clueMouseEnter(e); });
-        clue.addEventListener("mouseleave", e => { this.clueMouseLeave(e); });
-        clue.addEventListener("click", e => { this.clueClick(e); });
-        clue.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
-    });
+    if (allowInput) {
+        this.container.querySelectorAll(".crossword-clues li").forEach((clue) => {
+            clue.addEventListener("mouseenter", e => { this.clueMouseEnter(e); });
+            clue.addEventListener("mouseleave", e => { this.clueMouseLeave(e); });
+            clue.addEventListener("click", e => { this.clueClick(e); });
+            clue.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
+        });
 
-    window.addEventListener("mouseup", e => {this.mousedown = false; });
+        window.addEventListener("mouseup", e => {this.mousedown = false; });
 
-    document.addEventListener("keyup", function(e) { this.fShift = e.shiftKey; });
-    document.addEventListener("keydown", function(e) { this.fShift = e.shiftKey; });
+        document.addEventListener("keyup", function(e) { this.fShift = e.shiftKey; });
+        document.addEventListener("keydown", function(e) { this.fShift = e.shiftKey; });
+    }
 }
