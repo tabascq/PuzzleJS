@@ -25,7 +25,7 @@
             .trains-example .unknown { background: white; }
             .trains-example .trackbed { background: darkgoldenrod; }
             .trains-example .grass { background: lightgreen; }
-            .trains-example .inner-cell:not([data-path-code="0"]) { background: darkgoldenrod; }
+            .trains-example .inner-cell[data-path-code]:not([data-path-code="0"]) { background: darkgoldenrod; }
 
             .paint-by-numbers-example .unknown { background: lightgray; }
             .paint-by-numbers-example .black { background: black; }
@@ -52,7 +52,7 @@
     </head>
     <body>
         <div class="clipboard-container">
-        <h3>Puzzle.js Demo (with undo)</h3>
+        <h3>Puzzle.js Demo (with undo) <button style="transform: translateY(-1px);" onclick="resetAllPuzzleStateOnPage();">Reset all puzzles</button></h3>
         
         <div class="demo" data-undo-scope>
             <div>Basic 1-D</div>

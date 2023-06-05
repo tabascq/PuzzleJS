@@ -38,7 +38,8 @@ puzzleModes["default"] = {
     "data-drag-draw-edge": false,
     "data-unselectable-givens": false,
     "data-extracts": null,
-    "data-no-input": false
+    "data-no-input": false,
+    "data-state-key": null
 };
 
 puzzleModes["linear"] = {
@@ -82,8 +83,13 @@ puzzleModes["solution"] = {
 
 // Go through all puzzles and give them a PuzzleEntry object
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll(".puzzle-entry").forEach((p) => { new PuzzleEntry(p); });
+    document.querySelectorAll(".puzzle-entry").forEach((p, index) => { new PuzzleEntry(p, index); });
 });
+
+function resetAllPuzzleStateOnPage() {
+    document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+    window.location.reload();
+}
 
 function UndoManager() {
     this.undoStack = [];
@@ -194,9 +200,9 @@ function UndoManager() {
     }
 }
 
-function PuzzleEntry(p) {
+function PuzzleEntry(p, index) {
     this.container = p;
-    p.setAttribute("data-puzzle-entry", this);
+    p.puzzleEntry = this;
 
     // Assign all options by applying all properties from all modes. Modes specified earliest in data-mode get precedence.
     var modes = p.getAttribute("data-mode");
@@ -224,6 +230,9 @@ function PuzzleEntry(p) {
     this.mousedown = false;
     this.lastCell = null;
     this.currentFill = null;
+    this.stateKey = this.options["data-state-key"];
+    if (!this.stateKey) { this.stateKey = window.location.href + "|" + index; }
+    this.inhibitSave = false;
 
     this.locateScope = function(scopeId) {
         var ancestor = this.container;
@@ -641,6 +650,9 @@ function PuzzleEntry(p) {
     this.LinkCellsDirectional = function(cellFrom, directionFrom, cellTo, directionTo) {
         var codeFrom = cellFrom.getAttribute("data-path-code");
         var codeTo = cellTo.getAttribute("data-path-code");
+        if (!codeFrom) { codeFrom = 0; }
+        if (!codeTo) { codeTo = 0; }
+
         if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && !this.IsFullyLinked(codeFrom) && !this.IsFullyLinked(codeTo)) {
             this.undoManager.modifyAttribute(cellFrom, "data-path-code", codeFrom | directionFrom);
             this.undoManager.modifyAttribute(cellTo, "data-path-code", codeTo | directionTo);
@@ -759,6 +771,49 @@ function PuzzleEntry(p) {
         }
     }
 
+    this.prepareToReset = function() {
+        localStorage.removeItem(this.stateKey);
+        this.inhibitSave = true;
+    }
+
+    this.saveState = function() {
+        if (this.inhibitSave) return;
+
+        var stateArray = [];
+        var hasState = false;
+
+        this.table.querySelectorAll(".inner-cell").forEach(td => {
+            var fillIndex = 0;
+            if (this.fillClasses && !td.classList.contains("given-fill")) { fillIndex = this.fillClasses.indexOf(this.findClassInList(td, this.fillClasses)); }
+
+            var edgeCode = td.getAttribute("data-edge-code");
+            var givenEdgeCode = td.getAttribute("data-given-edge-code");
+            if (!edgeCode) edgeCode = 0;
+            if (!givenEdgeCode) givenEdgeCode = 0;
+            var edgeCodeDelta = edgeCode ^ givenEdgeCode;
+
+            var pathCode = td.getAttribute("data-path-code");
+            var givenPathCode = td.getAttribute("data-given-path-code");
+            if (!pathCode) pathCode = 0;
+            if (!givenPathCode) givenPathCode = 0;
+            var pathCodeDelta = pathCode ^ givenPathCode;
+
+            var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText;
+
+            var cellState = "";
+            if (fillIndex || edgeCodeDelta || pathCodeDelta || text) {
+                hasState = true;
+                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16);
+                if (text) { cellState += "," + text; }
+            }
+
+            stateArray.push(cellState);
+        });
+
+        if (hasState) { localStorage.setItem(this.stateKey, stateArray.join("|")); }
+        else { localStorage.removeItem(this.stateKey); }
+    }
+
 
     // --- Construct the interactive player. ---
     this.fillClasses = this.getOptionArray("data-fill-classes", " ");
@@ -797,6 +852,9 @@ function PuzzleEntry(p) {
     var regularRowBorder = 0;
     var regularColBorder = 0;
 
+    var savedState = localStorage.getItem(this.stateKey);
+    if (savedState) { savedState = savedState.split("|"); }
+
     if (!allowInput) {
         this.container.classList.add("no-input");
     }
@@ -830,6 +888,7 @@ function PuzzleEntry(p) {
     this.numCols = 0;
 
     var firstTabCell = true;
+    var stateIndex = 0;
 
     for (var r = 0; r < textLines.length; r++) {
         var tr = document.createElement("tr");
@@ -838,6 +897,9 @@ function PuzzleEntry(p) {
 
         this.numCols = Math.max(this.numCols, textLines[r].length);
         for (var c = 0; c < textLines[r].length; c++) {
+            var cellSavedState = null;
+            if (savedState) { cellSavedState = savedState[stateIndex++]; }
+
             var td = document.createElement("td");
             td.classList.add("cell");
             td.classList.add("inner-cell");
@@ -873,8 +935,14 @@ function PuzzleEntry(p) {
             }
             else {
                 text.innerText = this.translate(ch, textReplacements);
-                td.classList.add("given");
+                td.classList.add("given-text");
                 if (unselectableGivens) { td.classList.add("unselectable"); }
+            }
+
+            if (cellSavedState && cellSavedState.indexOf(",") >= 0) {
+                var savedText = cellSavedState.substring(cellSavedState.indexOf(",") + 1);
+                text.innerText = savedText;
+                if (savedText && savedText.length > 1) { td.classList.add("small-text"); }
             }
 
             if (!td.classList.contains("unselectable")) {
@@ -896,44 +964,49 @@ function PuzzleEntry(p) {
             td.appendChild(textwrapper);
 
             var edgeCode = 0;
-            if (regularRowBorder) {
-                if ((r % regularRowBorder) == 0) { edgeCode |= 1; }
-                if (r == textLines.length - 1) { edgeCode |= 2; }
-            }
-            if (regularColBorder) {
-                if ((c % regularColBorder) == 0) { edgeCode |= 4; }
-                if (c == textLines[r].length - 1) { edgeCode |= 8; }
-            }
-
-            if (edges) {
-                if (edges.length == textLines.length) {
-                    edgeCode |= parseInt(edges[r][c], 16);
+            if (edges || regularRowBorder || regularColBorder) {
+                if (regularRowBorder) {
+                    if ((r % regularRowBorder) == 0) { edgeCode |= 1; }
+                    if (r == textLines.length - 1) { edgeCode |= 2; }
                 }
-                else if (edges.length == textLines.length * 2 + 1) {
-                    var topRow = edges[r * 2];
-                    var midRow = edges[r * 2 + 1];
-                    var botRow = edges[r * 2 + 2];
-                    var chTop = (topRow.length == textLines[r].length) ? topRow[c] : topRow[c * 2 + 1];
-                    var chLeft = (midRow.length == textLines[r].length + 1) ? midRow[c] : midRow[c * 2];
-                    var chRight = (midRow.length == textLines[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
-                    var chBottom = (botRow.length == textLines[r].length) ? botRow[c] : botRow[c * 2 + 1];
-                    if (chTop != " " && chTop != ".") { edgeCode |= 1; }
-                    if (chBottom != " " && chBottom != ".") { edgeCode |= 2; }
-                    if (chLeft != " " && chLeft != ".") { edgeCode |= 4; }
-                    if (chRight != " " && chRight != ".") { edgeCode |= 8; }
+                if (regularColBorder) {
+                    if ((c % regularColBorder) == 0) { edgeCode |= 4; }
+                    if (c == textLines[r].length - 1) { edgeCode |= 8; }
                 }
+    
+                if (edges) {
+                    if (edges.length == textLines.length) {
+                        edgeCode |= parseInt(edges[r][c], 16);
+                    }
+                    else if (edges.length == textLines.length * 2 + 1) {
+                        var topRow = edges[r * 2];
+                        var midRow = edges[r * 2 + 1];
+                        var botRow = edges[r * 2 + 2];
+                        var chTop = (topRow.length == textLines[r].length) ? topRow[c] : topRow[c * 2 + 1];
+                        var chLeft = (midRow.length == textLines[r].length + 1) ? midRow[c] : midRow[c * 2];
+                        var chRight = (midRow.length == textLines[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
+                        var chBottom = (botRow.length == textLines[r].length) ? botRow[c] : botRow[c * 2 + 1];
+                        if (chTop != " " && chTop != ".") { edgeCode |= 1; }
+                        if (chBottom != " " && chBottom != ".") { edgeCode |= 2; }
+                        if (chLeft != " " && chLeft != ".") { edgeCode |= 4; }
+                        if (chRight != " " && chRight != ".") { edgeCode |= 8; }
+                    }
+                }
+    
+                if (edgeCode) { td.setAttribute("data-given-edge-code", edgeCode); }
             }
-
+            if (cellSavedState) { edgeCode ^= parseInt(cellSavedState[1], 16); }
             if (edgeCode) { td.setAttribute("data-edge-code", edgeCode); }
 
+            var pathCode = 0;
             if (paths) {
                 if (paths.length == textLines.length) {
-                    var p = parseInt(paths[r][c], 16);
-                    if (!p) { p = 0; }
-                    td.setAttribute("data-path-code", p);
-                    td.setAttribute("data-given-path-code", p);
+                    pathCode = parseInt(paths[r][c], 16);
+                    if (pathCode) { td.setAttribute("data-given-path-code", pathCode); }
                 }
             }
+            if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
+            if (pathCode) { td.setAttribute("data-path-code", pathCode); }
 
             if (clueNumbers && textLines[r][c] != '@') {
                 var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
@@ -968,12 +1041,14 @@ function PuzzleEntry(p) {
             }
 
             if (this.fillClasses) {
+                var fillIndex = 0;
                 if (fills && fills[r][c] != '.') {
-                    td.classList.add(this.fillClasses[parseInt(fills[r][c])]);
+                    fillIndex = parseInt(fills[r][c], 36);
                     td.classList.add("given-fill");
                 } else {
-                    td.classList.add(this.fillClasses[0]);
+                    fillIndex = cellSavedState ? parseInt(cellSavedState[0], 36) : 0;
                 }
+                td.classList.add(this.fillClasses[fillIndex]);
             }
 
             this.updateSvg(td);
@@ -1034,5 +1109,7 @@ function PuzzleEntry(p) {
 
         document.addEventListener("keyup", function(e) { this.fShift = e.shiftKey; });
         document.addEventListener("keydown", function(e) { this.fShift = e.shiftKey; });
+
+        window.addEventListener("beforeunload", e => { this.saveState(); });
     }
 }
