@@ -10,6 +10,7 @@ puzzleModes["default"] = {
     "data-text-replacements": null,
     "data-text-characters": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     "data-text-shift-key": "rebus",
+    "data-text-shift-lock": false,
     "data-text-solution": null,
 
     // fills
@@ -26,6 +27,7 @@ puzzleModes["default"] = {
     "data-edge-style": "box",
 
     // clues
+    "data-clue-locations": null,
     "data-clue-numbers": null,
     "data-top-clues": null,
     "data-bottom-clues": null,
@@ -47,6 +49,7 @@ puzzleModes["linear"] = {
 }
 
 puzzleModes["crossword"] = {
+    "data-clue-locations": "crossword",
     "data-clue-numbers": "auto"
 };
 
@@ -313,6 +316,19 @@ function PuzzleEntry(p, index) {
         }
     }
 
+    this.handleEventChar = function(e, ch) {
+        if (e.shiftKey || this.options["data-text-shift-lock"]) {
+            var val = this.getText(e.target).replace("\xa0", " ");
+            if (this.options["data-text-shift-key"] == "rebus" || !val.includes(ch)) { val = val + ch; }
+            else { val = val.replace(ch, ""); }
+
+            this.setText(e.target, ["small-text"], [], val);
+        } else {
+            this.setText(e.target, [], ["small-text"], ch);
+            this.move(e.target, this.dy, this.dx);
+        }
+    }
+
     this.keyDown = function(e) {
         this.fShift = e.shiftKey;
 
@@ -328,10 +344,14 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 39) { this.move(e.target, 0, 1); } // right
         else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
         else if (e.keyCode == 32) { // space
-            this.dx = 1 - this.dx; this.dy = 1 - this.dy;
-            if (this.options["data-clue-numbers"]) { this.unmark(e.target); this.mark(e.target); }
-            if (e.currentTarget.classList.contains("given-fill")) return;
-            if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, this.fillClasses, e.shiftKey); }
+            if (this.options["data-text-characters"].includes(" ")) {
+                this.handleEventChar(e, "\xa0");
+            } else {
+                this.dx = 1 - this.dx; this.dy = 1 - this.dy;
+                if (this.options["data-clue-numbers"]) { this.unmark(e.target); this.mark(e.target); }
+                if (e.currentTarget.classList.contains("given-fill")) return;
+                if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, this.fillClasses, e.shiftKey); }
+            }
         } else if (e.keyCode == 8 || e.keyCode == 46) { // backspace/delete
             this.setText(e.target, [], [], "");
             this.move(e.target, -this.dy, -this.dx);
@@ -339,16 +359,7 @@ function PuzzleEntry(p, index) {
             var ch = String.fromCharCode(e.keyCode);
 
             if (this.options["data-text-characters"].includes(ch)) {
-                if (e.shiftKey) {
-                    var val = this.getText(e.target);
-                    if (this.options["data-text-shift-key"] == "rebus" || !val.includes(ch)) { val = val + ch; }
-                    else { val = val.replace(ch, ""); }
-    
-                    this.setText(e.target, ["small-text"], [], val);
-                } else {
-                    this.setText(e.target, [], ["small-text"], ch);
-                    this.move(e.target, this.dy, this.dx);
-                }
+                this.handleEventChar(e, ch);
             }
         }
     }
@@ -1008,15 +1019,15 @@ function PuzzleEntry(p, index) {
             if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
             if (pathCode) { td.setAttribute("data-path-code", pathCode); }
 
-            if (clueNumbers && textLines[r][c] != '@') {
+            if (clueNumbers && this.options["data-clue-locations"] && textLines[r][c] != '@') {
                 var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
                 var downClue = (r == 0 || textLines[r-1][c] == '@' || (edgeCode & 1)) && r < textLines.length - 1 && textLines[r+1][c] != '@' && !(edgeCode & 2); // block/edge above, letter below
                 
-                if (acrossClue || downClue) {
+                if (acrossClue || downClue || this.options["data-clue-locations"] == "all") {
                     var clueRealNum = (clueNumbers == "auto") ? ++clueNum : clueNumbers[clueNum++];
                     const isClueEmpty = String(clueRealNum).trim() === "";
 
-                    if (!isClueEmpty) {
+                    if (!isClueEmpty && this.options["data-clue-locations"] == "crossword") {
                         if (acrossClue) { td.setAttribute("data-across-cluenumber", clueRealNum); }
                         if (downClue) { td.setAttribute("data-down-cluenumber", clueRealNum); }
                         if (acrossClue && acrossClues[acrossClueIndex]) {
@@ -1036,8 +1047,11 @@ function PuzzleEntry(p, index) {
                     clue.innerText = clueRealNum;
                     td.appendChild(clue);
                 }
-                if (!acrossClue && c > 0 && textLines[r][c-1] != '@' && !(edgeCode & 4)) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
-                if (!downClue && r > 0 && textLines[r-1][c] != '@' && !(edgeCode & 1)) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
+
+                if (this.options["data-clue-locations"] == "crossword") {
+                    if (!acrossClue && c > 0 && textLines[r][c-1] != '@' && !(edgeCode & 4)) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
+                    if (!downClue && r > 0 && textLines[r-1][c] != '@' && !(edgeCode & 1)) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
+                }
             }
 
             if (this.fillClasses) {
