@@ -761,18 +761,10 @@ function PuzzleEntry(p, index) {
 
         // Do edges.
         const edgeCode = inputTd.dataset.edgeCode;
-        if (edgeCode & 1) {
-            copyTd.style.borderTop = '3px solid black';
-        }
-        if (edgeCode & 2) {
-            copyTd.style.borderBottom = '3px solid black';
-        }
-        if (edgeCode & 4) {
-            copyTd.style.borderLeft = '3px solid black';
-        }
-        if (edgeCode & 8) {
-            copyTd.style.borderRight = '3px solid black';
-        }
+        copyTd.style.borderTop = (edgeCode & 1) ? '3px solid black' : '';
+        copyTd.style.borderBottom = (edgeCode & 2) ? '3px solid black' : '';
+        copyTd.style.borderLeft = (edgeCode & 4) ? '3px solid black' : '';
+        copyTd.style.borderRight = (edgeCode & 8) ? '3px solid black' : '';
 
         // Do paths.
         const pathCode = inputTd.dataset.pathCode;
