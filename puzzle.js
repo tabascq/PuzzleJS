@@ -313,6 +313,7 @@ function PuzzleEntry(p, index) {
             if (yMax != yMin) { edgeState.edgeCode |= (xCell == xMax ? 4 : 8); }
             this.lastEdgeState = null;
             this.toggleEdgeState(edgeState);
+            this.lastEdgeState = null;
         }
 
         this.cornerFocusX = newX;
@@ -454,6 +455,8 @@ function PuzzleEntry(p, index) {
             cell = cell.parentElement.parentElement.children[row + this.topClueDepth].children[col + this.leftClueDepth];
         }
 
+        var any = closeLeft || closeRight || closeTop || closeBottom;
+
         // edgecode is a "four-bit integer":
         //  - The rightmost bit is 1 iff the top border is shaded.
         //  - The 2nd-to-rightmost bit is 1 iff the bottom border is shaded.
@@ -465,7 +468,16 @@ function PuzzleEntry(p, index) {
         else if (closeLeft && !closeTop && !closeBottom) { edgeCode = 4; }
         else if (closeRight && !closeTop && !closeBottom) { edgeCode = 8; }
 
-        return { cell: cell, edgeCode: edgeCode };
+        if (edgeCode == 0 && (closeTop || closeBottom || closeLeft || closeRight)) {
+            var col = Array.prototype.indexOf.call(cell.parentElement.children, cell) - this.leftClueDepth;
+            var row = Array.prototype.indexOf.call(cell.parentElement.parentElement.children, cell.parentElement) - this.topClueDepth;
+            this.setCornerFocusMode();
+            this.cornerFocusX = col + (closeRight ? 1 : 0);
+            this.cornerFocusY = row + (closeBottom ? 1 : 0);
+            this.updateCornerFocus();
+        }
+
+        return { cell: cell, edgeCode: edgeCode, any: any };
     }
 
     this.toggleEdgeState = function(edgeState, right) {
@@ -501,14 +513,14 @@ function PuzzleEntry(p, index) {
         if (this.options["data-drag-draw-edge"]) {
             var edgeState = this.getEventEdgeState(e);
             this.lastEdgeState = null;
-            this.toggleEdgeState(edgeState, (e.which != 1 || this.fShift));
-            if (edgeState.edgeCode != 0) {
+            this.toggleEdgeState(edgeState, (e.which != 1 || e.shiftKey));
+            if (edgeState.any) {
                 e.preventDefault();
                 return;
             }
         }
         else if (this.options["data-drag-paint-fill"]) {
-            if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || this.fShift); }
+            if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || e.shiftKey); }
             else { this.currentFill = this.findClassInList(e.currentTarget, this.fillClasses); }
         }
         
@@ -521,7 +533,7 @@ function PuzzleEntry(p, index) {
 
         if (this.options["data-drag-draw-edge"]) {
             var edgeState = this.getEventEdgeState(e);
-            this.toggleEdgeState(edgeState, (e.which != 1 || this.fShift));
+            this.toggleEdgeState(edgeState, (e.which != 1 || e.shiftKey));
             e.preventDefault();
             return;
         }
