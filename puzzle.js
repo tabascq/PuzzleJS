@@ -291,6 +291,35 @@ function PuzzleEntry(p, index) {
         }
     }
 
+    this.moveCorner = function(dy, dx) {
+        var newX = dx + this.cornerFocusX;
+        var newY = dy + this.cornerFocusY;
+
+        newX = Math.max(newX, 0);
+        newX = Math.min(newX, this.numCols);
+        newY = Math.max(newY, 0);
+        newY = Math.min(newY, this.numRows);
+
+        if (this.fShift && (this.cornerFocusX != newX || this.cornerFocusY != newY)) {
+            var xMin = Math.min(this.cornerFocusX, newX);
+            var xMax = Math.max(this.cornerFocusX, newX);
+            var yMin = Math.min(this.cornerFocusY, newY);
+            var yMax = Math.max(this.cornerFocusY, newY);
+            var xCell = Math.min(xMin, this.numCols - 1);
+            var yCell = Math.min(yMin, this.numRows - 1);
+            var edgeState = { cell: this.table.children[this.topClueDepth + yCell].children[this.leftClueDepth + xCell], edgeCode: 0 };
+
+            if (xMax != xMin) { edgeState.edgeCode |= (yCell == yMax ? 1 : 2); }
+            if (yMax != yMin) { edgeState.edgeCode |= (xCell == xMax ? 4 : 8); }
+            this.lastEdgeState = null;
+            this.toggleEdgeState(edgeState);
+        }
+
+        this.cornerFocusX = newX;
+        this.cornerFocusY = newY;
+        this.updateCornerFocus();
+    }
+
     this.findClassInList = function(td, classes) {
         var cls = "";
         if (classes) { classes.forEach(c => { if (td.classList.contains(c)) cls = c; }) }
@@ -362,6 +391,22 @@ function PuzzleEntry(p, index) {
                 this.handleEventChar(e, ch);
             }
         }
+    }
+
+    this.keyDownCorner = function(e) {
+        this.fShift = e.shiftKey;
+
+        if (e.keyCode == 9) return;
+
+        e.preventDefault();
+        if (this.options["data-text-solution"]) { return; }
+        
+        if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
+        else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
+        else if (e.keyCode == 37) { this.moveCorner(0, -1); } // left
+        else if (e.keyCode == 38) { this.moveCorner(-1, 0); } // up
+        else if (e.keyCode == 39) { this.moveCorner(0, 1); } // right
+        else if (e.keyCode == 40) { this.moveCorner(1, 0); } // down
     }
 
     this.setText = function(target, adds, removes, text) {
@@ -825,6 +870,28 @@ function PuzzleEntry(p, index) {
         else { localStorage.removeItem(this.stateKey); }
     }
 
+    this.setCornerFocusMode = function() {
+        if (this.centerFocus) { this.centerFocus.tabIndex = -1; }
+
+        if (this.cornerFocus == null) {
+            this.cornerFocus = document.createElement("div");
+            this.cornerFocus.classList.add("corner-focus");
+            this.cornerFocus.addEventListener("keydown",  e => { this.keyDownCorner(e); });
+            this.table.appendChild(this.cornerFocus);
+        }
+
+        this.cornerFocus.tabIndex = 0;
+        this.cornerFocusX = 0;
+        this.cornerFocusY = 0;
+        this.cornerFocus.focus();
+        this.updateCornerFocus();
+    }
+
+    this.updateCornerFocus = function() {
+        var topLeftTD = this.table.children[this.topClueDepth].children[this.leftClueDepth];
+        this.cornerFocus.style.left = topLeftTD.offsetLeft + this.cornerFocusX * topLeftTD.offsetWidth;
+        this.cornerFocus.style.top = topLeftTD.offsetTop + this.cornerFocusY * topLeftTD.offsetHeight;
+    }
 
     // --- Construct the interactive player. ---
     this.fillClasses = this.getOptionArray("data-fill-classes", " ");
@@ -859,6 +926,10 @@ function PuzzleEntry(p, index) {
     var acrossClueIndex = 0;
     var downClues = this.container.querySelectorAll(".crossword-clues.down li");
     var downClueIndex = 0;
+
+    this.keyboardFocusModel = this.options["data-drag-draw-edge"] ? "corner" : "center";
+    this.cornerFocus = null;
+    this.centerFocus = null;
 
     var regularRowBorder = 0;
     var regularColBorder = 0;
@@ -898,7 +969,6 @@ function PuzzleEntry(p, index) {
     this.numRows = textLines.length;
     this.numCols = 0;
 
-    var firstTabCell = true;
     var stateIndex = 0;
 
     for (var r = 0; r < textLines.length; r++) {
@@ -958,8 +1028,8 @@ function PuzzleEntry(p, index) {
 
             if (!td.classList.contains("unselectable")) {
                 if (allowInput) {
-                    td.tabIndex = firstTabCell ? 0 : -1;
-                    firstTabCell = false;
+                    td.tabIndex = this.centerFocus ? -1 : 0;
+                    if (!this.centerFocus) { this.centerFocus = td; }
                     td.addEventListener("keydown",  e => { this.keyDown(e); });
                     td.addEventListener("mousedown",  e => { this.mouseDown(e); });
                     if (this.options["data-drag-draw-edge"]) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
@@ -1085,6 +1155,10 @@ function PuzzleEntry(p, index) {
 
     this.container.insertBefore(table, this.container.firstChild);
     this.table = table;
+
+    if (this.keyboardFocusModel == "corner") {
+        this.setCornerFocusMode();        
+    }
 
     // Copyjack support: initialize a copyjack version of the table.
     // This table will be modified as the user takes actions.

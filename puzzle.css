@@ -11,6 +11,7 @@
 .puzzle-entry table {
     border-collapse: collapse;
     display: inline-block;
+    position: relative;
     user-select: none;
 }
 
@@ -46,6 +47,22 @@
 }
 
 .puzzle-entry td:focus .text {
+    box-shadow: 0px 0px 3px 3px Highlight;
+    box-shadow: 0px 0px 3px 3px -webkit-focus-ring-color;
+}
+
+.puzzle-entry .corner-focus {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    background: none;
+    border: 0px solid black;
+    transform: translate(-50%, -50%);
+}
+
+.puzzle-entry .corner-focus:focus {
     box-shadow: 0px 0px 3px 3px Highlight;
     box-shadow: 0px 0px 3px 3px -webkit-focus-ring-color;
 }
