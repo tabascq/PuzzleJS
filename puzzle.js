@@ -359,6 +359,25 @@ function PuzzleEntry(p, index) {
         }
     }
 
+    this.handleBackspaceChar = function(e) {
+        var newVal = "";
+
+        if ((e.shiftKey || this.options["data-text-shift-lock"]) && this.options["data-text-shift-key"] == "rebus") {
+            newVal = this.getText(e.target).replace("\xa0", " ");
+            newVal = newVal.substring(0, newVal.length - 1);
+            if (newVal.length && newVal[newVal.length - 1] == " ") {
+                newVal = newVal.substring(0, newVal.length - 1) + "\xa0";
+            }
+        }
+
+        if (newVal) {
+            this.setText(e.target, [], [], newVal);
+        } else {
+            this.setText(e.target, [], ["small-text"], "");
+            this.move(e.target, -this.dy, -this.dx);
+        }
+    }
+
     this.keyDown = function(e) {
         this.fShift = e.shiftKey;
 
@@ -383,7 +402,9 @@ function PuzzleEntry(p, index) {
                 if (e.currentTarget.classList.contains("given-fill")) return;
                 if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, this.fillClasses, e.shiftKey); }
             }
-        } else if (e.keyCode == 8 || e.keyCode == 46) { // backspace/delete
+        } else if (e.keyCode == 8) { // backspace
+            this.handleBackspaceChar(e);
+        } else if (e.keyCode == 46) { // delete
             this.setText(e.target, [], [], "");
             this.move(e.target, -this.dy, -this.dx);
         } else {
