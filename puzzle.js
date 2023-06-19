@@ -236,6 +236,7 @@ function PuzzleEntry(p, index) {
     this.stateKey = this.options["data-state-key"];
     if (!this.stateKey) { this.stateKey = window.location.href + "|" + index; }
     this.inhibitSave = false;
+    this.xKeyMode = false;
 
     this.locateScope = function(scopeId) {
         var ancestor = this.container;
@@ -312,7 +313,7 @@ function PuzzleEntry(p, index) {
             if (xMax != xMin) { edgeState.edgeCode |= (yCell == yMax ? 1 : 2); }
             if (yMax != yMin) { edgeState.edgeCode |= (xCell == xMax ? 4 : 8); }
             this.lastEdgeState = null;
-            this.toggleEdgeState(edgeState);
+            this.setEdgeState(edgeState, this.xKeyMode ? "toggle-x" : "toggle-line");
             this.lastEdgeState = null;
         }
 
@@ -408,6 +409,7 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 38) { this.moveCorner(-1, 0); } // up
         else if (e.keyCode == 39) { this.moveCorner(0, 1); } // right
         else if (e.keyCode == 40) { this.moveCorner(1, 0); } // down
+        else if (e.keyCode == 88) { this.xKeyMode = !this.xKeyMode; this.cornerFocus.classList.toggle("x-mode"); } // toggle "x" mode
     }
 
     this.setText = function(target, adds, removes, text) {
@@ -480,7 +482,7 @@ function PuzzleEntry(p, index) {
         return { cell: cell, edgeCode: edgeCode, any: any };
     }
 
-    this.toggleEdgeState = function(edgeState, right) {
+    this.setEdgeState = function(edgeState, mode) {
         if (edgeState.edgeCode == 0) return;
         if (this.lastEdgeState != null && this.lastEdgeState.cell === edgeState.cell && this.lastEdgeState.edgeCode === edgeState.edgeCode) return;
 
@@ -490,7 +492,12 @@ function PuzzleEntry(p, index) {
 
         if (!this.lastEdgeState) {
             this.fromEdgeVal = curEdgeVal;
-            this.toEdgeVal = this.fromEdgeVal + (right ? -1 : 1);
+            switch(mode) {
+                case "cycle-front": this.toEdgeVal = this.fromEdgeVal + 1; break;
+                case "cycle-back": this.toEdgeVal = this.fromEdgeVal - 1; break;
+                case "toggle-line": this.toEdgeVal = (this.fromEdgeVal == 1) ? 0 : 1; break;
+                case "toggle-x": this.toEdgeVal = (this.fromEdgeVal == -1) ? 0 : -1; break;
+            }
             if (this.toEdgeVal > 1) { this.toEdgeVal -= 3; }
             if (this.toEdgeVal < -1) { this.toEdgeVal += 3; }
         }
@@ -513,7 +520,7 @@ function PuzzleEntry(p, index) {
         if (this.options["data-drag-draw-edge"]) {
             var edgeState = this.getEventEdgeState(e);
             this.lastEdgeState = null;
-            this.toggleEdgeState(edgeState, (e.which != 1 || e.shiftKey));
+            this.setEdgeState(edgeState, (e.which != 1 || e.shiftKey) ? "cycle-back" : "cycle-front");
             if (edgeState.any) {
                 e.preventDefault();
                 return;
@@ -533,7 +540,7 @@ function PuzzleEntry(p, index) {
 
         if (this.options["data-drag-draw-edge"]) {
             var edgeState = this.getEventEdgeState(e);
-            this.toggleEdgeState(edgeState, (e.which != 1 || e.shiftKey));
+            this.setEdgeState(edgeState, (e.which != 1 || e.shiftKey) ? "cycle-back" : "cycle-front");
             e.preventDefault();
             return;
         }

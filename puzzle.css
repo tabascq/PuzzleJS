@@ -62,6 +62,19 @@
     transform: translate(-50%, -50%);
 }
 
+.puzzle-entry .corner-focus.x-mode::after {
+    content: "\2573";
+    position: absolute;
+    user-select: none;
+    pointer-events: none;
+    color: white;
+    top: 50%;
+    left: 50%;
+    font-size: 8px;
+    font-weight: bold;
+    transform: translate(-50%, -50%);
+}
+
 .puzzle-entry .corner-focus:focus {
     box-shadow: 0px 0px 3px 3px Highlight;
     box-shadow: 0px 0px 3px 3px -webkit-focus-ring-color;
