@@ -517,6 +517,7 @@ function PuzzleEntry(p, index) {
     this.mouseDown = function(e) {
         this.mousedown = true;
         this.lastCell = e.currentTarget;
+        this.currentFill = null;
 
         if (this.options["data-drag-draw-edge"]) {
             var edgeState = this.getEventEdgeState(e);
@@ -527,7 +528,8 @@ function PuzzleEntry(p, index) {
                 return;
             }
         }
-        else if (this.options["data-drag-paint-fill"]) {
+        
+        if (this.options["data-drag-paint-fill"]) {
             if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || e.shiftKey); }
             else { this.currentFill = this.findClassInList(e.currentTarget, this.fillClasses); }
         }
@@ -542,7 +544,7 @@ function PuzzleEntry(p, index) {
     this.mouseMove = function(e) {
         if (!this.mousedown) return;
 
-        if (this.options["data-drag-draw-edge"]) {
+        if (this.options["data-drag-draw-edge"] && !this.currentFill) {
             var edgeState = this.getEventEdgeState(e);
             this.setEdgeState(edgeState, (e.which != 1 || e.shiftKey) ? "cycle-back" : "cycle-front");
             e.preventDefault();
@@ -581,7 +583,7 @@ function PuzzleEntry(p, index) {
     this.mouseEnter = function(e) {
         if (!this.mousedown) return;
         if (this.lastCell === e.currentTarget) return;
-        if (this.options["data-drag-draw-edge"]) return;
+        if (!this.currentFill) return;
 
         this.dragPaintAndPath(e.currentTarget);
     }
