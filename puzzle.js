@@ -218,8 +218,7 @@ function PuzzleEntry(p, index) {
 
     // Finally, any explicitly-specified attributes win.
     for (const [key, value] of Object.entries(this.options)) {
-        var localValue = this.container.getAttribute(key);
-        if (localValue) { this.options[key] = localValue; }
+        if (this.container.hasAttribute(key)) { this.options[key] = this.container.getAttribute(key); }
     }
 
     if (this.container.firstChild && this.container.firstChild.nodeType === Node.TEXT_NODE) {
@@ -236,6 +235,7 @@ function PuzzleEntry(p, index) {
     this.stateKey = this.options["data-state-key"];
     if (!this.stateKey) { this.stateKey = window.location.href + "|" + index; }
     this.inhibitSave = false;
+    this.xKeyMode = false;
 
     this.locateScope = function(scopeId) {
         var ancestor = this.container;
@@ -282,13 +282,43 @@ function PuzzleEntry(p, index) {
             if (text && !td.classList.contains("unselectable")) {
                 this.dx = Math.abs(dcol);
                 this.dy = Math.abs(drow);
-                td.focus();
+                this.updateCenterFocus(td);
                 return true;
             }
 
             col += dcol;
             row += drow;
         }
+    }
+
+    this.moveCorner = function(dy, dx) {
+        var newX = dx + this.cornerFocusX;
+        var newY = dy + this.cornerFocusY;
+
+        newX = Math.max(newX, 0);
+        newX = Math.min(newX, this.numCols);
+        newY = Math.max(newY, 0);
+        newY = Math.min(newY, this.numRows);
+
+        if (this.fShift && (this.cornerFocusX != newX || this.cornerFocusY != newY)) {
+            var xMin = Math.min(this.cornerFocusX, newX);
+            var xMax = Math.max(this.cornerFocusX, newX);
+            var yMin = Math.min(this.cornerFocusY, newY);
+            var yMax = Math.max(this.cornerFocusY, newY);
+            var xCell = Math.min(xMin, this.numCols - 1);
+            var yCell = Math.min(yMin, this.numRows - 1);
+            var edgeState = { cell: this.table.children[this.topClueDepth + yCell].children[this.leftClueDepth + xCell], edgeCode: 0 };
+
+            if (xMax != xMin) { edgeState.edgeCode |= (yCell == yMax ? 1 : 2); }
+            if (yMax != yMin) { edgeState.edgeCode |= (xCell == xMax ? 4 : 8); }
+            this.lastEdgeState = null;
+            this.setEdgeState(edgeState, this.xKeyMode ? "toggle-x" : "toggle-line");
+            this.lastEdgeState = null;
+        }
+
+        this.cornerFocusX = newX;
+        this.cornerFocusY = newY;
+        this.updateCornerFocus();
     }
 
     this.findClassInList = function(td, classes) {
@@ -343,6 +373,7 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 38) { this.move(e.target, -1, 0); } // up
         else if (e.keyCode == 39) { this.move(e.target, 0, 1); } // right
         else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
+        else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
@@ -362,6 +393,24 @@ function PuzzleEntry(p, index) {
                 this.handleEventChar(e, ch);
             }
         }
+    }
+
+    this.keyDownCorner = function(e) {
+        this.fShift = e.shiftKey;
+
+        if (e.keyCode == 9) return;
+
+        e.preventDefault();
+        if (this.options["data-text-solution"]) { return; }
+        
+        if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
+        else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
+        else if (e.keyCode == 37) { this.moveCorner(0, -1); } // left
+        else if (e.keyCode == 38) { this.moveCorner(-1, 0); } // up
+        else if (e.keyCode == 39) { this.moveCorner(0, 1); } // right
+        else if (e.keyCode == 40) { this.moveCorner(1, 0); } // down
+        else if (e.keyCode == 190 && this.canHaveCenterFocus) { this.setCenterFocusMode(); } // period
+        else if (e.keyCode == 88) { this.xKeyMode = !this.xKeyMode; this.cornerFocus.classList.toggle("x-mode"); } // toggle "x" mode
     }
 
     this.setText = function(target, adds, removes, text) {
@@ -409,6 +458,8 @@ function PuzzleEntry(p, index) {
             cell = cell.parentElement.parentElement.children[row + this.topClueDepth].children[col + this.leftClueDepth];
         }
 
+        var any = closeLeft || closeRight || closeTop || closeBottom;
+
         // edgecode is a "four-bit integer":
         //  - The rightmost bit is 1 iff the top border is shaded.
         //  - The 2nd-to-rightmost bit is 1 iff the bottom border is shaded.
@@ -420,10 +471,19 @@ function PuzzleEntry(p, index) {
         else if (closeLeft && !closeTop && !closeBottom) { edgeCode = 4; }
         else if (closeRight && !closeTop && !closeBottom) { edgeCode = 8; }
 
-        return { cell: cell, edgeCode: edgeCode };
+        if (edgeCode == 0 && (closeTop || closeBottom || closeLeft || closeRight)) {
+            var col = Array.prototype.indexOf.call(cell.parentElement.children, cell) - this.leftClueDepth;
+            var row = Array.prototype.indexOf.call(cell.parentElement.parentElement.children, cell.parentElement) - this.topClueDepth;
+            this.setCornerFocusMode();
+            this.cornerFocusX = col + (closeRight ? 1 : 0);
+            this.cornerFocusY = row + (closeBottom ? 1 : 0);
+            this.updateCornerFocus();
+        }
+
+        return { cell: cell, edgeCode: edgeCode, any: any };
     }
 
-    this.toggleEdgeState = function(edgeState, right) {
+    this.setEdgeState = function(edgeState, mode) {
         if (edgeState.edgeCode == 0) return;
         if (this.lastEdgeState != null && this.lastEdgeState.cell === edgeState.cell && this.lastEdgeState.edgeCode === edgeState.edgeCode) return;
 
@@ -433,7 +493,12 @@ function PuzzleEntry(p, index) {
 
         if (!this.lastEdgeState) {
             this.fromEdgeVal = curEdgeVal;
-            this.toEdgeVal = this.fromEdgeVal + (right ? -1 : 1);
+            switch(mode) {
+                case "cycle-front": this.toEdgeVal = this.fromEdgeVal + 1; break;
+                case "cycle-back": this.toEdgeVal = this.fromEdgeVal - 1; break;
+                case "toggle-line": this.toEdgeVal = (this.fromEdgeVal == 1) ? 0 : 1; break;
+                case "toggle-x": this.toEdgeVal = (this.fromEdgeVal == -1) ? 0 : -1; break;
+            }
             if (this.toEdgeVal > 1) { this.toEdgeVal -= 3; }
             if (this.toEdgeVal < -1) { this.toEdgeVal += 3; }
         }
@@ -452,31 +517,36 @@ function PuzzleEntry(p, index) {
     this.mouseDown = function(e) {
         this.mousedown = true;
         this.lastCell = e.currentTarget;
+        this.currentFill = null;
 
         if (this.options["data-drag-draw-edge"]) {
             var edgeState = this.getEventEdgeState(e);
             this.lastEdgeState = null;
-            this.toggleEdgeState(edgeState, (e.which != 1 || this.fShift));
-            if (edgeState.edgeCode != 0) {
+            this.setEdgeState(edgeState, (e.which != 1 || e.shiftKey) ? "cycle-back" : "cycle-front");
+            if (edgeState.any) {
                 e.preventDefault();
                 return;
             }
         }
-        else if (this.options["data-drag-paint-fill"]) {
-            if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || this.fShift); }
+        
+        if (this.options["data-drag-paint-fill"]) {
+            if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || e.shiftKey); }
             else { this.currentFill = this.findClassInList(e.currentTarget, this.fillClasses); }
         }
         
-        e.currentTarget.focus();
+        if (this.canHaveCenterFocus) {
+            this.setCenterFocusMode();
+            this.updateCenterFocus(e.currentTarget);
+        }
         e.preventDefault();
     }
 
     this.mouseMove = function(e) {
         if (!this.mousedown) return;
 
-        if (this.options["data-drag-draw-edge"]) {
+        if (this.options["data-drag-draw-edge"] && !this.currentFill) {
             var edgeState = this.getEventEdgeState(e);
-            this.toggleEdgeState(edgeState, (e.which != 1 || this.fShift));
+            this.setEdgeState(edgeState, (e.which != 1 || e.shiftKey) ? "cycle-back" : "cycle-front");
             e.preventDefault();
             return;
         }
@@ -506,14 +576,14 @@ function PuzzleEntry(p, index) {
 
         if (!wantPaint || canPaint) {
             this.lastCell = to;
-            to.focus();
+            this.updateCenterFocus(to);
         }
     }
 
     this.mouseEnter = function(e) {
         if (!this.mousedown) return;
         if (this.lastCell === e.currentTarget) return;
-        if (this.options["data-drag-draw-edge"]) return;
+        if (!this.currentFill) return;
 
         this.dragPaintAndPath(e.currentTarget);
     }
@@ -817,6 +887,40 @@ function PuzzleEntry(p, index) {
         else { localStorage.removeItem(this.stateKey); }
     }
 
+    this.setCornerFocusMode = function() {
+        if (this.firstCenterFocus) { this.firstCenterFocus.tabIndex = -1; }
+
+        if (this.cornerFocus == null) {
+            this.cornerFocus = document.createElement("div");
+            this.cornerFocus.classList.add("corner-focus");
+            this.cornerFocus.addEventListener("keydown",  e => { this.keyDownCorner(e); });
+            this.table.appendChild(this.cornerFocus);
+
+            this.cornerFocusX = 0;
+            this.cornerFocusY = 0;
+        }
+
+        this.cornerFocus.tabIndex = 0;
+        this.cornerFocus.focus();
+        this.updateCornerFocus();
+    }
+
+    this.setCenterFocusMode = function() {
+        if (this.cornerFocus) { this.cornerFocus.tabIndex = -1; }
+        this.firstCenterFocus.tabIndex = 0;
+        if (this.currentCenterFocus) { this.currentCenterFocus.focus(); }
+    }
+
+    this.updateCornerFocus = function() {
+        var topLeftTD = this.table.children[this.topClueDepth].children[this.leftClueDepth];
+        this.cornerFocus.style.left = topLeftTD.offsetLeft + this.cornerFocusX * topLeftTD.offsetWidth;
+        this.cornerFocus.style.top = topLeftTD.offsetTop + this.cornerFocusY * topLeftTD.offsetHeight;
+    }
+
+    this.updateCenterFocus = function(center) {
+        this.currentCenterFocus = center;
+        this.currentCenterFocus.focus();
+    }
 
     // --- Construct the interactive player. ---
     this.fillClasses = this.getOptionArray("data-fill-classes", " ");
@@ -851,6 +955,12 @@ function PuzzleEntry(p, index) {
     var acrossClueIndex = 0;
     var downClues = this.container.querySelectorAll(".crossword-clues.down li");
     var downClueIndex = 0;
+
+    this.canHaveCenterFocus = this.options["data-text-characters"] || (fills && this.options["data-fill-cycle"]) || this.options["data-drag-draw-path"];
+    this.canHaveCornerFocus = this.options["data-drag-draw-edge"];
+    this.keyboardFocusModel = this.canHaveCornerFocus ? "corner" : "center";
+    this.cornerFocus = null;
+    this.firstCenterFocus = null;
 
     var regularRowBorder = 0;
     var regularColBorder = 0;
@@ -890,7 +1000,6 @@ function PuzzleEntry(p, index) {
     this.numRows = textLines.length;
     this.numCols = 0;
 
-    var firstTabCell = true;
     var stateIndex = 0;
 
     for (var r = 0; r < textLines.length; r++) {
@@ -950,8 +1059,8 @@ function PuzzleEntry(p, index) {
 
             if (!td.classList.contains("unselectable")) {
                 if (allowInput) {
-                    td.tabIndex = firstTabCell ? 0 : -1;
-                    firstTabCell = false;
+                    td.tabIndex = this.firstCenterFocus ? -1 : 0;
+                    if (!this.firstCenterFocus) { this.firstCenterFocus = td; }
                     td.addEventListener("keydown",  e => { this.keyDown(e); });
                     td.addEventListener("mousedown",  e => { this.mouseDown(e); });
                     if (this.options["data-drag-draw-edge"]) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
@@ -1077,6 +1186,10 @@ function PuzzleEntry(p, index) {
 
     this.container.insertBefore(table, this.container.firstChild);
     this.table = table;
+
+    if (this.keyboardFocusModel == "corner") {
+        this.setCornerFocusMode();        
+    }
 
     // Copyjack support: initialize a copyjack version of the table.
     // This table will be modified as the user takes actions.
