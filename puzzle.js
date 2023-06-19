@@ -1,3 +1,7 @@
+/* (c) 2023 Kenny Young
+ * This code is licensed under the MIT License.
+ * https://github.com/tabascq/PuzzleJS
+ */
 var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 
 // register some puzzle modes; a mode is just a set of options,
