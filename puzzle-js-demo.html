@@ -8,7 +8,7 @@
             .demo {
                 display: grid;
                 grid-template-columns: 30% 70%;
-                row-gap: 30px;
+                row-gap: 50px;
             }
 
             .nurikabe-example .unknown { background: lightgray; }
@@ -30,6 +30,12 @@
             .paint-by-numbers-example .unknown { background: lightgray; }
             .paint-by-numbers-example .black { background: black; }
             .paint-by-numbers-example .white { background: white; }
+
+            .wolves-and-sheep-example .unknown { background: white; }
+            .wolves-and-sheep-example .wolf { background: tan; }
+            .wolves-and-sheep-example .sheep { background: lightgreen; }
+            .wolves-and-sheep-example .wolf.given-fill::after { content: "🐺"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .wolves-and-sheep-example .sheep.given-fill::after { content: "🐑"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
         </style>
         <!-- Copyjack styles from https://github.com/galacticpuzzlehunt/gph-site/blob/master/puzzles/static/css/base.css -->
         <style>
@@ -225,6 +231,10 @@
 
             <div>Slitherlink</div>
             <div class="puzzle-entry slitherlink-example" data-text="22122|2...2|1...1|2...2|22122" data-mode="notext slitherlink"></div>
+
+            <div>Wolves and Sheep: Slitherlink with wolves on the outside and sheep on the inside.</div>
+            <div class="puzzle-entry wolves-and-sheep-example" data-text="...3.|.32..|...2.|..30.|....." data-mode="notext slitherlink" data-fill-classes="unknown sheep wolf" data-fills="1...1|.....|..2..|.....|1...1"></div>
+
             <button class="clipboard-button"></button>
         </div>
         </div>
