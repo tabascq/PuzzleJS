@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- (c) 2023 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
 <svg viewBox="-10 -10 20 20" xmlns="http://www.w3.org/2000/svg">
     <g id="edge-base">
     </g>
