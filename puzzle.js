@@ -88,6 +88,12 @@ puzzleModes["solution"] = {
     "data-no-input": true
 }
 
+// Parse string as raw JS objects. e.g. "false" -> false
+// (if ("false") is truthy in JS)
+function parseFalseStrings(s) {
+    return s.toLowerCase() === "false" ? false : s;
+}
+
 // Go through all puzzles and give them a PuzzleEntry object
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll(".puzzle-entry").forEach((p, index) => { new PuzzleEntry(p, index); });
@@ -222,7 +228,7 @@ function PuzzleEntry(p, index) {
 
     // Finally, any explicitly-specified attributes win.
     for (const [key, value] of Object.entries(this.options)) {
-        if (this.container.hasAttribute(key)) { this.options[key] = this.container.getAttribute(key); }
+        if (this.container.hasAttribute(key)) { this.options[key] = parseFalseStrings(this.container.getAttribute(key)); }
     }
 
     if (this.container.firstChild && this.container.firstChild.nodeType === Node.TEXT_NODE) {
@@ -388,7 +394,7 @@ function PuzzleEntry(p, index) {
         if (e.keyCode == 9) return;
 
         e.preventDefault();
-        if (this.options["data-text-solution"]) { return; }
+        if (this.options["data-text-solution"] || this.options["data-no-input"]) { return; }
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
@@ -426,7 +432,7 @@ function PuzzleEntry(p, index) {
         if (e.keyCode == 9) return;
 
         e.preventDefault();
-        if (this.options["data-text-solution"]) { return; }
+        if (this.options["data-no-input"]) { return; }
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
@@ -499,10 +505,12 @@ function PuzzleEntry(p, index) {
         if (edgeCode == 0 && (closeTop || closeBottom || closeLeft || closeRight)) {
             var col = Array.prototype.indexOf.call(cell.parentElement.children, cell) - this.leftClueDepth;
             var row = Array.prototype.indexOf.call(cell.parentElement.parentElement.children, cell.parentElement) - this.topClueDepth;
-            this.setCornerFocusMode();
-            this.cornerFocusX = col + (closeRight ? 1 : 0);
-            this.cornerFocusY = row + (closeBottom ? 1 : 0);
-            this.updateCornerFocus();
+            if (this.canHaveCornerFocus) {
+                this.setCornerFocusMode();
+                this.cornerFocusX = col + (closeRight ? 1 : 0);
+                this.cornerFocusY = row + (closeBottom ? 1 : 0);
+                this.updateCornerFocus();
+            }
         }
 
         return { cell: cell, edgeCode: edgeCode, any: any };
@@ -544,7 +552,7 @@ function PuzzleEntry(p, index) {
         this.lastCell = e.currentTarget;
         this.currentFill = null;
 
-        if (this.options["data-drag-draw-edge"]) {
+        if (this.canDrawOnEdges) {
             var edgeState = this.getEventEdgeState(e);
             this.lastEdgeState = null;
             this.setEdgeState(edgeState, (e.which != 1 || e.shiftKey) ? "cycle-back" : "cycle-front");
@@ -569,7 +577,7 @@ function PuzzleEntry(p, index) {
     this.mouseMove = function(e) {
         if (!this.mousedown) return;
 
-        if (this.options["data-drag-draw-edge"] && !this.currentFill) {
+        if (this.canDrawOnEdges && !this.currentFill) {
             var edgeState = this.getEventEdgeState(e);
             this.setEdgeState(edgeState, (e.which != 1 || e.shiftKey) ? "cycle-back" : "cycle-front");
             e.preventDefault();
@@ -938,8 +946,8 @@ function PuzzleEntry(p, index) {
 
     this.updateCornerFocus = function() {
         var topLeftTD = this.table.children[this.topClueDepth].children[this.leftClueDepth];
-        this.cornerFocus.style.left = topLeftTD.offsetLeft + this.cornerFocusX * topLeftTD.offsetWidth;
-        this.cornerFocus.style.top = topLeftTD.offsetTop + this.cornerFocusY * topLeftTD.offsetHeight;
+        this.cornerFocus.style.left = (topLeftTD.offsetLeft + this.cornerFocusX * topLeftTD.offsetWidth) + "px";
+        this.cornerFocus.style.top = (topLeftTD.offsetTop + this.cornerFocusY * topLeftTD.offsetHeight) + "px";
     }
 
     this.updateCenterFocus = function(center) {
@@ -981,9 +989,11 @@ function PuzzleEntry(p, index) {
     var downClues = this.container.querySelectorAll(".crossword-clues.down li");
     var downClueIndex = 0;
 
+    this.canDrawOnEdges = this.options["data-drag-draw-edge"] && !this.options["data-no-input"];
+
     this.canHaveCenterFocus = this.options["data-text-characters"] || (fills && this.options["data-fill-cycle"]) || this.options["data-drag-draw-path"];
-    this.canHaveCornerFocus = this.options["data-drag-draw-edge"];
-    this.keyboardFocusModel = this.canHaveCornerFocus ? "corner" : "center";
+    this.canHaveCornerFocus = this.canDrawOnEdges;
+    this.keyboardFocusModel = this.options["data-no-input"] ? "none" : (this.canHaveCornerFocus ? "corner" : "center");
     this.cornerFocus = null;
     this.firstCenterFocus = null;
 
@@ -1088,7 +1098,7 @@ function PuzzleEntry(p, index) {
                     if (!this.firstCenterFocus) { this.firstCenterFocus = td; }
                     td.addEventListener("keydown",  e => { this.keyDown(e); });
                     td.addEventListener("mousedown",  e => { this.mouseDown(e); });
-                    if (this.options["data-drag-draw-edge"]) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
+                    if (this.canDrawOnEdges) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
                     td.addEventListener("mouseenter",  e => { this.mouseEnter(e); });
                     td.addEventListener("contextmenu",  e => { e.preventDefault(); });
                     if (clueNumbers) {
