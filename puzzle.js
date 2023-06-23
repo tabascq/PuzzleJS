@@ -1341,10 +1341,12 @@ function PuzzleEntry(p, index) {
         // Populate the copy-only table.
         for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
             const copyTr = document.createElement('tr');
+            copyTr.style.userSelect = 'auto';
             this.copyjackVersion.appendChild(copyTr);
             for (const [j, td] of Array.from(tr.getElementsByTagName('td')).entries()) {
                 td.dataset.coord = [i, j];
                 const copyTd = document.createElement('td');
+                copyTd.style.userSelect = 'auto';
                 copyTr.appendChild(copyTd);
                 this.processTdForCopyjack(td);
             }
