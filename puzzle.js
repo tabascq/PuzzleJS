@@ -1149,7 +1149,7 @@ function PuzzleEntry(p, index) {
             if (paths) {
                 if (paths.length == textLines.length) {
                     pathCode = parseInt(paths[r][c], 16);
-                    if (pathCode) { td.setAttribute("data-given-path-code", pathCode); }
+                    if (pathCode) { td.setAttribute("data-path-code", pathCode); td.setAttribute("data-given-path-code", pathCode); }
                 }
             }
             if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
