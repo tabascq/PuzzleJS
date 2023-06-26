@@ -91,6 +91,18 @@
     box-shadow: 0px 0px 3px 3px -webkit-focus-ring-color;
 }
 
+.puzzle-entry .interesting::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80%;
+    height: 80%;
+    transform: translate(-50%, -50%);
+    border-radius: 100px;
+    border: 2px solid red;
+}
+
 .puzzle-entry svg {
     pointer-events: none;
 }

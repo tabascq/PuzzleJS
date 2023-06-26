@@ -404,7 +404,9 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
-            if (this.options["data-text-characters"].includes(" ")) {
+            if (e.ctrlKey) {
+                e.currentTarget.classList.toggle("interesting");
+            } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
                 this.dx = 1 - this.dx; this.dy = 1 - this.dy;
@@ -551,6 +553,12 @@ function PuzzleEntry(p, index) {
         this.mousedown = true;
         this.lastCell = e.currentTarget;
         this.currentFill = null;
+
+        if (e.ctrlKey) {
+            e.currentTarget.classList.toggle("interesting");
+            e.preventDefault();
+            return;
+        }
 
         if (this.canDrawOnEdges) {
             var edgeState = this.getEventEdgeState(e);
@@ -834,6 +842,7 @@ function PuzzleEntry(p, index) {
         if (clueIndex >= 0 && clueIndex < clues.length && clues[clueIndex]) {
             td.textContent = clues[clueIndex];
             td.classList.add(cls);
+            td.addEventListener("mousedown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else if (e.shiftKey) { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
             td.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
         } else { td.classList.add("unselectable"); }
 
