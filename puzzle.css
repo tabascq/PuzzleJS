@@ -5,6 +5,7 @@
 .puzzle-entry {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 20px;
 
     /* Make background colors print faithfully. */
