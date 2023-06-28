@@ -974,8 +974,8 @@ function PuzzleEntry(p, index) {
 
     this.aboutPopup = function() {
         var lines = [];
-        lines.push("<div class='puzzle-about-back'></div>");
-        lines.push("<div class='puzzle-about'>");
+        lines.push("<div class='puzzle-about-back no-copy'></div>");
+        lines.push("<div class='puzzle-about no-copy'>");
         lines.push("<div class='puzzle-about-scroller'><table>");
         lines.push("<tr><th>Function</th><th>Keyboard</th><th>Mouse</th></tr>");
         lines.push("<tr><td>Reset saved state</td><td>N/A</td><td>Reset Button</td></tr>");
@@ -1305,6 +1305,7 @@ function PuzzleEntry(p, index) {
     if (this.options["data-show-commands"]) {
         this.commands = document.createElement("div");
         this.commands.classList.add("puzzle-commands");
+        this.commands.classList.add("no-copy");
         this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button>";
         this.commands.querySelector(".puzzle-about-button").addEventListener("click", e => { this.aboutPopup(); });
         this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
