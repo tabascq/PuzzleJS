@@ -45,6 +45,7 @@ puzzleModes["default"] = {
     "data-unselectable-givens": false,
     "data-extracts": null,
     "data-no-input": false,
+    "data-show-commands": false,
     "data-state-key": null
 };
 
@@ -964,6 +965,67 @@ function PuzzleEntry(p, index) {
         this.currentCenterFocus.focus();
     }
 
+    this.closeAbout = function() {
+        this.container.querySelector(".puzzle-about-back").remove();
+        this.container.querySelector(".puzzle-about").remove();
+
+        if (this.oldFocus) { this.oldFocus.focus(); this.oldFocus = null; }
+    }
+
+    this.aboutPopup = function() {
+        var lines = [];
+        lines.push("<div class='puzzle-about-back'></div>");
+        lines.push("<div class='puzzle-about'>");
+        lines.push("<div class='puzzle-about-scroller'><table>");
+        lines.push("<tr><th>Function</th><th>Keyboard</th><th>Mouse</th></tr>");
+        lines.push("<tr><td>Reset saved state</td><td>N/A</td><td>Reset Button</td></tr>");
+        lines.push("<tr><td>Undo/Redo</td><td>Ctrl+Z/Y</td><td>Undo/Redo Buttons</td></tr>");
+        if (this.options["data-text-characters"]) {
+            if (this.options["data-text-shift-lock"]) {
+                lines.push("<tr><td>Multiple-character text entry</td><td>Type to append; Backspace to remove, Del to clear</td><td>N/A</td></tr>");
+            } else {
+                lines.push("<tr><td>Single-character text entry</td><td>Type to replace; Backspace/Del to clear</td><td>N/A</td></tr>");
+                if (this.options["data-text-shift-key"] == "rebus") {
+                    lines.push("<tr><td>Rebus clue text entry</td><td>Shift-Type to append; Shift-Backspace to remove</td><td>N/A</td></tr>");
+                } else {
+                    lines.push("<tr><td>Candidate-value text entry</td><td>Shift-Type to toggle a character</td><td>N/A</td></tr>");
+                }
+            }
+        }
+        if (this.canHaveCenterFocus) {
+            lines.push("<tr><td>Navigate between cells</td><td>Arrow keys</td><td>Click a cell</td></tr>");
+        }
+        if (this.fillClasses && this.fillClasses.length > 0 && this.options["data-fill-cycle"]) {
+            lines.push("<tr><td>Change cell background (forwards or backwards)</td><td>Space or Shift-Space</td><td>Click/Left-Click or Right/Shift-Click</td></tr>");
+        }
+        if (this.options["data-drag-draw-path"]) {
+            lines.push("<tr><td>Draw a path between cells</td><td>Shift-arrow keys</td><td>Click one cell, drag to others</td></tr>");
+        }
+        if (this.options["data-drag-draw-edge"]) {
+            if (this.canHaveCenterFocus) {
+                lines.push("<tr><td>Draw an edge between cells</td><td>'.' to enter/exit corner mode, then Shift-arrow keys</td><td>Click one corner or edge, drag to others</td></tr>");
+            } else {
+                lines.push("<tr><td>Draw an edge between cells</td><td>Shift-arrow keys</td><td>Click one corner or edge, drag to others</td></tr>");
+            }
+        }
+        lines.push("<tr><td>Mark a cell as 'interesting'</td><td>Ctrl+Space</td><td>Ctrl+Click</td></tr>");
+        if (this.leftClueDepth || this.rightClueDepth || this.topClueDepth || this.bottomClueDepth) {
+            lines.push("<tr><td>Mark an external clue as 'satisfied'</td><td>N/A</td><td>Right+Click</td></tr>");
+        }
+        lines.push("</table></div>");
+        lines.push("<div class='puzzle-about-credits'>Made with <a href='https://github.com/tabascq/PuzzleJS' target='_blank'>Puzzle.js</a></div>")
+        lines.push("<button type='button' class='puzzle-about-close'>Close</button>")
+        lines.push("</div>");
+        this.container.insertAdjacentHTML("beforeend", lines.join(""));
+
+        this.oldFocus = document.activeElement;
+
+        this.container.querySelector(".puzzle-about-back").addEventListener("mousedown", e => { this.closeAbout(); });
+        this.container.querySelector(".puzzle-about-close").focus();
+        this.container.querySelector(".puzzle-about-close").addEventListener("click", e => { this.closeAbout(); });
+        this.container.querySelector(".puzzle-about-close").addEventListener("keyup", e => { if (e.keyCode == 27 || e.keyCode == 13) this.closeAbout(); });
+    }
+
     // --- Construct the interactive player. ---
     this.fillClasses = this.getOptionArray("data-fill-classes", " ");
 
@@ -1228,11 +1290,28 @@ function PuzzleEntry(p, index) {
         table.appendChild(tr);
     }
 
-    this.container.insertBefore(table, this.container.firstChild);
     this.table = table;
+
+    var wrapper = document.createElement("div");
+    wrapper.classList.add("puzzle-table-wrapper");
+    wrapper.insertBefore(table, null);
+
+    this.container.insertBefore(wrapper, this.container.firstChild);
 
     if (this.keyboardFocusModel == "corner") {
         this.setCornerFocusMode();        
+    }
+
+    if (this.options["data-show-commands"]) {
+        this.commands = document.createElement("div");
+        this.commands.classList.add("puzzle-commands");
+        this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button>";
+        this.commands.querySelector(".puzzle-about-button").addEventListener("click", e => { this.aboutPopup(); });
+        this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
+        this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
+        // TODO shouldn't need a reload
+        this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { this.prepareToReset(); window.location.reload(); });
+        wrapper.insertBefore(this.commands, null);
     }
 
     // Copyjack support: initialize a copyjack version of the table.
@@ -1246,7 +1325,7 @@ function PuzzleEntry(p, index) {
         this.copyjackVersion = document.createElement('table');
         this.copyjackVersion.classList.add('copy-only');
         this.copyjackVersion.style.userSelect = 'auto'; // Needed for Firefox compatibility.
-        this.container.insertBefore(this.copyjackVersion, this.table);
+        wrapper.insertBefore(this.copyjackVersion, this.table);
         // Populate the copy-only table.
         for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
             const copyTr = document.createElement('tr');
