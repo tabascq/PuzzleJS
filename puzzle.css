@@ -5,8 +5,8 @@
 .puzzle-entry {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
     gap: 20px;
+    width: max-content;
 
     /* Make background colors print faithfully. */
    -webkit-print-color-adjust: exact;
