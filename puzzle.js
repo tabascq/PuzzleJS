@@ -1294,10 +1294,6 @@ function PuzzleEntry(p, index) {
 
     this.container.insertBefore(table, this.container.firstChild);
 
-    if (this.keyboardFocusModel == "corner") {
-        this.setCornerFocusMode();        
-    }
-
     if (this.options["data-show-commands"]) {
         this.commands = document.createElement("div");
         this.commands.classList.add("puzzle-commands");
@@ -1318,6 +1314,10 @@ function PuzzleEntry(p, index) {
         cell.colSpan = this.numCols;
         cell.insertBefore(this.commands, null);
         for (var i = 0; i < this.rightClueDepth; i++) { row.insertCell(-1); }
+    }
+
+    if (this.keyboardFocusModel == "corner") {
+        this.setCornerFocusMode();        
     }
 
     // Copyjack support: initialize a copyjack version of the table.
