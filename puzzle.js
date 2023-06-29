@@ -1292,11 +1292,7 @@ function PuzzleEntry(p, index) {
 
     this.table = table;
 
-    var wrapper = document.createElement("div");
-    wrapper.classList.add("puzzle-table-wrapper");
-    wrapper.insertBefore(table, null);
-
-    this.container.insertBefore(wrapper, this.container.firstChild);
+    this.container.insertBefore(table, this.container.firstChild);
 
     if (this.keyboardFocusModel == "corner") {
         this.setCornerFocusMode();        
@@ -1312,7 +1308,16 @@ function PuzzleEntry(p, index) {
         this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
         // TODO shouldn't need a reload
         this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { this.prepareToReset(); window.location.reload(); });
-        wrapper.insertBefore(this.commands, null);
+
+        // add as an extra row of the table because everything else breaks layout somewhere
+        var row = table.insertRow(-1);
+        row.classList.add("commands");
+        for (var i = 0; i < this.leftClueDepth; i++) { row.insertCell(-1); }
+        var cell = row.insertCell(-1);
+        cell.style.maxWidth = table.offsetWidth;
+        cell.colSpan = this.numCols;
+        cell.insertBefore(this.commands, null);
+        for (var i = 0; i < this.rightClueDepth; i++) { row.insertCell(-1); }
     }
 
     // Copyjack support: initialize a copyjack version of the table.
@@ -1326,7 +1331,7 @@ function PuzzleEntry(p, index) {
         this.copyjackVersion = document.createElement('table');
         this.copyjackVersion.classList.add('copy-only');
         this.copyjackVersion.style.userSelect = 'auto'; // Needed for Firefox compatibility.
-        wrapper.insertBefore(this.copyjackVersion, this.table);
+        this.container.insertBefore(this.copyjackVersion, this.table);
         // Populate the copy-only table.
         for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
             const copyTr = document.createElement('tr');
