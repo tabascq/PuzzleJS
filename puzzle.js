@@ -449,7 +449,7 @@ function PuzzleEntry(p, index) {
 
     this.setText = function(target, adds, removes, text) {
         var textElement = target.querySelector(".text span");
-        if (textElement.innerText != text && !target.classList.contains("given")) {
+        if (textElement.innerText != text && !target.classList.contains("given-text")) {
             this.undoManager.startGroup(this);
             this.undoManager.modifyClass(target, adds, removes);
             this.undoManager.modifyText(textElement, text);
