@@ -976,7 +976,9 @@ function PuzzleEntry(p, index) {
         var lines = [];
         lines.push("<div class='puzzle-about-back no-copy'></div>");
         lines.push("<div class='puzzle-about no-copy'>");
-        lines.push("<div class='puzzle-about-scroller'><table>");
+        lines.push("<div class='puzzle-about-scroller'>");
+        lines.push("<div class='puzzle-about-savedstate'>This puzzle will save its state when you leave/refresh the page.</div>");
+        lines.push("<table>");
         lines.push("<tr><th>Function</th><th>Keyboard</th><th>Mouse</th></tr>");
         lines.push("<tr><td>Reset saved state</td><td>N/A</td><td>Reset Button</td></tr>");
         lines.push("<tr><td>Undo/Redo</td><td>Ctrl+Z/Y</td><td>Undo/Redo Buttons</td></tr>");

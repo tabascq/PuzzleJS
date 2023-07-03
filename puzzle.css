@@ -236,6 +236,11 @@
     text-align: center;
 }
 
+.puzzle-about-savedstate {
+    margin: 0px auto;
+    text-align: center;
+}
+
 .puzzle-about-scroller {
     overflow-y: auto;
     max-height: calc(75vh - 30px);
