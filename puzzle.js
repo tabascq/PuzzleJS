@@ -16,6 +16,7 @@ puzzleModes["default"] = {
     "data-text-shift-key": "rebus",
     "data-text-shift-lock": false,
     "data-text-solution": null,
+    "data-text-toggle-nav-dir": true,
 
     // fills
     "data-fill-classes": null,
@@ -50,6 +51,7 @@ puzzleModes["default"] = {
 };
 
 puzzleModes["linear"] = {
+    "data-text-toggle-nav-dir": false,
     "data-unselectable-givens": true
 }
 
@@ -410,7 +412,7 @@ function PuzzleEntry(p, index) {
             } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
-                this.dx = 1 - this.dx; this.dy = 1 - this.dy;
+                if (this.options["data-text-toggle-nav-dir"]) { this.dx = 1 - this.dx; this.dy = 1 - this.dy; }
                 if (this.options["data-clue-numbers"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
                 if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, this.fillClasses, e.shiftKey); }
@@ -421,7 +423,9 @@ function PuzzleEntry(p, index) {
             this.setText(e.target, [], [], "");
             this.move(e.target, -this.dy, -this.dx);
         } else {
-            var ch = String.fromCharCode(e.keyCode);
+            var code = e.keyCode;
+            if (code >= 96 && code <= 105) { code -= 48; }
+            var ch = String.fromCharCode(code);
 
             if (this.options["data-text-characters"].includes(ch)) {
                 this.handleEventChar(e, ch);
