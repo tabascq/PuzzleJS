@@ -44,6 +44,10 @@
     text-transform: uppercase;
 }
 
+.puzzle-entry .commands td {
+    cursor: default; /* The puzzle commands row itself is not interactable. */
+}
+
 .puzzle-entry .text {
     z-index: 2;
     position: absolute;

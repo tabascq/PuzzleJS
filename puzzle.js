@@ -556,6 +556,10 @@ function PuzzleEntry(p, index) {
 
     this.mouseDown = function(e) {
         this.mousedown = true;
+        if ((document.activeElement == e.currentTarget) && this.options["data-text-toggle-nav-dir"]) {
+            this.dx = 1 - this.dx; this.dy = 1 - this.dy;
+            e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
+        }
         this.lastCell = e.currentTarget;
         this.currentFill = null;
 
@@ -668,8 +672,8 @@ function PuzzleEntry(p, index) {
     this.clueClick = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.table.querySelector("td[data-across-cluenumber='" + acrosscluenumber + "']").focus(); this.dx = 1; this.dy = 0; }
-        if (downcluenumber) { this.table.querySelector("td[data-down-cluenumber='" + downcluenumber + "']").focus(); this.dx = 0; this.dy = 1; }
+        if (acrosscluenumber) { this.dx = 1; this.dy = 0; this.table.querySelector("td[data-across-cluenumber='" + acrosscluenumber + "']").focus(); }
+        if (downcluenumber) { this.dx = 0; this.dy = 1; this.table.querySelector("td[data-down-cluenumber='" + downcluenumber + "']").focus(); }
     }
 
     this.scrollClue = function(li) {
