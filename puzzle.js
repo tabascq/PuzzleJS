@@ -556,6 +556,10 @@ function PuzzleEntry(p, index) {
 
     this.mouseDown = function(e) {
         this.mousedown = true;
+        if ((document.activeElement == e.currentTarget) && this.options["data-text-toggle-nav-dir"]) {
+            this.dx = 1 - this.dx; this.dy = 1 - this.dy;
+            e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
+        }
         this.lastCell = e.currentTarget;
         this.currentFill = null;
 
@@ -668,8 +672,8 @@ function PuzzleEntry(p, index) {
     this.clueClick = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.table.querySelector("td[data-across-cluenumber='" + acrosscluenumber + "']").focus(); this.dx = 1; this.dy = 0; }
-        if (downcluenumber) { this.table.querySelector("td[data-down-cluenumber='" + downcluenumber + "']").focus(); this.dx = 0; this.dy = 1; }
+        if (acrosscluenumber) { this.dx = 1; this.dy = 0; this.table.querySelector("td[data-across-cluenumber='" + acrosscluenumber + "']").focus(); }
+        if (downcluenumber) { this.dx = 0; this.dy = 1; this.table.querySelector("td[data-down-cluenumber='" + downcluenumber + "']").focus(); }
     }
 
     this.scrollClue = function(li) {
@@ -1341,10 +1345,12 @@ function PuzzleEntry(p, index) {
         // Populate the copy-only table.
         for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
             const copyTr = document.createElement('tr');
+            copyTr.style.userSelect = 'auto';
             this.copyjackVersion.appendChild(copyTr);
             for (const [j, td] of Array.from(tr.getElementsByTagName('td')).entries()) {
                 td.dataset.coord = [i, j];
                 const copyTd = document.createElement('td');
+                copyTd.style.userSelect = 'auto';
                 copyTr.appendChild(copyTd);
                 this.processTdForCopyjack(td);
             }
