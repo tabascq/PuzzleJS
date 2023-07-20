@@ -1,0 +1,53 @@
+/* (c) 2023 Kenny Young
+ * This code is licensed under the MIT License.
+ * https://github.com/tabascq/PuzzleJS
+ */
+
+ /* basic fills */
+ .cell.white { background-color: white; }
+ .cell.lightgray { background-color: lightgray; }
+ .cell.darkgray { background-color: darkgray; }
+ .cell.gray { background-color: gray; }
+ .cell.black { background-color: black; }
+ .cell.red { background-color: red; }
+ .cell.orange { background-color: orange; }
+ .cell.yellow { background-color: yellow; }
+ .cell.green { background-color: green; }
+ .cell.blue { background-color: blue; }
+ .cell.indigo { background-color: indigo; }
+ .cell.violet { background-color: violet; }
+
+ /* fills for laser-colored paths */
+ .cell.black .edge-base { stroke: silver; }
+
+ .cell.white-laser { background-color: #7f7f7f; }
+ .cell.white-laser .edge-base { stroke: silver; }
+ .cell.white-laser .path { stroke: white; }
+
+ .cell.red-laser { background-color: #7f0000; }
+ .cell.red-laser .edge-base { stroke: silver; }
+ .cell.red-laser .path { stroke: red; }
+
+ .cell.orange-laser { background-color: #7f5300; }
+ .cell.orange-laser .edge-base { stroke: silver; }
+ .cell.orange-laser .path { stroke: orange; }
+
+ .cell.yellow-laser { background-color: #7f7f00; }
+ .cell.yellow-laser .edge-base { stroke: silver; }
+ .cell.yellow-laser .path { stroke: yellow; }
+
+ .cell.green-laser { background-color: #00007f; }
+ .cell.green-laser .edge-base { stroke: silver; }
+ .cell.green-laser .path { stroke: green; }
+ 
+ .cell.blue-laser { background-color: #007f00; }
+ .cell.blue-laser .edge-base { stroke: silver; }
+ .cell.blue-laser .path { stroke: blue; }
+ 
+ .cell.indigo-laser { background-color: #250041; }
+ .cell.indigo-laser .edge-base { stroke: silver; }
+ .cell.indigo-laser .path { stroke: indigo; }
+ 
+ .cell.violet-laser { background-color: #7f007f; }
+ .cell.violet-laser .edge-base { stroke: silver; }
+ .cell.violet-laser .path { stroke: violet; }

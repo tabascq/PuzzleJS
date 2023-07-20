@@ -33,7 +33,7 @@ puzzleModes["default"] = {
 
     // clues
     "data-clue-locations": null,
-    "data-clue-numbers": null,
+    "data-clue-numbers": "auto",
     "data-top-clues": null,
     "data-bottom-clues": null,
     "data-left-clues": null,
@@ -56,8 +56,7 @@ puzzleModes["linear"] = {
 }
 
 puzzleModes["crossword"] = {
-    "data-clue-locations": "crossword",
-    "data-clue-numbers": "auto"
+    "data-clue-locations": "crossword"
 };
 
 puzzleModes["notext"] = {
@@ -67,6 +66,7 @@ puzzleModes["notext"] = {
 puzzleModes["sudoku"] = {
     "data-text-characters": "123456789",
     "data-edges": "3x3",
+    "data-text": "9x9",
     "data-text-shift-key": "candidates"
 };
 
@@ -79,6 +79,7 @@ puzzleModes["pathpaint"] = {
 puzzleModes["trains"] = {
     "data-path-style": "track",
     "data-drag-paint-fill": false,
+    "data-fill-cycle": false,
     "data-drag-draw-path": true
 }
 
@@ -235,9 +236,11 @@ function PuzzleEntry(p, index) {
     }
 
     if (this.container.firstChild && this.container.firstChild.nodeType === Node.TEXT_NODE) {
-        var json = JSON.parse(this.container.firstChild.textContent);
-        for (const[key, value] of Object.entries(json)) { this.options[key] = value; }
-        this.container.removeChild(this.container.firstChild);
+        try {
+            var json = JSON.parse(this.container.firstChild.textContent);
+            for (const[key, value] of Object.entries(json)) { this.options[key] = value; }
+            this.container.removeChild(this.container.firstChild);
+        } catch {}
     }
 
     this.dx = 1;
@@ -579,10 +582,8 @@ function PuzzleEntry(p, index) {
             }
         }
         
-        if (this.options["data-drag-paint-fill"]) {
-            if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || e.shiftKey); }
-            else { this.currentFill = this.findClassInList(e.currentTarget, this.fillClasses); }
-        }
+        if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || e.shiftKey); }
+        else { this.currentFill = this.findClassInList(e.currentTarget, this.fillClasses); }
         
         if (this.canHaveCenterFocus) {
             this.setCenterFocusMode();
@@ -603,7 +604,7 @@ function PuzzleEntry(p, index) {
     }
 
     this.dragPaintAndPath = function(to) {
-        var wantPaint = this.options["data-drag-paint-fill"];
+        var wantPaint = this.options["data-drag-paint-fill"] && !!this.currentFill;
         var canPaint = wantPaint;
 
         this.undoManager.startGroup(this);
@@ -633,7 +634,6 @@ function PuzzleEntry(p, index) {
     this.mouseEnter = function(e) {
         if (!this.mousedown) return;
         if (this.lastCell === e.currentTarget) return;
-        if (!this.currentFill) return;
 
         this.dragPaintAndPath(e.currentTarget);
     }
@@ -733,7 +733,9 @@ function PuzzleEntry(p, index) {
     this.addEdgeToSvg = function(svg, edgeName) {
         var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
         use.classList.add(edgeName);
-        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", puzzleJsFolderPath + "edge-" + this.options["data-edge-style"] + ".svg#" + edgeName);
+        var edgePath = this.options["data-edge-style"];
+        if (!edgePath.endsWith(".svg")) { edgePath = puzzleJsFolderPath + "edge-" + edgePath + ".svg"; }
+        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", edgePath + "#" + edgeName);
         svg.appendChild(use);
     }
 
@@ -752,7 +754,9 @@ function PuzzleEntry(p, index) {
         if (pathCode) {
             var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
             use.classList.add("path");
-            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", puzzleJsFolderPath + "path-" + this.options["data-path-style"] + ".svg#path-" + translatedData[0]);
+            var pathPath = this.options["data-path-style"];
+            if (!pathPath.endsWith(".svg")) { pathPath = puzzleJsFolderPath + "path-" + pathPath + ".svg"; }
+            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", pathPath + "#path-" + translatedData[0]);
             if (translatedData[1] != "0") { use.setAttributeNS(null, "transform", "rotate(" + parseInt(translatedData[1] * 90) + ")"); }
             svg.appendChild(use);
         }
@@ -1229,9 +1233,23 @@ function PuzzleEntry(p, index) {
             var pathCode = 0;
             if (paths) {
                 if (paths.length == textLines.length) {
-                    pathCode = parseInt(paths[r][c], 16);
-                    if (pathCode) { td.setAttribute("data-path-code", pathCode); td.setAttribute("data-given-path-code", pathCode); }
+                    pathCode |= parseInt(paths[r][c], 16);
                 }
+                else if (paths.length == textLines.length * 2 + 1) {
+                    var topRow = paths[r * 2];
+                    var midRow = paths[r * 2 + 1];
+                    var botRow = paths[r * 2 + 2];
+                    var chTop = (topRow.length == textLines[r].length) ? topRow[c] : topRow[c * 2 + 1];
+                    var chLeft = (midRow.length == textLines[r].length + 1) ? midRow[c] : midRow[c * 2];
+                    var chRight = (midRow.length == textLines[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
+                    var chBottom = (botRow.length == textLines[r].length) ? botRow[c] : botRow[c * 2 + 1];
+                    if (chTop != " " && chTop != ".") { pathCode |= 1; }
+                    if (chBottom != " " && chBottom != ".") { pathCode |= 2; }
+                    if (chLeft != " " && chLeft != ".") { pathCode |= 4; }
+                    if (chRight != " " && chRight != ".") { pathCode |= 8; }
+                }
+
+                if (pathCode) { td.setAttribute("data-path-code", pathCode); td.setAttribute("data-given-path-code", pathCode); }
             }
             if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
             if (pathCode) { td.setAttribute("data-path-code", pathCode); }

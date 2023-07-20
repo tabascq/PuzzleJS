@@ -1,0 +1,76 @@
+<!-- (c) 2023 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<html>
+    <head>
+        <title>Puzzle.js</title>
+        <link rel="stylesheet" href="reference-example.css"/>
+        <script type="text/javascript" src="reference-example.js"></script>
+        <link rel="stylesheet" href="puzzle.css"/>
+        <link rel="stylesheet" href="puzzle-basic-colors.css"/>
+        <script type="text/javascript" src="puzzle.js"></script>
+        <style>
+            body {
+                padding: 1rem;
+            }
+
+            h1, h2, p, li {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            code {
+                background-color: #ddf;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Puzzle.js: A customizable interactive solver for hunt-style puzzles</h1>
+        <p>This is a toolkit intended for people who want to embed interactive puzzle solvers into existing HTML pages. The master repository is located at <a href="https://github.com/tabascq/PuzzleJS" target="_blank">https://github.com/tabascq/PuzzleJS</a>.</p>
+        <p>It is constructed with the following goals in mind:</p>
+        <ul>
+            <li>Easy to embed a puzzle in an existing HTML page</li>
+            <li>Zero JS or CSS knowledge required</li>
+            <li>Visually pleaasing default output</li>
+            <li>Easy customization via CSS, if desired</li>
+            <li>Undo/redo and saved state</li>
+            <li>Fully-accessible interactive solving controls</li>
+            <li>Integration with &ldquo;Copy to Clipboard&rdquo; functionality used in online puzzle hunts</li>
+        </ul>
+        <p>The interactive solver does not provide any insights for solving a puzzle, and does not even know the answer to the puzzle (at least for now).</p>
+        <h2>Quickstart</h2>
+        <p>Simply make sure the files in this repository are available to your web page, then add this to your page:</p>
+        <div style="padding-left: 4em">
+            <code>&lt;script type="text/javascript" src="puzzle.js"&gt;&lt;/script&gt;</code><br/>
+            <code>&lt;link rel="stylesheet" href="puzzle.css"&gt;</code>
+        </div>
+        <p>and optionally:</p>
+        <div style="padding-left: 4em">
+            <code>&lt;link rel="stylesheet" href="puzzle-basic-colors.css"&gt;</code>
+        </div>
+        <p>From there it's as easy as this!</p>
+        <div class="example">
+            <div class="puzzle-entry" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
+        </div>
+        <div class="example">
+            <div class="puzzle-entry" data-text="####" data-extracts="1 2 3 4"></div>
+        </div>
+        <div class="example">
+            <div class="puzzle-entry" data-mode="notext slitherlink" data-text="2.12|10..|..12|32.1" data-show-commands="true"></div>
+        </div>
+        <div class="example">
+            <div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="black yellow-laser red-laser" data-fills="1...|..1.|.2..|...2" data-show-commands="true"></div>
+        </div>
+        <h2>Demos</h2>
+        <p>Several more mini demos can be found <a href="puzzle-js-demo">here</a>.</p>
+        <!--<p>These are some fully-realized puzzles that have been constructed with Puzzle.js. All demos are provided with the consent of their authors.</p>-->
+        <p><i>More demo puzzles TBD in August, pending completion of the events in which they appear!</i></p>
+        <h2>Documentation</h2>
+        <ul>
+            <li><a href="reference-options.html">Options reference</a></li>
+            <li>Styling reference (TBD)</li>
+        </ul>
+        <h2>Feedback</h2>
+        <p>This is a work in progress! Please feel free to create issues and/or pull requests at <a href="https://github.com/tabascq/PuzzleJS" target="_blank">https://github.com/tabascq/PuzzleJS</a>.</p>
+        <p>If you have any questions, I can be reached with the handle &ldquo;tabascq&rdquo; on Discord/Gmail/Hotmail.</p>
+    </body>
+</html>

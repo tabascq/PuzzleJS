@@ -3,42 +3,40 @@
 <!-- https://github.com/tabascq/PuzzleJS -->
 <html>
     <head>
-        <title>Puzzle.js Demo</title>
+        <title>Puzzle.js Mini Demos</title>
         <link rel="stylesheet" href="puzzle.css"/>
+        <link rel="stylesheet" href="puzzle-basic-colors.css"/>
+        <link rel="stylesheet" href="reference-example.css"/>
+        <script type="text/javascript" src="reference-example.js"></script>
         <script type="text/javascript" src="puzzle.js"></script>
         <script type="text/javascript" src="copyjack.js"></script>
         <style>
-            .demo {
-                display: grid;
-                grid-template-columns: 30% 70%;
-                row-gap: 50px;
+            body {
+                padding: 1rem;
             }
 
-            .nurikabe-example .unknown { background: lightgray; }
-            .nurikabe-example .island { background: lightgreen; }
-            .nurikabe-example .water { background: #6666ff; }
+            h1, h2, p, div, li {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            code {
+                background-color: #ddf;
+            }
 
             .acrostic-example .puzzle-entry { font-size: 20px; padding-bottom: 10px; }
 
-            .path-paint-example .white { background: white; }
-            .path-paint-example .yellow { background: yellow; }
-            .path-paint-example .red { background: red; }
-            .path-paint-example .path { stroke: #0000003f; }
+            .path-paint-example .cell.path { stroke: #0000003f; }
 
-            .trains-example .unknown { background: white; }
-            .trains-example .trackbed { background: darkgoldenrod; }
-            .trains-example .grass { background: lightgreen; }
+            .trains-example .cell.unknown { background: white; }
+            .trains-example .cell.trackbed { background: darkgoldenrod; }
+            .trains-example .cell.grass { background: lightgreen; }
             .trains-example .inner-cell[data-path-code]:not([data-path-code="0"]) { background: darkgoldenrod; }
 
-            .paint-by-numbers-example .unknown { background: lightgray; }
-            .paint-by-numbers-example .black { background: black; }
-            .paint-by-numbers-example .white { background: white; }
-
-            .wolves-and-sheep-example .unknown { background: white; }
-            .wolves-and-sheep-example .wolf { background: tan; }
-            .wolves-and-sheep-example .sheep { background: lightgreen; }
-            .wolves-and-sheep-example .wolf.given-fill::after { content: "🐺"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-            .wolves-and-sheep-example .sheep.given-fill::after { content: "🐑"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .wolves-and-sheep-example .cell.unknown { background: white; }
+            .wolves-and-sheep-example .cell.wolf { background: tan; }
+            .wolves-and-sheep-example .cell.sheep { background: lightgreen; }
+            .wolves-and-sheep-example .cell.wolf.given-fill::after { content: "🐺"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .wolves-and-sheep-example .cell.sheep.given-fill::after { content: "🐑"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
         </style>
         <!-- Copyjack styles from https://github.com/galacticpuzzlehunt/gph-site/blob/master/puzzles/static/css/base.css -->
         <style>
@@ -61,182 +59,224 @@
     </head>
     <body>
         <div class="clipboard-container">
-        <h3>Puzzle.js Demo (with undo) <button style="transform: translateY(-1px);" onclick="resetAllPuzzleStateOnPage();">Reset all puzzles</button></h3>
+        <h1>Puzzle.js Mini Demos</h1>
+        <p>All demos support undo/redo, even if the command bar is not shown. All puzzles also save their state.</p>
+        <button style="transform: translateY(-1px);" onclick="resetAllPuzzleStateOnPage();">Reset all demo state</button>
         
         <div class="demo" data-undo-scope>
-            <div>Basic 1-D</div>
-            <div class="puzzle-entry" data-mode="linear" data-text="A..#..G.." data-extracts="3"></div>
-
-            <div>Basic 1-D Solution</div>
-            <div class="puzzle-entry" data-mode="linear solution" data-text="A..#..G.." data-text-solution="ABCDEFGHI"></div>
-
-            <div>Basic 2-D with auto clue numbers</div>
-            <div class="puzzle-entry" data-show-commands="true" data-mode="crossword" data-text="@....|.#...|..@..|...#.|....@" data-extracts="2 5"></div>
-
-            <div>Basic 2-D with custom clue numbers</div>
-            <div class="puzzle-entry" data-show-commands="true" data-mode="crossword" data-text="@....|.#...|..@..|...#.|....@" data-clue-numbers="2 3 5 7 11 13 17 19 23 29" data-extracts="4 1"></div>
-
-            <div>Collection of all highlights above (minus solution)</div>
-            <div class="puzzle-entry" data-mode="linear" data-text="#####" data-extracts="1 2 3 4 5"></div>
-
-            <div>Crossword with clues</div>
-            <div class="puzzle-entry" data-show-commands="true" data-mode="crossword">
-                {
-                 "data-text": [
-                    "@....",
-                    ".....",
-                    "..@..",
-                    ".....",
-                    "....@"
-                 ]   
-                }
-                <div class="crossword-clues across">
-                    <h2>Across</h2>
-                    <ol>
-                        <li>Each entry of this puzzle</li>
-                        <li>The third clue number in this grid</li>
-                        <li>A greeting</li>
-                        <li>A common article</li>
-                        <li>Components of a list</li>
-                        <li>Neural ____</li>
-                    </ol>
-                </div>
-                <div class="crossword-clues down">
-                    <h2>Down</h2>
-                    <ol>
-                        <li>Most common color in this grid</li>
-                        <li>A Boolean operator</li>
-                        <li>Quantities of paper</li>
-                        <li>Where bears live</li>
-                        <li>Flimsy</li>
-                        <li>It phoned home</li>
-                    </ol>
-                </div>
+            <h2>Basic 1-D</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="A..#..G.." data-extracts="3"></div>
             </div>
 
-            <div>Barred with clues</div>
-            <div class="puzzle-entry" data-show-commands="true" data-mode="crossword" data-text="4x4">
-                {
-                 "data-edges": [
-                    "._._._._.",
-                    "|.....|.|",
-                    "..._.....",
-                    "|.......|",
-                    ".........",
-                    "|.......|",
-                    "....._...",
-                    "|.|.....|",
-                    "._._._._."
-                 ]  
-                }
-
-                <div class="crossword-clues across">
-                    <h2>Across</h2>
-                    <ol>
-                        <li>Sticky stuff</li>
-                        <li>Thought</li>
-                        <li>Crime film genre</li>
-                        <li>A state of matter</li>
-                    </ol>
-                </div>
-                <div class="crossword-clues down">
-                    <h2>Down</h2>
-                    <ol>
-                      <li>Small, like this puzzle</li>
-                      <li>Outdoor equipment retailer</li>
-                      <li>This puzzle has a few</li>
-                      <li>Family pet, often</li>
-                    </ol>
-                </div>
+            <h2>Basic 1-D Solution</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear solution" data-text="A..#..G.." data-text-solution="ABCDEFGHI"></div>
             </div>
 
-            <div>Mini sudoku</div>
-            <div class="puzzle-entry" data-show-commands="true" data-mode="sudoku" data-text="..3.|2...|...1|.4.." data-edges="2x2" data-text-characters="1234"></div>
-
-            <div>Mini shape sudoku</div>
-            <div class="puzzle-entry" data-show-commands="true" data-mode="sudoku" data-text-characters="1234">
-                {
-                    "data-text": [
-                    ".3..",
-                    ".12.",
-                    "..13",
-                    "...."
-                    ],
-                    "data-edges": [
-                    "._._._._.",
-                    "|.|.....|",
-                    "..._..._.",
-                    "|...|.|.|",
-                    "..._._...",
-                    "|.|.|...|",
-                    "._..._...",
-                    "|.....|.|",
-                    "._._._._."
-                    ]
-                }
+            <h2>Basic 2-D with auto clue numbers</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-show-commands="true" data-mode="crossword" data-text="@....|.#...|..@..|...#.|....@" data-extracts="2 5"></div>
             </div>
 
-            <div>Mini wordoku</div>
-            <div class="puzzle-entry" data-show-commands="true" data-mode="sudoku" data-text=".O..|...R|W...|..D." data-edges="2x2" data-text-characters="WORD"></div>
+            <h2>Basic 2-D with custom clue numbers</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-show-commands="true" data-mode="crossword" data-text="@....|.#...|..@..|...#.|....@" data-clue-numbers="2 3 5 7 11 13 17 19 23 29" data-extracts="4 1"></div>
+            </div>
 
-            <div>Nurikabe - click or spacebar, right/shift click/space cycles in opposite direction</div>
-            <div class="puzzle-entry nurikabe-example" data-show-commands="true" data-mode="notext" data-text="...|.9.|..." data-fill-classes="unknown island water"></div>
+            <h2>Collection of all highlights above (minus solution)</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="#####" data-extracts="1 2 3 4 5"></div>
+            </div>
+
+            <h2>Crossword with clues</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-show-commands="true" data-mode="crossword">
+    {
+        "data-text": [
+        "@....",
+        ".....",
+        "..@..",
+        ".....",
+        "....@"
+        ]   
+    }
+    <div class="crossword-clues across">
+        <h2>Across</h2>
+        <ol>
+            <li>Each entry of this puzzle</li>
+            <li>The third clue number in this grid</li>
+            <li>A greeting</li>
+            <li>A common article</li>
+            <li>Components of a list</li>
+            <li>Neural ____</li>
+        </ol>
+    </div>
+    <div class="crossword-clues down">
+        <h2>Down</h2>
+        <ol>
+            <li>Most common color in this grid</li>
+            <li>A Boolean operator</li>
+            <li>Quantities of paper</li>
+            <li>Where bears live</li>
+            <li>Flimsy</li>
+            <li>It phoned home</li>
+        </ol>
+    </div>
+</div>
+            </div>
+
+            <h2>Barred crossword with clues</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-show-commands="true" data-mode="crossword" data-text="4x4">
+    {
+        "data-edges": [
+        "._._._._.",
+        "|.....|.|",
+        "..._.....",
+        "|.......|",
+        ".........",
+        "|.......|",
+        "....._...",
+        "|.|.....|",
+        "._._._._."
+        ]  
+    }
+
+    <div class="crossword-clues across">
+        <h2>Across</h2>
+        <ol>
+            <li>Sticky stuff</li>
+            <li>Thought</li>
+            <li>Crime film genre</li>
+            <li>A state of matter</li>
+        </ol>
+    </div>
+    <div class="crossword-clues down">
+        <h2>Down</h2>
+        <ol>
+            <li>Small, like this puzzle</li>
+            <li>Outdoor equipment retailer</li>
+            <li>This puzzle has a few</li>
+            <li>Family pet, often</li>
+        </ol>
+    </div>
+</div>
+            </div>
+
+            <h2>Mini sudoku</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-show-commands="true" data-mode="sudoku" data-text="..3.|2...|...1|.4.." data-edges="2x2" data-text-characters="1234"></div>
+            </div>
+
+            <h2>Mini shape sudoku</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-show-commands="true" data-mode="sudoku" data-text-characters="1234">
+    {
+        "data-text": [
+        ".3..",
+        ".12.",
+        "..13",
+        "...."
+        ],
+        "data-edges": [
+        "._._._._.",
+        "|.|.....|",
+        "..._..._.",
+        "|...|.|.|",
+        "..._._...",
+        "|.|.|...|",
+        "._..._...",
+        "|.....|.|",
+        "._._._._."
+        ]
+    }
+</div>
+            </div>
+
+            <h2>Mini wordoku</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-show-commands="true" data-mode="sudoku" data-text=".O..|...R|W...|..D." data-edges="2x2" data-text-characters="WORD"></div>
+            </div>
+
+            <h2>World&rsquo;s Easiest Nurikabe</h2>
+            <p>Controls: click or spacebar, right/shift click/space cycles in opposite direction.</p>
+            <div class="example">
+                <div class="puzzle-entry nurikabe-example" data-mode="notext" data-text="...|.9.|..." data-fill-classes="lightgray green blue"></div>
+            </div>
             
-            <div>Cryptogram</div>
-            <div class="puzzle-entry" data-mode="linear" data-text="#### ## #|##### ###" data-extracts="G O A T A T I T O N K G N Y M"></div>
-
-            <div>Acrostic</div>
-            <div class="acrostic-example">
-                <div class="puzzle-entry" data-mode="linear" data-text="#####@#|#######" data-extracts="C1 A2 C3 C4 C5 B6 C7 B8 B9 B10 A11 C12 A13"></div>
-                <br/>
-                <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
-                    <div>Not new</div>
-                    <div class="puzzle-entry" data-text="###" data-extracts="A11 A2 A13"></div>
-                    <div>Left, on a map</div>
-                    <div class="puzzle-entry" data-text="####" data-extracts="B10 B6 B8 B9"></div>
-                    <div>Lights, Camera, ____!</div>
-                    <div class="puzzle-entry" data-text="######" data-extracts="C7 C1 C5 C3 C12 C4"></div>
-                </div>
+            <h2>Cryptogram</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="#### ## #|##### ###" data-extracts="G O A T A T I T O N K G N Y M"></div>
             </div>
 
-            <div>Path paint: drag from number to number with a path whose length matches the number. 1&rsquo;s do not get a path.</div>
-            <div class="puzzle-entry path-paint-example" data-show-commands="true" data-mode="notext pathpaint" data-text-replacements="M13" data-fill-classes="white yellow red">
-                {
-                    "data-text-replacements": {"M": 13},
-
-                    "data-text": [
-                    "..M.1..",
-                    ".11.11.",
-                    ".....4.",
-                    ".9...9.",
-                    "M..1..4",
-                    ".1...1.",
-                    "..3.3.."
-                    ],
-
-                    "data-fills": [
-                    "..1.1..",
-                    ".12.21.",
-                    ".....1.",
-                    ".2...2.",
-                    "1..1..1",
-                    ".1...1.",
-                    "..1.1.."
-                    ]
-                }
+            <h2>Acrostic</h2>
+            <div class="example">
+                <div class="acrostic-example" style="min-width: 400px; background-color: white; padding: 10px;">
+    <div class="puzzle-entry" data-mode="linear" data-text="#####@#|#######" data-extracts="C1 A2 C3 C4 C5 B6 C7 B8 B9 B10 A11 C12 A13"></div>
+    <br/>
+    <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
+        <div>Not new</div>
+        <div class="puzzle-entry" data-text="###" data-extracts="A11 A2 A13"></div>
+        <div>Left, on a map</div>
+        <div class="puzzle-entry" data-text="####" data-extracts="B10 B6 B8 B9"></div>
+        <div>Lights, Camera, ____!</div>
+        <div class="puzzle-entry" data-text="######" data-extracts="C7 C1 C5 C3 C12 C4"></div>
+    </div>
+</div>
             </div>
 
-            <div>Trains: drag a train path from A to B (note: still needs to allow click to cycle fills, but not drag)</div>
-            <div class="puzzle-entry trains-example" data-show-commands="true" data-text="5x5" data-mode="notext trains" data-fill-classes="unknown trackbed grass" data-paths=".....|.....|.....|2..2.|5..3." data-top-clues="3|3|1|4|3" data-bottom-clues="|||B|" data-left-clues="||||A" data-right-clues="4|2|4|2|2"></div>
+            <h2>Path paint</h2>
+            <p>Drag from number to number with a path whose length matches the number. 1&rsquo;s do not get a path.</p>
+            <div class="example">
+                <div class="puzzle-entry path-paint-example" data-show-commands="true" data-mode="notext pathpaint" data-fill-classes="white yellow red">
+    {
+        "data-text-replacements": {"M": 13},
 
-            <div>Paint by Numbers</div>
-            <div class="puzzle-entry paint-by-numbers-example" data-show-commands="true" data-text="10x10" data-edges="5x5" data-mode="notext" data-fill-classes="unknown black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
+        "data-text": [
+        "..M.1..",
+        ".11.11.",
+        ".....4.",
+        ".9...9.",
+        "M..1..4",
+        ".1...1.",
+        "..3.3.."
+        ],
 
-            <div>Slitherlink</div>
-            <div class="puzzle-entry slitherlink-example" data-show-commands="true" data-text="22122|2...2|1...1|2...2|22122" data-mode="notext slitherlink"></div>
+        "data-fills": [
+        "..1.1..",
+        ".12.21.",
+        ".....1.",
+        ".2...2.",
+        "1..1..1",
+        ".1...1.",
+        "..1.1.."
+        ]
+    }
+</div>
+            </div>
 
-            <div>Wolves and Sheep: Slitherlink with wolves on the outside and sheep on the inside.</div>
-            <div class="puzzle-entry wolves-and-sheep-example" data-show-commands="true" data-text="...3.|.32..|...2.|..30.|....." data-mode="notext slitherlink" data-drag-paint-fill="true" data-fill-classes="unknown sheep wolf" data-fills="1...1|.....|..2..|.....|1...1"></div>
+            <h2>Trains</h2>
+            <p>Drag a train path from A to B (note: still needs to allow click to cycle fills, but not drag)</p>
+            <div class="example">
+                <div class="puzzle-entry trains-example" data-show-commands="true" data-text="5x5" data-mode="notext trains" data-fill-classes="unknown trackbed grass" data-paths=".....|.....|.....|2..2.|5..3." data-top-clues="3|3|1|4|3" data-bottom-clues="|||B|" data-left-clues="||||A" data-right-clues="4|2|4|2|2"></div>
+            </div>
+
+            <h2>Paint by Numbers</h2>
+            <div class="example">
+                <div class="puzzle-entry paint-by-numbers-example" data-show-commands="true" data-text="10x10" data-edges="5x5" data-mode="notext" data-fill-classes="lightgray black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
+            </div>
+
+            <h2>Slitherlink</h2>
+            <div class="example">
+                <div class="puzzle-entry slitherlink-example" data-show-commands="true" data-text="22122|2...2|1...1|2...2|22122" data-mode="notext slitherlink"></div>
+            </div>
+
+            <h2>Wolves and Sheep</h2>
+            <p>Slitherlink with wolves on the outside and sheep on the inside.</p>
+            <div class="example">
+                <div class="puzzle-entry wolves-and-sheep-example" data-show-commands="true" data-text="...3.|.32..|...2.|..30.|....." data-mode="notext slitherlink" data-fill-classes="unknown sheep wolf" data-fills="1...1|.....|..2..|.....|1...1"></div>
+            </div>
 
             <button class="clipboard-button"></button>
         </div>

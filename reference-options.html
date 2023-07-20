@@ -1,0 +1,532 @@
+<!-- (c) 2023 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<html>
+    <head>
+        <title>Puzzle.js Reference Options</title>
+        <link rel="stylesheet" href="reference-example.css"/>
+        <script type="text/javascript" src="reference-example.js"></script>
+        <link rel="stylesheet" href="puzzle.css"/>
+        <link rel="stylesheet" href="puzzle-basic-colors.css"/>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".mode").forEach((mode) => {
+                    let modeName = mode.getAttribute("data-name");
+                    let mh = document.createElement("h3");
+                    mh.innerText = modeName;
+                    mh.id = modeName;
+                    mode.insertBefore(mh, mode.firstChild);
+
+                    let t = document.createElement("table");
+                    t.insertAdjacentHTML("afterbegin", "<tr><th>Option</th><th>Value</th></tr>");
+                    for (const [key, value] of Object.entries(puzzleModes[modeName])) {
+                        let tr = document.createElement("tr");
+                        let keyTd = document.createElement("td");
+                        let keyA = document.createElement("a");
+                        let valueTd = document.createElement("td");
+                        keyA.href = "#" + key;
+                        keyA.innerText = key;
+                        keyTd.appendChild(keyA);
+                        valueTd.innerText = value;
+                        tr.appendChild(keyTd);
+                        tr.appendChild(valueTd);
+                        t.appendChild(tr);
+                    }
+                    mode.insertBefore(t, mh.nextSibling);
+                });
+                document.querySelectorAll(".option").forEach((option) => {
+                    let optionName = option.getAttribute("data-name");
+                    let oh = document.createElement("h3");
+                    oh.innerText = optionName;
+                    oh.id = optionName;
+                    option.insertBefore(oh, option.firstChild);
+
+                    let t = document.createElement("table");
+                    t.insertAdjacentHTML("afterbegin", "<tr><th>Mode</th><th>Value</th></tr>");
+                    for (const [key, value] of Object.entries(puzzleModes)) {
+                        if (!(optionName in value)) continue;
+
+                        let tr = document.createElement("tr");
+                        let keyTd = document.createElement("td");
+                        let keyA = document.createElement("a");
+                        let valueTd = document.createElement("td");
+                        keyA.href = "#" + key;
+                        keyA.innerText = key;
+                        keyTd.appendChild(keyA);
+                        valueTd.innerText = value[optionName];
+                        tr.appendChild(keyTd);
+                        tr.appendChild(valueTd);
+                        t.appendChild(tr);
+                    }
+                    option.insertBefore(t, oh.nextSibling);
+                });
+            });
+        </script>
+        <script type="text/javascript" src="puzzle.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+            });
+        </script>
+        <style>
+            body {
+                padding: 1rem;
+            }
+
+            h1, h2, p, li {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            h3 {
+                font-family: monospace;
+            }
+
+            code {
+                background-color: #ddf;
+            }
+
+            .mode, .option {
+                padding-left: 2rem;
+            }
+
+            .mode h3, .option h3 {
+                margin-left: -2rem;
+            }
+
+            .mode > table, .option > table {
+                border-collapse: collapse;
+            }
+
+            .mode > table td, .option > table td {
+                border: 1px solid black;
+                font-family: monospace;
+                padding: 5px;
+            }
+
+            .mode > table th, .option > table th {
+                border: 1px solid black;
+                font-family: monospace;
+                background-color: #eee;
+                padding: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Puzzle.js Reference: Options</h1>
+        <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
+        <h2>Options Model</h2>
+        <p>Puzzle.js puzzles are configured by a wide variety of options. These options can be set in three ways:</p>
+        <ul>
+            <li>
+                <b>Modes:</b> Collections of options that are set in a block. A puzzle can have one or more modes set at once via the <code>data-mode</code> attribute on the puzzle. If two modes try to set the same option, the mode specified later wins.<br/>
+                <div class="example">
+                    <div class="puzzle-entry" data-mode="sudoku"></div>
+                </div>
+            </li>
+            <li>
+                <b>Attributes:</b> An option value can be set directly on the puzzle with an attribute of the same name. These options take precedence over options set by modes.<br/>
+                <div class="example">
+                    <div class="puzzle-entry" data-mode="sudoku" data-edges="2x2" data-text="1...|.2..|..3.|...4"></div>
+                </div>
+            </li>
+            <li>
+                <b>JSON:</b> One or more option values can also be specified in text inside the puzzle div, which will be parsed as a single JSON object. These options take precedence over options set by attributes and modes. This is useful for options that are easier to read/edit in 2D. For example, the previous example could also have been specified as:<br/>
+                <div class="example">
+                    <div class="puzzle-entry" data-mode="sudoku" data-edges="2x2">
+    { "data-text": [
+        "1...",
+        ".2..",
+        "..3.",
+        "...4"
+    ] }
+</div>
+                </div>
+            </li>
+        </ul>
+        <h2>Modes</h2>
+        <p>Remember that a mode is nothing more than an amalgamation of property values. As such, every characteristic of a mode can be overridden.</p>
+        <div class="mode" data-name="default">
+            <p>The <code>default</code> mode is always included, and names all options that can be defined.</p>
+        </div>
+
+        <div class="mode" data-name="linear">
+            <p>The <code>linear</code> mode is used for single lines of text. Boxes are drawn only around editable characters.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="m.ss.ng v.w.ls"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="crossword">
+            <p>The <code>crossword</code> mode builds crosswords with automatic clue numbering.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="crossword" data-text="@...|....|....|...@"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="notext">
+            <p>The <code>notext</code> mode prevents text input in the cells.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext" data-text="n.pe"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="sudoku">
+            <p>The <code>sudoku</code> mode makes a 9x9 grid with 3x3 regions. Characters are constrained to digits, which can be toggled on and off.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="sudoku"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="pathpaint">
+            <p>The <code>pathpaint</code> mode allows dragging (or shift-arrowing) between cells to draw paths and propagate fills.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="white yellow red" data-fills="1...|..1.|.2..|...2"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="trains">
+            <p>The <code>trains</code> mode allows dragging (or shift-arrowing) between cells to create train tracks.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext trains" data-text="4x4"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="slitherlink">
+            <p>The <code>slitherlink</code> mode allows dragging (or shift-arrowing) between dots to draw edges.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext slitherlink" data-text="4x4"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="solution">
+            <p>The <code>solution</code> mode turns off all input, so that a solution can be displayed.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="slitherlink solution" data-text="4x4" data-edges="....|.73.|.3b.|...."></div>
+            </div>
+        </div>
+
+        <h2>Options</h2>
+        <div class="option" data-name="data-text">
+            <p>The starting text for the puzzle cells. <code>data-text</code> can be any of the following:</p>
+            <ul>
+                <li>A rectangular area, e.g. <code>9x9</code> makes a blank Sudoku-size grid.</li>
+                <li>A series of lines separated by <code>|</code> characters.</li>
+                <li>If the option is specified in JSON, an array of strings, one string per line.</li>
+            </ul>
+            <p>Characters are written into the puzzle cells, with the following characters getting special treatment:</p>
+            <ul>
+                <li><code>.</code> - an editable blank cell</li>
+                <li><code>#</code> - an editable extract cell (see <a href="#data-extracts"><code>data-extracts</code></a> for more information)</li>
+                <li><code>@</code> - an uneditable black cell</li>
+            </ul>
+            <p>A cell can also be given contents that are larger than a single character, using <a href="#data-text-replacements"><code>data-text-replacements</code></a>.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x2"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="@.A|.#.|B.@"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-replacements">
+            <p>A way to replace a single character in the <a href="#data-text"><code>data-text</code></a> option with a string of any length.</p>
+            <p>Currently, the only way to specify this option is with a JSON object using its key-value features.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="235|7ET|SNW">
+    { "data-text-replacements":
+        { "E": "11", "T": "13", "S": "17", "N": "19", "W": "23" }
+    }
+</div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-characters">
+            <p>The set of valid characters that can be provided in text input. Set it to <code>""</code> to reject all text input.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="sudoku" data-text=".O..|...R|W...|..D." data-edges="2x2" data-text-characters="WORD"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-shift-key">
+            <p>Sets shift key behavior when typing letters. There are two types of behavior:</p>
+            <ul>
+                <li><b><code>rebus</code></b> - the character is appended to the cell. Useful for typing words in crossword puzzle cells, etc.</li>
+                <li><b><code>candidates</code></b> - the character is deleted if it is already present in the cell and appended otherwise. Useful for marking candidate digits in sudoku cells, etc.</li>
+            </ul>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="a fruit:." data-text-shift-key="rebus"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="vowel(s):." data-text-shift-key="candidates"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-shift-lock">
+            <p>Acts as if the Shift key is always pressed, yielding <a href="#data-text-shift-key"><code>data-text-shift-key</code></a> behavior on every keystroke even if Shift is not actually pressed.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="a fruit:." data-text-shift-lock="true"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-solution">
+            <p>Provides a string of characters forming the solution for the puzzle. Useful when the <a href="#data-text"><code>data-text</code></a> option includes special characters that otherwise make it impossible to put the entire solution there.</p>
+            <p><code>data-text-solution</code> can be any of the following:</p>
+            <ul>
+                <li>A series of lines separated by <code>|</code> characters.</li>
+                <li>If the option is specified in JSON, an array of strings, one string per line.</li>
+            </ul>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="p...#." data-text-solution="puzzle"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-toggle-nav-dir">
+            <p>Specifies whether the spacebar changes the character navigation direction from horizontal to vertical when the spacebar is pressed.</p>
+        </div>
+        <div class="option" data-name="data-fill-classes">
+            <p>Specifies a set of classes that can be used to provide background fills for cells. By default, clicking a cell will cycle through these classes.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-fill-classes="white yellow red"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-fills">
+            <p>Specifies a background fill for each cell based on the classes provided by <a href="#data-fill-classes"><code>data-fill-classes</code></a>. There are two types of values that can be specified per character:</p>
+            <ul>
+                <li><code>.</code> - A cell whose fill class can be changed by the player. The starting fill class for the cell will be the first one specified in the <a href="#data-fill-classes"><code>data-fill-classes</code></a> option.</li>
+                <li>any digit - A zero-based index into <a href="#data-fill-classes"><code>data-fill-classes</code></a> that specifies the unchangeable (i.e. given) fill class to be placed on the cell.</li>
+            </ul>
+            <p><code>data-fills</code> can be any of the following:</p>
+            <ul>
+                <li>A series of lines separated by <code>|</code> characters.</li>
+                <li>If the option is specified in JSON, an array of strings, one string per line.</li>
+            </ul>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-fill-classes="white yellow red" data-fills="1.1|.2.|1.1"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-fill-cycle">
+            <p>Specifies whether click/spacebar on a cell will cycle through the available fills specified in <a href="#data-fill-classes"><code>data-fill-classes</code></a>. The default behavior is to cycle, but the <a href="#pathpaint"><code>pathpaint</code></a> mode does not use the cycling behavior.</p>
+        </div>
+        <div class="option" data-name="data-paths">
+            <p>Specifies a set of interior paths between cells.</p>
+            <p><code>data-paths</code> can be any of the following:</p>
+            <ul>
+                <li>A series of lines separated by <code>|</code> characters.</li>
+                <li>If the option is specified in JSON, an array of strings, one string per line.</li>
+            </ul>
+            <p><code>data-paths</code> also has two types of specification:</p>
+            <ul>
+                <li>An m by n grid where the path segments inside each cell are specified in binary: for each cell, 1 for top, 2 for bottom, 4 for left, and 8 for right.</li>
+                <li>A (2m+1) by (2n+1) grid where the path segments are represented by <code>-</code> and <code>|</code> segments between the cell centers. The <code>|</code> can also be written as <code>l</code> or <code>I</code> to make the format compatible with the lines-separated-by-<code>|</code> syntax. Characters at the centers and vertices are ignored, so you can type characters there that enhance the readability.</li>
+            </ul>
+            <div class="example">
+                <div class="puzzle-entry" data-text=" 1 |4 8| 2 " data-paths="...|.6.|..."></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text=" 1 |4 8| 2 " data-paths="...|.f.|..."></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3">
+    { "data-paths": [
+    ".|...|.",
+    ".*.*.*.",
+    ".|...|.",
+    "-*-*-*-",
+    ".|...|.",
+    ".*.*.*.",
+    ".|...|."
+    ] }
+</div>
+            </div>
+        </div>
+        <div class="option" data-name="data-path-style">
+            <p>Specifies the way the path is drawn. Three drawing styles are provided: <code>straight</code>, <code>curved</code>, and <code>track</code>.</p>
+            <p>If the value ends in <code>.svg</code>, it is assumed to be a custom svg file for rendering paths and the svg is located with a file path relative to the puzzle page. See more information in the Styling Reference.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="white yellow red" data-fills="1...|..1.|.2..|...2" data-path-style="track"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-edges">
+            <p>Specifies a set of exterior edges between cells.</p>
+            <p><code>data-edges</code> can be any of the following:</p>
+            <ul>
+                <li>A series of lines separated by <code>|</code> characters.</li>
+                <li>If the option is specified in JSON, an array of strings, one string per line.</li>
+            </ul>
+            <p><code>data-edges</code> also has two types of specification:</p>
+            <ul>
+                <li>A rectangular area that repeats boxes of that size, e.g. <code>3x3</code> makes 3x3 boxes for a Sudoku grid.</li>
+                <li>An m by n grid where the path segments inside each cell are specified in binary: for each cell, 1 for top, 2 for bottom, 4 for left, and 8 for right.</li>
+                <li>A (2m+1) by (2n+1) grid where the edge segments are represented by <code>-</code> and <code>|</code> segments between the cell centers. The <code>|</code> can also be written as <code>l</code> or <code>I</code> to make the format compatible with the lines-separated-by-<code>|</code> syntax. Characters at the centers and vertices are ignored, so you can type characters there that enhance the readability.</li>
+            </ul>
+            <div class="example">
+                <div class="puzzle-entry" data-text="6x6" data-edges="3x2"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text=" 1 |4 8| 2 " data-edges="...|.6.|..."></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text=" 1 |4 8| 2 " data-edges="...|.f.|..."></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3">
+    { "data-edges": [
+    "|------",
+    "|*.*.*.",
+    "|-----|",
+    ".*.*.*|",
+    "|-----|",
+    "|*.*.*.",
+    "|------"
+    ] }
+</div>
+            </div>
+        </div>
+        <div class="option" data-name="data-edge-style">
+            <p>Specifies the way the edges and bounding box are drawn. Four drawing styles are provided: <code>box</code>, <code>dots</code>, <code>dash</code>, and <code>none</code>.</p>
+            <p>If the value ends in <code>.svg</code>, it is assumed to be a custom svg file for rendering edges and the svg is located with a file path relative to the puzzle page. See more information in the Styling Reference.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-edge-style="dash">
+    { "data-edges": [
+    "|------",
+    "|*.*.*.",
+    "|-----|",
+    ".*.*.*|",
+    "|-----|",
+    "|*.*.*.",
+    "|------"
+    ] }
+</div>
+            </div>
+        </div>
+        <div class="option" data-name="data-clue-locations">
+            <p>Clue numbers are the numbers that go in the upper left corner of crossword cells, KenKen cells, etc.</p>
+            <p>This property has three formats:</p>
+            <ul>
+                <li>nothing - no cells will have clue numbers.</li>
+                <li><code>crossword</code> - clue numbers are provided everywhere a crossword would typically have one. This supports American crosswords, barred crosswords, cryptic crosswords, etc.</li>
+                <li><code>all</code> - all cells will have clue numbers.</li>
+            </ul>
+            <p>If the puzzle contains an element with a class of <code>crossword-clues across</code> or <code>crossword-clues down</code>, <code>li</code> clues within an <code>ol</code> element will be synchronized with the clue numbers.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="@..|...|..@" data-clue-locations="crossword"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="@..|...|..@" data-clue-locations="all"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="@..|...|..@" data-clue-locations="crossword">
+    <div class="crossword-clues across">
+        <b>Across</b>
+        <ol>
+            <li>Dad</li>
+            <li>Home for lions</li>
+            <li>Not off</li>
+        </ol>
+    </div>
+    <div class="crossword-clues down">
+        <b>Down</b>
+        <ol>
+            <li>Ink-based writing device</li>
+            <li>English article</li>
+            <li>Haircut</li>
+        </ol>
+    </div>
+</div>
+            </div>
+        </div>
+        <div class="option" data-name="data-clue-numbers">
+            <p>Clue numbers are the numbers that go in the upper left corner of crossword cells, KenKen cells, etc.</p>
+            <p>This property has two formats:</p>
+            <ul>
+                <li><code>auto</code> - clues are numbered sequentially.</li>
+                <li>Any set of values (numeric or otherwise), with spaces in between.</li>
+            </ul>
+            <div class="example">
+                <div class="puzzle-entry" data-text="@..|...|..@" data-clue-locations="crossword" data-clue-numbers="H I L O"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-top-clues">
+            <p>Specifies clues along the top of the puzzle. Clues for each column are separated by <code>|</code> characters, and multiple clues per column are separated by spaces.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-top-clues="1 2||3"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-bottom-clues">
+            <p>Specifies clues along the bottom of the puzzle. Clues for each column are separated by <code>|</code> characters, and multiple clues per column are separated by spaces.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-bottom-clues="1 2||3"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-left-clues">
+            <p>Specifies clues along the left of the puzzle. Clues for each row are separated by <code>|</code> characters, and multiple clues per column are separated by spaces.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-left-clues="1 2||3"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-right-clues">
+            <p>Specifies clues along the right of the puzzle. Clues for each row are separated by <code>|</code> characters, and multiple clues per column are separated by spaces.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-right-clues="1 2||3"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-drag-paint-fill">
+            <p>Specifies whether a dragging operation will continue to paint cells with the fill from the cell that was originally clicked.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-fill-classes="white yellow red" data-drag-paint-fill="true"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-fill-classes="white yellow red" data-drag-paint-fill="false"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-drag-draw-path">
+            <p>Specifies whether a dragging operation will draw an interior path between cells.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-path="true"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-drag-draw-edge">
+            <p>Specifies whether a dragging operation will draw an exterior edge between vertices.</p>
+            <p>When edge drawing is available, a new focus model is added to support the vertices. If cell focus and vertex focus are both available, you can switch between the two models by pressing the <code>.</code> key.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext" data-text="3x3" data-drag-draw-edge="true"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-edge="true"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-unselectable-givens">
+            <p>Specifies whether cells with original contents are selectable with bounding boxes or not.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="g.v.ns" data-unselectable-givens="false"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="g.v.ns" data-unselectable-givens="true"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-extracts">
+            <p>Specifies a set of extract codes for all cells marked with a <code>#</code> in the <a href="#data-text"><code>data-text</code></a> field. Two cells with the same code anywhere on the page will share their values, permitting the extraction of letters from a puzzle into an answer phrase.</p>
+            <p>The format for <code>data-extracts</code> is a set of codes, with spaces between them. Each code is applied to the next occurrence of <code>#</code>.</p>
+            <div class="example">
+                <div>
+    <div class="puzzle-entry" data-mode="linear" data-text=" #uzzle " data-extracts="2"></div>
+    <br/>
+    <div class="puzzle-entry" data-mode="linear" data-text="e#tracts" data-extracts="1"></div>
+    <br/>
+    <div class="puzzle-entry" data-mode="linear" data-text="-> ## <-" data-extracts="1 2"></div>
+</div>
+        </div>
+        <div class="option" data-name="data-no-input">
+            <p>Turns off all mouse and keyboard input for the puzzle. Useful for solutions, samples, and scenarios with multiple puzzle layers on top of each other.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="slitherlink" data-text="4x4" data-edges="....|.73.|.3b.|...." data-no-input="true"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-show-commands">
+            <p>Displays buttons below the puzzle, allowing for discovery of all the features provided by the interactive solver. The About button in particular shows mouse and keyboard controls for all behaviors permitted by the options chosen.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="slitherlink" data-text="6x4" data-show-commands="true"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-state-key">
+            <p>Allows for a specifically-named key to be used for the saved state in localStorage. When not present, the state key will be constructed from the page URL and the index of the puzzle among all <code>.puzzle-entry</code> objects on the page.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-state-key="MyCustomKey"></div>
+            </div>
+        </div>
+    </body>
+</html>

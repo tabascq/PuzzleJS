@@ -1,0 +1,37 @@
+/* (c) 2023 Kenny Young
+ * This code is licensed under the MIT License.
+ * https://github.com/tabascq/PuzzleJS
+ */
+ .example {
+    background-color: #ddf;
+    padding: 1em;
+    padding-left: 3em;
+    margin: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+}
+
+.example pre {
+    margin: 0;
+    text-wrap: wrap;
+}
+
+.example pre::before {
+    content: "Example";
+    font-family: serif;
+    font-weight: bold;
+    font-style: italic;
+    display: block;
+    margin-left: -2em;
+}
+
+.example .puzzle-entry {
+    background-color: white;
+    flex-shrink: 0;
+}
+
+.example .puzzle-entry[data-show-commands=true] {
+    padding: 20px 30px;
+}
