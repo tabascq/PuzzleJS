@@ -946,7 +946,7 @@ function PuzzleEntry(p, index) {
         else { localStorage.removeItem(this.stateKey); }
     }
 
-    this.setCornerFocusMode = function() {
+    this.setCornerFocusMode = function(notyet) {
         if (this.firstCenterFocus) { this.firstCenterFocus.tabIndex = -1; }
 
         if (this.cornerFocus == null) {
@@ -960,14 +960,14 @@ function PuzzleEntry(p, index) {
         }
 
         this.cornerFocus.tabIndex = 0;
-        this.cornerFocus.focus();
+        if (!notyet) { this.cornerFocus.focus(); }
         this.updateCornerFocus();
     }
 
-    this.setCenterFocusMode = function() {
+    this.setCenterFocusMode = function(notyet) {
         if (this.cornerFocus) { this.cornerFocus.tabIndex = -1; }
         this.firstCenterFocus.tabIndex = 0;
-        if (this.currentCenterFocus) { this.currentCenterFocus.focus(); }
+        if (!notyet && this.currentCenterFocus) { this.currentCenterFocus.focus(); }
     }
 
     this.updateCornerFocus = function() {
@@ -1356,7 +1356,7 @@ function PuzzleEntry(p, index) {
     }
 
     if (this.keyboardFocusModel == "corner") {
-        this.setCornerFocusMode();        
+        this.setCornerFocusMode(true);        
     }
 
     // Copyjack support: initialize a copyjack version of the table.
