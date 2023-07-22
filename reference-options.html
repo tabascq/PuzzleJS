@@ -274,8 +274,14 @@
                 <div class="puzzle-entry" data-mode="linear" data-text="p...#." data-text-solution="puzzle"></div>
             </div>
         </div>
-        <div class="option" data-name="data-text-toggle-nav-dir">
-            <p>Specifies whether the spacebar changes the character navigation direction from horizontal to vertical when the spacebar is pressed.</p>
+        <div class="option" data-name="data-text-advance-on-type">
+            <p>Specifies whether the cell advances/retreats when typing and/or pressing backspace. When set, clicking a cell or pressing Space changes the character navigation direction from horizontal to vertical (unless there is only one row or column of text).</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="4x4" data-text-advance-on-type="true"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="4x4" data-text-advance-on-type="false"></div>
+            </div>
         </div>
         <div class="option" data-name="data-fill-classes">
             <p>Specifies a set of classes that can be used to provide background fills for cells. By default, clicking a cell will cycle through these classes.</p>

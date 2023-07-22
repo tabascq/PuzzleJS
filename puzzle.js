@@ -16,7 +16,7 @@ puzzleModes["default"] = {
     "data-text-shift-key": "rebus",
     "data-text-shift-lock": false,
     "data-text-solution": null,
-    "data-text-toggle-nav-dir": true,
+    "data-text-advance-on-type": false,
 
     // fills
     "data-fill-classes": null,
@@ -51,11 +51,12 @@ puzzleModes["default"] = {
 };
 
 puzzleModes["linear"] = {
-    "data-text-toggle-nav-dir": false,
+    "data-text-advance-on-type": true,
     "data-unselectable-givens": true
 }
 
 puzzleModes["crossword"] = {
+    "data-text-advance-on-type": true,
     "data-clue-locations": "crossword"
 };
 
@@ -243,8 +244,6 @@ function PuzzleEntry(p, index) {
         } catch {}
     }
 
-    this.dx = 1;
-    this.dy = 0;
     this.mousedown = false;
     this.lastCell = null;
     this.currentFill = null;
@@ -296,8 +295,10 @@ function PuzzleEntry(p, index) {
             var text = td.querySelector(".text span");
 
             if (text && !td.classList.contains("unselectable")) {
-                this.dx = Math.abs(dcol);
-                this.dy = Math.abs(drow);
+                if (this.options["data-text-advance-on-type"]) {
+                    this.dx = Math.abs(dcol);
+                    this.dy = Math.abs(drow);
+                }
                 this.updateCenterFocus(td);
                 return true;
             }
@@ -371,7 +372,7 @@ function PuzzleEntry(p, index) {
             this.setText(e.target, ["small-text"], [], val);
         } else {
             this.setText(e.target, [], ["small-text"], ch);
-            this.move(e.target, this.dy, this.dx);
+            if (this.options["data-text-advance-on-type"]) { this.move(e.target, this.dy, this.dx); }
         }
     }
 
@@ -390,7 +391,7 @@ function PuzzleEntry(p, index) {
             this.setText(e.target, [], [], newVal);
         } else {
             this.setText(e.target, [], ["small-text"], "");
-            this.move(e.target, -this.dy, -this.dx);
+            if (this.options["data-text-advance-on-type"]) { this.move(e.target, -this.dy, -this.dx); }
         }
     }
 
@@ -415,7 +416,7 @@ function PuzzleEntry(p, index) {
             } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
-                if (this.options["data-text-toggle-nav-dir"]) { this.dx = 1 - this.dx; this.dy = 1 - this.dy; }
+                if (this.options["data-text-advance-on-type"] && this.numCols > 1 && this.numRows > 1) { this.dx = 1 - this.dx; this.dy = 1 - this.dy; }
                 if (this.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
                 if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, this.fillClasses, e.shiftKey); }
@@ -424,7 +425,6 @@ function PuzzleEntry(p, index) {
             this.handleBackspaceChar(e);
         } else if (e.keyCode == 46) { // delete
             this.setText(e.target, [], [], "");
-            this.move(e.target, -this.dy, -this.dx);
         } else {
             var code = e.keyCode;
             if (code >= 96 && code <= 105) { code -= 48; }
@@ -559,7 +559,7 @@ function PuzzleEntry(p, index) {
 
     this.mouseDown = function(e) {
         this.mousedown = true;
-        if ((document.activeElement == e.currentTarget) && this.options["data-text-toggle-nav-dir"]) {
+        if ((document.activeElement == e.currentTarget) && this.options["data-text-advance-on-type"] && this.numCols > 1 && this.numRows > 1) {
             this.dx = 1 - this.dx; this.dy = 1 - this.dy;
             e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
         }
@@ -1325,6 +1325,13 @@ function PuzzleEntry(p, index) {
     this.table = table;
 
     this.container.insertBefore(table, this.container.firstChild);
+
+    this.dx = 0;
+    this.dy = 0;
+    if (this.options["data-text-advance-on-type"]) {
+        if (this.numCols > 1) { this.dx = 1; }        
+        else if (this.numRows > 1) { this.dy = 1; }        
+    }
 
     if (this.options["data-show-commands"]) {
         this.commands = document.createElement("div");
