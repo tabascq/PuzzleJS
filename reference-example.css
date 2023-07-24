@@ -19,7 +19,7 @@
 }
 
 .example pre::before {
-    content: "Example";
+    content: "Interactive Example";
     font-family: serif;
     font-weight: bold;
     font-style: italic;
