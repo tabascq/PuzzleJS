@@ -1,0 +1,352 @@
+<html>
+<head>
+<title>Earth</title>
+</head>
+<style>
+  div#puzzle-contents-copyable svg:not(.cell > *) {
+    width: 20px;
+    height: 20px;
+  }
+  
+  div#puzzle-contents-copyable .earth-img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .earth-top::before {
+    content: '';
+    background: url("earth.svg") no-repeat center;
+    width: 40px;
+    height: 20px;
+    position: absolute;
+    left: 0px;
+    top: -10px;
+  }
+
+  .earth-left::before {
+    content: '';
+    background: url("earth.svg") no-repeat center;
+    width: 20px;
+    height: 40px;
+    position: absolute;
+    left: -10px;
+    top: 0px;
+  }
+
+  .earth-bottom::before {
+    content: '';
+    background: url("earth.svg") no-repeat center;
+    width: 40px;
+    height: 20px;
+    position: absolute;
+    left: 0px;
+    top: 30px;
+  }
+  
+  .earth-right::before {
+    content: '';
+    background: url("earth.svg") no-repeat center;
+    width: 20px;
+    height: 40px;
+    position: absolute;
+    left: 30px;
+    top: 0px;
+  }
+
+  div#puzzle-contents-copyable .example-row {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 20px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  div#puzzle-contents-copyable .flexible {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  div#puzzle-contents-copyable .puzzle-entry {
+    padding: 10px;
+    border: 1px solid black;
+  }
+
+  div#puzzle-contents-copyable .example-row .puzzle-entry td .text {
+    font-size: 16px;
+    line-height: 40px;
+  }
+
+  div#puzzle-contents-copyable .no-break {
+    break-inside: avoid;
+  }
+
+  @media only print {
+    @page { size: landscape }
+  }
+</style>
+<script type="text/javascript" src="../../puzzle.js"></script>
+<link rel="stylesheet" href="../../puzzle.css">
+<link rel="stylesheet" href="../copyjack.css"/>
+<script type="text/javascript" src="../copyjack.js"></script>
+</head>
+<body>
+<div id="puzzle-contents-copyable" class="clipboard-container"> <!-- This div ID is magic and makes clipboard work -->
+  <p>
+    <i>These puzzles leave your Earths divided; piecing them together will result in some gaps.</i>
+  </p>
+  
+  <h2>Puzzle rules</h2>
+  <p>Connect the dots with vertical and horizontal lines to form one loop.</p>
+  <p>The loop may not branch or cross itself (all dots have 0 or 2 connected lines).</p>
+  <p>If a square has a number, that is how many sides are surrounded by the line.</p>
+  <p>If two dots have a <img src="earth.svg" class="earth-img"/> between them, a line must go through that gap.</p>
+
+
+  <h2>Example:</h2>
+
+  <p class="copy-only">See puzzle page for background images.</p>
+
+  <div class="example-row">
+    <div class="puzzle-entry" data-mode="notext slitherlink solution" data-fill-classes="none earth-top earth-left earth-bottom earth-right">
+      {
+        "data-text-solution": [
+          " 231",
+          "2 3 ",
+          "2   ",
+          " 3 3"
+        ],
+        "data-fills": [
+          "....",
+          "1...",
+          "....",
+          "1..."
+        ],
+        "data-edges": [
+          ".........",
+          ".........",
+          ".........",
+          ".........",
+          ".........",
+          ".........",
+          ".........",
+          ".........",
+          "........."
+        ]
+      }
+    </div>
+    &rarr;
+    <div class="puzzle-entry" data-mode="notext slitherlink solution" data-fill-classes="none earth-top earth-left earth-bottom earth-right">
+      {
+        "data-text-solution": [
+          " 231",
+          "2 3 ",
+          "2   ",
+          " 3 3"
+        ],
+        "data-fills": [
+          "....",
+          "1...",
+          "....",
+          "1..."
+        ],
+        "data-edges": [
+          "....._...",
+          ".........",
+          "._..._..",
+          ".........",
+          "....._...",
+          ".........",
+          "._.......",
+          "........|",
+          "......._."
+        ]
+      }
+    </div>
+    &rarr;
+    <div class="puzzle-entry" data-mode="notext slitherlink solution" data-fill-classes="none earth-top earth-left earth-bottom earth-right">
+      {
+        "data-text-solution": [
+          " 231",
+          "2 3 ",
+          "2   ",
+          " 3 3"
+        ],
+        "data-fills": [
+          "....",
+          "1...",
+          "....",
+          "1..."
+        ],
+        "data-edges": [
+          "..._._...",
+          "..|...|..",
+          "._..._...",
+          "|...|....",
+          "....._._.",
+          "|.......|",
+          "._..._...",
+          "..|.|.|.|",
+          "..._..._."
+        ]
+      }
+    </div>
+  </div>
+  
+  <h2>Puzzles:</h2>
+  
+  <div class="no-copy" style="font-style: italic">The controls for the interactive puzzles below are as follows.
+    <ul>
+      <li>Click (and optionally drag) to draw lines.</li>
+      <li>Lines can be crossed out by going over an existing line again or by using the right mouse button.</li> 
+      <li>Hit tab to focus on the next puzzle.</li>
+      <li>Use arrow keys to navigate from one dot to another.</li>
+      <li>Use shift+arrow keys to mark edges with lines; go over a line again to remove it, and use the X key to toggle cross-out mode.</li>
+    </ul>
+    The puzzles' state is saved, so you may exit and return without losing progress.
+  </div><p></p>
+
+  <div class="flexible">
+    <div class="puzzle-entry" data-mode="notext slitherlink" data-fill-classes="none earth-top earth-left earth-bottom earth-right" data-fill-cycle="false">
+      {
+        "data-text": [
+          ".....3",
+          "...1..",
+          ".0..10",
+          "0...1.",
+          "..2...",
+          "0.313."
+        ],
+        "data-fills": [
+          ".....4",
+          "2.....",
+          "......",
+          "......",
+          "......",
+          "..2..."
+        ]
+      }
+    </div>
+    <div class="copy-only"><br/>---<br/><br/></div>
+    <div class="puzzle-entry" data-mode="notext slitherlink" data-fill-classes="none earth-top earth-left earth-bottom earth-right" data-fill-cycle="false">
+      {
+        "data-text": [
+          "12...2",
+          "..21..",
+          ".1...2",
+          "2.1.3.",
+          "3..0.0",
+          "3....."
+        ],
+        "data-fills": [
+          ".2...4",
+          "......",
+          "......",
+          "......",
+          "......",
+          "..2..."
+        ]
+      }
+    </div>
+    <div class="copy-only"><br/>---<br/><br/></div>
+    <div class="puzzle-entry" data-mode="notext slitherlink" data-fill-classes="none earth-top earth-left earth-bottom earth-right" data-fill-cycle="false">
+      {
+        "data-text": [
+          "3.0...",
+          "...3..",
+          ".2..33",
+          ".2...2",
+          "1.1.11",
+          "......"
+        ],
+        "data-fills": [
+          "......",
+          "......",
+          "......",
+          "2....4",
+          "......",
+          "......"
+        ]
+      }
+    </div>
+    <div class="copy-only"><br/>---<br/><br/></div>
+    <div class="puzzle-entry" data-mode="notext slitherlink" data-fill-classes="none earth-top earth-left earth-bottom earth-right" data-fill-cycle="false">
+      {
+        "data-text": [
+          "3...21",
+          "1..3..",
+          ".01.1.",
+          ".....1",
+          ".013..",
+          ".....1"
+        ],
+        "data-fills": [
+          "2.....",
+          "......",
+          "......",
+          "......",
+          "......",
+          "..2..."
+        ]
+      }
+    </div>
+    <div class="copy-only"><br/>---<br/><br/></div>
+    <div class="puzzle-entry" data-mode="notext slitherlink" data-fill-classes="none earth-top earth-left earth-bottom earth-right" data-fill-cycle="false">
+      {
+        "data-text": [
+          "2.2.2.",
+          "..1...",
+          ".1..2.",
+          ".1.2.0",
+          "21....",
+          "..0.0."
+        ],
+        "data-fills": [
+          "......",
+          ".....2",
+          "......",
+          "......",
+          "......",
+          ".2...."
+        ]
+      }
+    </div>
+    <div class="copy-only"><br/>---<br/><br/></div>
+    <div class="puzzle-entry" data-mode="notext slitherlink" data-fill-classes="none earth-top earth-left earth-bottom earth-right" data-fill-cycle="false">
+      {
+        "data-text": [
+          "...0.3",
+          "31..1.",
+          "...3..",
+          ".3.13.",
+          "......",
+          ".1.1.1"
+        ],
+        "data-fills": [
+          "......",
+          "......",
+          "......",
+          "......",
+          "2....4",
+          "......"
+        ]
+      }
+    </div>
+  </div>
+
+  <div style="margin: 2em 0"><hr/></div><div class="copy-only"><br/>---<br/><br/></div>
+
+  <div class="copy-only puzzle-entry" data-mode="notext slitherlink solution" data-text="21x6" data-edges="1x1"></div>
+
+  <div class="flexible no-copy no-break">
+    <div class="puzzle-entry" data-mode="notext slitherlink solution" data-text="21x6"></div>
+  </div>
+
+  <button class="clipboard-button"></button>
+</div>
+</body>
+</html>

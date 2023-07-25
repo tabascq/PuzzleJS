@@ -1,0 +1,17 @@
+/* From https://github.com/galacticpuzzlehunt/gph-site/blob/master/puzzles/static/css/base.css. */
+/* Used in these demos for demonstration purposes only. */
+.copy-only {
+    display: none !important;
+}
+
+.clipboard-button {
+    border-radius: 1em;
+    bottom: 1.5em;
+    cursor: pointer;
+    font-size: 1em;
+    height: 2em;
+    padding: 0 0.8em;
+    position: fixed !important;
+    right: 1.5em;
+    z-index: 100; /* Needed so hover & click work even when button floats outside of its parent. */
+}

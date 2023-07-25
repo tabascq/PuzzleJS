@@ -1,5 +1,5 @@
 // From https://github.com/galacticpuzzlehunt/gph-site/blob/master/puzzles/static/js/copyjack.js.
-// Used on this page for demonstration purposes only.
+// Used in these demos for demonstration purposes only.
 
 // We don't have internationalization in this demo.
 const gettext = (s) => s;

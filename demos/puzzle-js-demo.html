@@ -6,10 +6,11 @@
         <title>Puzzle.js Mini Demos</title>
         <link rel="stylesheet" href="../puzzle.css"/>
         <link rel="stylesheet" href="../puzzle-basic-colors.css"/>
-        <link rel="stylesheet" href="../reference-example.css"/>
-        <script type="text/javascript" src="../reference-example.js"></script>
+        <link rel="stylesheet" href="../reference/reference-example.css"/>
+        <script type="text/javascript" src="../reference/reference-example.js"></script>
         <script type="text/javascript" src="../puzzle.js"></script>
-        <script type="text/javascript" src="../copyjack.js"></script>
+        <link rel="stylesheet" href="copyjack.css"/>
+        <script type="text/javascript" src="copyjack.js"></script>
         <style>
             body {
                 padding: 1rem;
@@ -37,24 +38,6 @@
             .wolves-and-sheep-example .cell.sheep { background: lightgreen; }
             .wolves-and-sheep-example .cell.wolf.given-fill::after { content: "🐺"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
             .wolves-and-sheep-example .cell.sheep.given-fill::after { content: "🐑"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        </style>
-        <!-- Copyjack styles from https://github.com/galacticpuzzlehunt/gph-site/blob/master/puzzles/static/css/base.css -->
-        <style>
-            .copy-only {
-                display: none !important;
-            }
-
-            .clipboard-button {
-                border-radius: 1em;
-                bottom: 1.5em;
-                cursor: pointer;
-                font-size: 1em;
-                height: 2em;
-                padding: 0 0.8em;
-                position: fixed !important;
-                right: 1.5em;
-                z-index: 100; /* Needed so hover & click work even when button floats outside of its parent. */
-            }
         </style>
     </head>
     <body>
