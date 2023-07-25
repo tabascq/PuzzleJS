@@ -165,15 +165,17 @@ function UndoManager() {
     }
 
     this.endGroup = function() {
-        if (!this.activeGroup) return;
+        var retVal = false;
 
-        if (this.activeGroup.units.length) {
+        if (this.activeGroup && this.activeGroup.units.length) {
             this.undoStack.push(this.activeGroup);
             this.redoStack = [];
             this.notify(this.activeGroup);
+            retVal = true;
         }
 
         this.activeGroup = null;
+        return retVal;
     }
 
     this.modifyClass = function(elem, adds, removes) {
@@ -623,11 +625,11 @@ function PuzzleEntry(p, index) {
 
         if (canPaint && setLast) { this.setClassInCycle(this.lastCell, this.fillClasses, this.currentFill); }
 
-        this.undoManager.endGroup();
+        var didWork = this.undoManager.endGroup();
 
         if (!wantPaint || canPaint) {
             this.lastCell = to;
-            this.updateCenterFocus(to);
+            if (didWork) { this.updateCenterFocus(to); }
         }
     }
 
@@ -905,6 +907,15 @@ function PuzzleEntry(p, index) {
 
     this.prepareToReset = function() {
         localStorage.removeItem(this.stateKey);
+
+        this.table.querySelectorAll(".inner-cell.extract .text span").forEach(s => {
+            var extractId = s.getAttribute("data-extract-id");
+
+            if (extractId) {
+                document.querySelectorAll("." + extractId).forEach(elem => { elem.innerText = ""; });
+            }
+        });
+
         this.inhibitSave = true;
     }
 
