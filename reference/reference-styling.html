@@ -19,7 +19,7 @@
                 padding: 1rem;
             }
 
-            h1, h2, h3, p, li {
+            body, h1, h2, h3, p, li, td {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
 
@@ -43,7 +43,7 @@
 
             .given-text-example .cell.given-text { font-style: italic; background: tan; }
 
-            .earth-example .cell.earth { background: url("../demos/earth/earth.svg") no-repeat center; }
+            .earth-example .cell.earth { background-image: url("../demos/earth/earth.svg"); background-size: contain; }
 
             .red-blue-example .cell::before { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
             .red-blue-example .cell.red { background: pink; }
@@ -61,6 +61,12 @@
             .connect-a-fruit-example .cell.kiwi.given-fill::before { content: "🥝" }
             .connect-a-fruit-example .cell.tangerine .path { stroke: orange; }
             .connect-a-fruit-example .cell.tangerine.given-fill::before { content: "🍊" }
+
+            .connect-a-fruit-2-example .cell::before { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .connect-a-fruit-2-example .cell.kiwi .path { stroke: green; }
+            .connect-a-fruit-2-example .cell.kiwi.given-fill::before { content: "🥝"; z-index: 1; text-shadow: none; }
+            .connect-a-fruit-2-example .cell.tangerine .path { stroke: orange; }
+            .connect-a-fruit-2-example .cell.tangerine.given-fill::before { content: "🍊"; z-index: 1; text-shadow: none; }
 
             .color-train-example .cell .edge-base { stroke: red; }
             .color-train-example .cell .edge-top { stroke: blue; }
@@ -84,8 +90,7 @@
         <p>When a change occurs that is likely to break any existing custom styling, it will be called out in the <a href="#BreakingChanges">Breaking Changes</a> section, along with migration advice.</p>
 
         <h2>Basic Color Styles: always forward-compatible</h2>
-        <p>For styling that is guaranteed to never break, use the styles in <code>puzzle-basic-colors.css</code>, which are limited to color changes. This file defines fill classes for <code>white</code>, <code>lightgray</code>, <code>darkgray</code>, <code>black</code>, <code>red</code>, <code>orange</code>, <code>yellow</code>, <code>green</code>, <code>blue</code>, <code>indigo</code>, and <code>violet</code>. It also provides styles that support interior paths of many colors on a black background, via <code>white-laser</code>, <code>red-laser</code>, <code>orange-laser</code>, <code>yellow-laser</code>, <code>green-laser</code>, <code>blue-laser</code>, <code>indigo-laser</code>, and <code>violet-laser</code>.</p>
-
+        <p>For styling that is guaranteed to never break, use the styles in <code>puzzle-basic-colors.css</code>, which are limited to color changes. This file defines fill classes for <code>white</code>, <code>lightgray</code>, <code>darkgray</code>, <code>black</code>, <code>red</code>, <code>orange</code>, <code>yellow</code>, <code>green</code>, <code>blue</code>, <code>indigo</code>, and <code>violet</code>.</p>
         <div class="example">
             <div class="puzzle-entry" data-mode="notext" data-text="5x5" data-edges="5x5" data-fill-classes="lightgray black white" data-top-clues="5|1 1|1 1|1 1|3" data-left-clues="5|1 1|5|1|1"></div>
         </div>
@@ -93,6 +98,7 @@
             <!-- Drag to connect the cells! -->
 <div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="white yellow red" data-fills="1...|..1.|.2..|...2"></div>
         </div>
+        <p><code>puzzle-basic-colors.css</code> also provides fill classes that support interior paths of many colors on a black background, via <code>white-laser</code>, <code>red-laser</code>, <code>orange-laser</code>, <code>yellow-laser</code>, <code>green-laser</code>, <code>blue-laser</code>, <code>indigo-laser</code>, and <code>violet-laser</code>.</p>
         <div class="example">
             <!-- Drag to connect the cells! -->
 <div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="black yellow-laser red-laser" data-fills="1...|..1.|.2..|...2"></div>
@@ -109,6 +115,7 @@
         <div class="example">
             <div class="puzzle-entry big-example" data-text="bi|g."></div>
         </div>
+
         <h2>Text</h2>
         <p>Text comes with an outline by default to make sure that it is legible on top of anything no matter how dark. If the outline is not desired for any reason, it can be removed by setting <code>text-shadow</code> to none.</p>
         <div class="example">
@@ -118,6 +125,7 @@
         <div class="example">
             <div class="puzzle-entry given-text-example" data-text="g.i|.v.|e.n"></div>
         </div>
+
         <h2>Fills</h2>
         <p>Fills can be more than just colors; they can be any bitmap or SVG file as well, via the standard CSS properties for such.</p>
         <div class="example">
@@ -132,15 +140,22 @@
         <div class="example">
             <div class="puzzle-entry red-blue-example" data-mode="notext" data-text="2x2" data-fill-classes="none red blue" data-fills="1.|.2"></div>
         </div>
+        <p>The absolute-positioning trick can also be used to put such pseudoelements above path lines, along with a <code>z-index</code> change.</p>
+        <div class="example">
+            <!-- Drag to connect the fruit! -->
+<div class="puzzle-entry connect-a-fruit-2-example" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="none kiwi tangerine" data-fills="1...|..1.|.2..|...2"></div>
+        </div>
         <p>If the special symbol includes emoji, you may need to slightly tweak the positioning to get it to center vertically, like the <code>45%</code> below.</p>
         <div class="example">
             <div class="puzzle-entry yes-no-example" data-mode="notext" data-text="2x2" data-fill-classes="none yes no" data-fills="1.|.2"></div>
         </div>
+
         <h2>Paths and Edges</h2>
-        <p>Since paths and edges are made with SVG, they must be styles with the <code>stroke</code> property, not the <code>border</code> property.</p>
+        <p>Since paths and edges are made with SVG, they must be styled with the <code>stroke</code> property, not the <code>border</code> property.</p>
         <div class="example">
             <div class="puzzle-entry color-train-example" data-mode="notext" data-text="4x4" data-edges="2x2" data-path-style="track" data-drag-draw-path="true" data-paths="c6..|.96.|..96|...1"></div>
         </div>
+
         <h3 id="custom-paths">Custom Paths</h3>
         <p>There are three path styles provided for the <code>data-path-style</code> option: <code>straight</code>, <code>curved</code>, and <code>track</code>. If something else is desired, you can provide your own SVG file; when the value of <code>data-path-style</code> ends with <code>.svg</code>, it will find that SVG file relative to your page. It should be structured like this:</p>
         <div class="example non-interactive">
@@ -152,7 +167,7 @@
     <path id="path-x" fill="none" stroke-width="2" d="M0,10 V-10 M10,0 H-10"></path>
 </svg>
         </div>
-        <p>This SVG is composed of five superimposed elements, and the appropriate components will be referenced with the SVG <code>use</code> element. These elements are single <code>path</code> elements in the example above, but can be groups of elements so long as a parent <code>g</code> element has the appropriate <code>id</code> attribute. Note that no <code>stroke</code> property is defined in the SVG, so that the uses of the SVG can override that.</p>
+        <p>This SVG is composed of five superimposed elements, and the appropriate components will be referenced with the SVG <code>use</code> element. These elements are single <code>path</code> elements in the example above, but can be groups of elements so long as a parent <code>g</code> element has the appropriate <code>id</code> attribute.</p>
         <ul>
             <li><code>path-i</code>: a line running from the center to the bottom.</li>
             <li><code>path-l</code>: a line running from the top to the bottom.</li>
@@ -160,6 +175,8 @@
             <li><code>path-t</code>: a T junction involving the left, right, and bottom.</li>
             <li><code>path-x</code>: a four-way junction involving all four directions.</li>
         </ul>
+        <p>Note that no <code>stroke</code> property is present in the SVG, so that the uses of the SVG can override that.</p>
+
         <h3 id="custom-edges">Custom Edges</h3>
         <p>Edges describe both the initial bounding box and the edges that go within it. There are four edge styles provided for the <code>data-edge-style</code> option: <code>box</code>, <code>dash</code>, <code>dots</code>, and <code>none</code>. If something else is desired, you can provide your own SVG file; when the value of <code>data-edge-style</code> ends with <code>.svg</code>, it will find that SVG file relative to your page. It should be structured like this:</p>
         <div class="example non-interactive">
@@ -177,7 +194,7 @@
     <path id="x-edge-bottom" stroke-width="1" d="M-2,12 L2,8 M2,12 L-2,8"></path>
 </svg>
         </div>
-        <p>This SVG is composed of nine superimposed elements, and the appropriate components will be referenced with the SVG <code>use</code> element. Most of these elements are single <code>path</code> elements in the example above, but can be groups of elements so long as a parent <code>g</code> element has the appropriate <code>id</code> attribute. Note that no <code>stroke</code> property is defined in the SVG, so that the uses of the SVG can override that.</p>
+        <p>This SVG is composed of nine superimposed elements, and the appropriate components will be referenced with the SVG <code>use</code> element. Most of these elements are single <code>path</code> elements in the example above, but can be groups of elements so long as a parent <code>g</code> element has the appropriate <code>id</code> attribute.</p>
         <ul>
             <li><code>edge-base</code>: the basic bounding box of the cell.</li>
             <li><code>edge-top</code>: the top edge of the cell, when present.</li>
@@ -189,7 +206,9 @@
             <li><code>x-edge-left</code>: the X denoting the lack of a left edge of the cell, when present.</li>
             <li><code>x-edge-right</code>: the X denoting the lack of a right edge of the cell, when present.</li>
         </ul>
+        <p>Note that no <code>stroke</code> property is present in the SVG, so that the uses of the SVG can override that.</p>
         <p>Remember that edges are shared between cells, and the right and bottom edge elements will only be used for the right and bottom edges of the grid.</p>
+
         <h2>Layers</h2>
         <p>If the effect you want is difficult to create with just one grid, consider using two or more overlapping grids and set <code>data-no-input</code> on all but one to remove them from tab order etc. The overlapping puzzles will not share any information with each other. You could of course also use a background image or SVG.</p>
         <div class="example">
@@ -198,14 +217,15 @@
     <div class="puzzle-entry" data-mode="notext" data-text="2x2" data-fill-classes="none black-dot white-dot" data-fills="1.|.2"></div>
 </div>
         </div>
+
         <h2>Many Helpful CSS Selectors</h2>
         <p>This is certainly not an exhaustive list of selectors, but it includes nearly all classes that PuzzleJS sets on output elements.</p>
         <table>
             <tr><th>Selector</th><th>Selects</th></tr>
             <tr><td><code>.cell</code></td><td>A cell of the puzzle grid: interior, exterior, etc.</td></tr>
             <tr><td><code>.cell.inner-cell</code></td><td>A cell of the main (interior) area of the puzzle grid.</td></tr>
-            <tr><td><code>.cell.unselectable</code></td><td>A cell that has no border and can't be selected.</td></tr>
-            <tr><td><code>.cell.interesting</code></td><td>A cell that has been marked by the player as "interesting".</td></tr>
+            <tr><td><code>.cell.unselectable</code></td><td>A cell that has no border and can&rsquo;t be selected.</td></tr>
+            <tr><td><code>.cell.interesting</code></td><td>A cell that has been marked by the player as &ldquo;interesting&rdquo;.</td></tr>
             <tr><td><code>.cell.strikethrough</code></td><td>A cell containing a clue that the player has marked as complete.</td></tr>
             <tr><td><code>.cell.extract</code></td><td>A cell that has been marked for answer letter extraction via <code>#</code> in <code>data-text</code>.</td></tr>
             <tr><td><code>.cell.outer-cell</code></td><td>A cell outside the grid, such as an exterior clue.</td></tr>
@@ -228,8 +248,8 @@
             <tr><td><code>.cell .x-edge-left</code></td><td>The X to the left of the cell, if that X is present.</td></tr>
             <tr><td><code>.cell .x-edge-right</code></td><td>The X to the right of the cell, if that X is present.</td></tr>
             <tr><td><code>.cell .clue</code></td><td>The interior (e.g. crossword) clue of a cell.</td></tr>
-            <tr><td><code>.cell.hovered</code></td><td>A crossword cell when the player is hovering over one of that cell's crossword clues.</td></tr>
-            <tr><td><code>.cell.marked</code></td><td>A crossword cell when one of that cell's clues is selected.</td></tr>
+            <tr><td><code>.cell.hovered</code></td><td>A crossword cell when the player is hovering over one of that cell&rsquo;s crossword clues.</td></tr>
+            <tr><td><code>.cell.marked</code></td><td>A crossword cell when one of that cell&rsquo;s clues is selected.</td></tr>
             <tr><td><code>.crossword-clues .li.marked</code></td><td>A crossword clue that is selected.</td></tr>
             <tr><td><code>.corner-focus</code></td><td>The corner-focus marker, when it has focus.</td></tr>
             <tr><td><code>.puzzle-commands</code></td><td>The row of commands below the puzzle, if the <code>data-show-commands</code> option is set.</td></tr>
@@ -238,6 +258,7 @@
             <tr><td><code>.puzzle-redo-button</code></td><td>The Redo button, if the <code>data-show-commands</code> option is set.</td></tr>
             <tr><td><code>.puzzle-reset-button</code></td><td>The Reset button, if the <code>data-show-commands</code> option is set.</td></tr>
         </table>
+
         <h2 id="BreakingChanges">Breaking Changes</h2>
         <p>There are no breaking changes to styling at this time.</p>
     </body>
