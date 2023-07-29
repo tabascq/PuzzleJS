@@ -27,6 +27,10 @@
     margin-left: -2em;
 }
 
+.example.non-interactive pre::before {
+    content: "Example";
+}
+
 .example .puzzle-entry {
     background-color: white;
     flex-shrink: 0;
