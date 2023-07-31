@@ -111,6 +111,10 @@
     pointer-events: none;
 }
 
+.puzzle-entry .cell > svg {
+    z-index: 1;
+}
+
 .puzzle-entry td.unselectable {
     cursor: default;
     border: none;
