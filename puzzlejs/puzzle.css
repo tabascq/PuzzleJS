@@ -42,6 +42,7 @@
     user-select: none;
     cursor: pointer;
     text-transform: uppercase;
+    caret-color: transparent;
 }
 
 .puzzle-entry .commands td {

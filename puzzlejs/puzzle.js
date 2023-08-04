@@ -1160,10 +1160,13 @@ function PuzzleEntry(p, index) {
 
             if (ch == '.') {
                 if (solution) { text.innerText = this.translate(solution[r][c], textReplacements); }
+                else if (allowInput && this.options["data-text-characters"]) { td.contentEditable = true; }
             }
             else if (ch == '#') {
                 td.classList.add("extract");
                 if (solution) { text.innerText = this.translate(solution[r][c], textReplacements); }
+                else if (allowInput && this.options["data-text-characters"]) { td.contentEditable = true; }
+
                 if (extracts) {
                     var code = extracts[extractNum++];
                     var id = "extract-id-" + code;
