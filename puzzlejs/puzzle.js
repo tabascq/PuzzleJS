@@ -1174,6 +1174,7 @@ function PuzzleEntry(p, index) {
                     text.classList.add(id);
 
                     var extractCode = document.createElement("div");
+                    extractCode.contentEditable = false;
                     extractCode.classList.add("extract-code");
                     extractCode.innerText = code;
                     td.appendChild(extractCode);    
@@ -1296,6 +1297,7 @@ function PuzzleEntry(p, index) {
                     }
 
                     var clue = document.createElement("div");
+                    clue.contentEditable = false;
                     clue.classList.add("clue");
                     clue.innerText = clueIndicator;
                     td.appendChild(clue);
