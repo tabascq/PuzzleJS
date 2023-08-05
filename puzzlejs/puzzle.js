@@ -397,6 +397,11 @@ function PuzzleEntry(p, index) {
         }
     }
 
+    this.beforeInput = function(e) {
+        e.target.dispatchEvent(new KeyboardEvent("keydown", { keyCode: (e.data ? e.data.toUpperCase().charCodeAt(0) : 46) }));
+        e.preventDefault();
+    }
+
     this.keyDown = function(e) {
         this.fShift = e.shiftKey;
 
@@ -1201,6 +1206,7 @@ function PuzzleEntry(p, index) {
                     td.tabIndex = this.firstCenterFocus ? -1 : 0;
                     if (!this.firstCenterFocus) { this.firstCenterFocus = td; }
                     td.addEventListener("keydown",  e => { this.keyDown(e); });
+                    td.addEventListener("beforeinput", e => { this.beforeInput(e); });
                     td.addEventListener("mousedown",  e => { this.mouseDown(e); });
                     if (this.canDrawOnEdges) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
                     td.addEventListener("mouseenter",  e => { this.mouseEnter(e); });
