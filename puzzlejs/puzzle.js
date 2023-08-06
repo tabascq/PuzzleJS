@@ -723,13 +723,13 @@ function PuzzleEntry(p, index) {
         var acrosscluenumber = cell.getAttribute("data-across-cluenumber");
         var downcluenumber = cell.getAttribute("data-down-cluenumber");
         if (acrosscluenumber) {
-            this.container.querySelector("li[data-across-cluenumber='" + acrosscluenumber + "']")?.classList.remove("marked");
+            this.container.querySelectorAll("li[data-across-cluenumber='" + acrosscluenumber + "']").forEach(li => { li.classList.remove("marked"); });
             if (this.dx !== 0) {
                 this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("marked"); });
             }
         }
         if (downcluenumber) {
-            this.container.querySelector("li[data-down-cluenumber='" + downcluenumber + "']")?.classList.remove("marked");
+            this.container.querySelectorAll("li[data-down-cluenumber='" + downcluenumber + "']").forEach(li => { li.classList.remove("marked"); });
             if (this.dy !== 0) {
                 this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("marked"); });
             }
@@ -886,7 +886,7 @@ function PuzzleEntry(p, index) {
         copyTd.innerText = inputTd.innerText;
         // If the td has a "value", overwrite the innertext.
         const text = inputTd.querySelector('.text span');
-        if (text?.innerText) {
+        if (text && text.innerText) {
             copyTd.innerText = text.innerText;
         }
 
