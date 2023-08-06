@@ -941,7 +941,7 @@ function PuzzleEntry(p, index) {
             if (!givenPathCode) givenPathCode = 0;
             var pathCodeDelta = pathCode ^ givenPathCode;
 
-            var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText;
+            var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText.trim();
 
             var cellState = "";
             if (fillIndex || edgeCodeDelta || pathCodeDelta || text) {
@@ -1187,7 +1187,7 @@ function PuzzleEntry(p, index) {
             }
 
             if (cellSavedState && cellSavedState.indexOf(",") >= 0) {
-                var savedText = cellSavedState.substring(cellSavedState.indexOf(",") + 1);
+                var savedText = cellSavedState.substring(cellSavedState.indexOf(",") + 1).trim();
                 text.innerText = savedText;
                 if (savedText && savedText.length > 1) { td.classList.add("small-text"); }
             }
