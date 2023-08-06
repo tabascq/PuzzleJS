@@ -15,7 +15,7 @@
 
 .example pre {
     margin: 0;
-    text-wrap: wrap;
+    white-space: pre-wrap;
 }
 
 .example pre::before {
