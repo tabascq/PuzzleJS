@@ -43,6 +43,7 @@
     cursor: pointer;
     text-transform: uppercase;
     caret-color: transparent;
+    touch-action: pinch-zoom;
 }
 
 .puzzle-entry .commands td {

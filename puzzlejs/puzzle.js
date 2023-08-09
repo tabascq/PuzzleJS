@@ -246,7 +246,7 @@ function PuzzleEntry(p, index) {
         } catch {}
     }
 
-    this.mousedown = false;
+    this.pointerIsDown = false;
     this.lastCell = null;
     this.currentFill = null;
     this.stateKey = this.options["data-state-key"];
@@ -564,8 +564,13 @@ function PuzzleEntry(p, index) {
         this.updateSvg(edgeState.cell);
     }
 
-    this.mouseDown = function(e) {
-        this.mousedown = true;
+    this.pointerDown = function(e) {
+        if (this.pointerIsDown) { this.pointerIsDown = false; return; }
+
+        this.pointerIsDown = true;
+
+        if (e.target.hasPointerCapture(e.pointerId)) { e.target.releasePointerCapture(e.pointerId); }
+
         if ((document.activeElement == e.currentTarget) && this.options["data-text-advance-on-type"] && this.numCols > 1 && this.numRows > 1) {
             this.dx = 1 - this.dx; this.dy = 1 - this.dy;
             e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
@@ -582,14 +587,14 @@ function PuzzleEntry(p, index) {
         if (this.canDrawOnEdges) {
             var edgeState = this.getEventEdgeState(e);
             this.lastEdgeState = null;
-            this.setEdgeState(edgeState, (e.which != 1 || e.shiftKey) ? "cycle-back" : "cycle-front");
+            this.setEdgeState(edgeState, (e.button > 0 || e.shiftKey) ? "cycle-back" : "cycle-front");
             if (edgeState.any) {
                 e.preventDefault();
                 return;
             }
         }
         
-        if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.which != 1 || e.shiftKey); }
+        if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.button > 0 || e.shiftKey); }
         else { this.currentFill = this.findClassInList(e.currentTarget, this.fillClasses); }
         
         if (this.canHaveCenterFocus) {
@@ -599,15 +604,19 @@ function PuzzleEntry(p, index) {
         e.preventDefault();
     }
 
-    this.mouseMove = function(e) {
-        if (!this.mousedown) return;
+    this.pointerMove = function(e) {
+        if (!this.pointerIsDown) return;
+
+        e.preventDefault();
 
         if (this.canDrawOnEdges && !this.currentFill) {
             var edgeState = this.getEventEdgeState(e);
-            this.setEdgeState(edgeState, (e.which != 1 || e.shiftKey) ? "cycle-back" : "cycle-front");
-            e.preventDefault();
-            return;
+            this.setEdgeState(edgeState, (e.button > 0 || e.shiftKey) ? "cycle-back" : "cycle-front");
         }
+    }
+
+    this.pointerCancel = function(e) {
+        this.pointerIsDown = false;
     }
 
     this.dragPaintAndPath = function(to) {
@@ -638,8 +647,8 @@ function PuzzleEntry(p, index) {
         }
     }
 
-    this.mouseEnter = function(e) {
-        if (!this.mousedown) return;
+    this.pointerEnter = function(e) {
+        if (!this.pointerIsDown) return;
         if (this.lastCell === e.currentTarget) return;
 
         this.dragPaintAndPath(e.currentTarget);
@@ -662,14 +671,14 @@ function PuzzleEntry(p, index) {
         return replacements[ch];
     }
 
-    this.clueMouseEnter = function(e) {
+    this.cluePointerEnter = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
         if (acrosscluenumber) { this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
         if (downcluenumber) { this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
     }
 
-    this.clueMouseLeave = function(e) {
+    this.cluePointerLeave = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
         if (acrosscluenumber) { this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("hovered"); }); }
@@ -866,7 +875,7 @@ function PuzzleEntry(p, index) {
         if (clueIndex >= 0 && clueIndex < clues.length && clues[clueIndex]) {
             td.textContent = clues[clueIndex];
             td.classList.add(cls);
-            td.addEventListener("mousedown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else if (e.shiftKey) { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
+            td.addEventListener("pointerdown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else if (e.shiftKey) { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
             td.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
         } else { td.classList.add("unselectable"); }
 
@@ -1011,7 +1020,7 @@ function PuzzleEntry(p, index) {
         lines.push("<div class='puzzle-about-scroller'>");
         lines.push("<div class='puzzle-about-savedstate'>This puzzle will save its state when you leave/refresh the page.</div>");
         lines.push("<table>");
-        lines.push("<tr><th>Function</th><th>Keyboard</th><th>Mouse</th></tr>");
+        lines.push("<tr><th>Function</th><th>Keyboard</th><th>Mouse/Touch</th></tr>");
         lines.push("<tr><td>Reset saved state</td><td>N/A</td><td>Reset Button</td></tr>");
         lines.push("<tr><td>Undo/Redo</td><td>Ctrl+Z/Y</td><td>Undo/Redo Buttons</td></tr>");
         if (this.options["data-text-characters"]) {
@@ -1054,7 +1063,7 @@ function PuzzleEntry(p, index) {
 
         this.oldFocus = document.activeElement;
 
-        this.container.querySelector(".puzzle-about-back").addEventListener("mousedown", e => { this.closeAbout(); });
+        this.container.querySelector(".puzzle-about-back").addEventListener("pointerdown", e => { this.closeAbout(); });
         this.container.querySelector(".puzzle-about-close").focus();
         this.container.querySelector(".puzzle-about-close").addEventListener("click", e => { this.closeAbout(); });
         this.container.querySelector(".puzzle-about-close").addEventListener("keyup", e => { if (e.keyCode == 27 || e.keyCode == 13) this.closeAbout(); });
@@ -1207,9 +1216,10 @@ function PuzzleEntry(p, index) {
                     if (!this.firstCenterFocus) { this.firstCenterFocus = td; }
                     td.addEventListener("keydown",  e => { this.keyDown(e); });
                     td.addEventListener("beforeinput", e => { this.beforeInput(e); });
-                    td.addEventListener("mousedown",  e => { this.mouseDown(e); });
-                    if (this.canDrawOnEdges) { td.addEventListener("mousemove",  e => { this.mouseMove(e); }); }
-                    td.addEventListener("mouseenter",  e => { this.mouseEnter(e); });
+                    td.addEventListener("pointerdown",  e => { this.pointerDown(e); });
+                    td.addEventListener("pointermove",  e => { this.pointerMove(e); });
+                    td.addEventListener("pointerenter",  e => { this.pointerEnter(e); });
+                    td.addEventListener("pointercancel",  e => { this.pointerCancel(e); });
                     td.addEventListener("contextmenu",  e => { e.preventDefault(); });
                     if (this.options["data-clue-locations"] === "crossword") {
                         td.addEventListener("focus",  e => { this.mark(e.target); });
@@ -1410,13 +1420,13 @@ function PuzzleEntry(p, index) {
 
     if (allowInput) {
         this.container.querySelectorAll(".crossword-clues li").forEach((clue) => {
-            clue.addEventListener("mouseenter", e => { this.clueMouseEnter(e); });
-            clue.addEventListener("mouseleave", e => { this.clueMouseLeave(e); });
+            clue.addEventListener("pointerenter", e => { this.cluePointerEnter(e); });
+            clue.addEventListener("pointerleave", e => { this.cluePointerLeave(e); });
             clue.addEventListener("click", e => { this.clueClick(e); });
             clue.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
         });
 
-        window.addEventListener("mouseup", e => {this.mousedown = false; });
+        window.addEventListener("pointerup", e => {this.pointerIsDown = false; });
 
         document.addEventListener("keyup", function(e) { this.fShift = e.shiftKey; });
         document.addEventListener("keydown", function(e) { this.fShift = e.shiftKey; });
