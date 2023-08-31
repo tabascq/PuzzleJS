@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pictionary</title>
+    <link rel="stylesheet" href="../pd2023/base-styles.css">
+    <link rel="stylesheet" href="../pd2023/print-styles.css" media="print">
+    <link rel="stylesheet" href="../../puzzlejs/puzzle.css">
+    <script type="text/javascript" src="../../puzzlejs/puzzle.js"></script>
+    <style>
+        .content-div { min-width: 1000px; }
+        .pics { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; }
+        .pics img { max-height: 300px; max-width: 300px; margin: 20px; }
+        #pic3 { max-height: 200px; }
+        #pic4 { max-height: 240px; }
+        #pic5 { max-width: 400px; }
+        .card { width: 300px; border: 1px solid black; border-radius: 10px 10px; display: flex; flex-direction: column; align-items: center; }
+        .category .puzzle-entry { margin: 5px; }
+        .puzzle-entry table { margin: 0px; }
+        .puzzle-entry .cell { width: 30px; height: 30px; font-size: 20px; }
+        .puzzle-entry .cell use { stroke: #00000080; }
+        .category .puzzle-entry .cell.extract { background-color: #ffffff80; }
+        .card .title { text-align: center; font-family: 'Times New Roman', Times, serif; font-size: 36px; margin-top: 20px; font-weight: bold; text-decoration: underline; }
+        .category { display: flex; width: 260px; align-items: center; border: 1px solid black; margin-top: 20px; }
+        .category.cat-p { background-color: #FFEA6C; }
+        .category.cat-o { background-color: #B5C1EF; }
+        .category.cat-a { background-color: #FFB98F; }
+        .category.cat-d { background-color: #A8FFD1; }
+        .category.cat-ap { background-color: #FF856E; }
+        .card .category.cat-ap { margin-bottom: 20px; }
+        .category-letter { width: 30px; height: 40px; line-height: 40px; text-align: center; border-right: 1px solid black; }
+        .puzzle-entry.final { margin-top: 20px; }
+        .puzzle-entry.final .cell.extract { background-color: #ffffff80; }
+        .key { display: flex; margin-bottom: 20px; gap: 20px; }
+        .key .category { margin-top: 0px; }
+        .key .category-description { font-size: 12px; margin-left: 5px; }
+
+        @media print {
+            @page { size: landscape; }
+            .pics { margin: 0px auto; margin-top: 20px; width: 800px; }
+            .pics img { max-height: 240px; max-width: 240px; margin: 20px; }
+            #pic1 { margin-left: -30px; }
+            #pic2 { margin-right: -30px; }
+            #pic3 { max-height: 160px; margin-top: -20px; }
+            #pic4 { max-height: 200px; margin-top: -20px; }
+            #pic5 { max-width: 320px; margin-top: -20px; }
+            .card { width: 250px; border-radius: 8px 8px; }
+            .puzzle-entry .cell { width: 25px; height: 25px; background: white; }
+            .category .puzzle-entry .cell.extract { background-color: white; }
+            .puzzle-entry.final .cell.extract { background-color: white; }
+            .card .title { font-size: 24px; margin-top: 14px; }
+            .category { width: 225px; margin-top: 14px; }
+            .card .category.cat-ap { margin-bottom: 14px; }
+            .category-letter { width: 30px; height: 30px; line-height: 30px; }
+            .puzzle-entry.final { margin-top: 14px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-div">
+    <div class="header-div">
+        <h1>
+            Pictionary
+            <div class="byline-div">
+                Dana Y.
+            </div>
+        </h1>
+
+        <div class="divider-div">
+        </div>
+    </div>
+    <div class="content-div">
+        <p>Birds have invaded Pictionary making it Piction-aerie! Raise the birds back up to the sky to see what they&rsquo;ve left behind for you.</p>
+        <div class="key">
+            <div class="category cat-p">
+                <div class="category-letter">P</div>
+                <div class="category-description">Person, place, or animal</div>
+            </div>
+            <div class="category cat-o">
+                <div class="category-letter">O</div>
+                <div class="category-description">Object</div>
+            </div>
+            <div class="category cat-a">
+                <div class="category-letter">A</div>
+                <div class="category-description">Action</div>
+            </div>
+            <div class="category cat-d">
+                <div class="category-letter">D</div>
+                <div class="category-description">Difficult (any category)</div>
+            </div>
+            <div class="category cat-ap">
+                <div class="category-letter">AP</div>
+                <div class="category-description">All Play (any category)</div>
+            </div>
+        </div>
+        <div class="pics">
+            <img id="pic1" src="pictionary1.png" alt="A stick-figure drawing" />
+            <div class="entries">
+                <div class="card">
+                    <div class="title">CATEGORIES</div>
+                    <div class="category cat-p">
+                        <div class="category-letter">P</div>
+                        <div class="puzzle-entry" data-mode="linear" data-text="##...." data-extracts="9 2"></div>
+                    </div>
+                    <div class="category cat-o">
+                        <div class="category-letter">O</div>
+                        <div class="puzzle-entry" data-mode="linear" data-text="....#" data-extracts="7"></div>
+                    </div>
+                    <div class="category cat-a">
+                        <div class="category-letter">A</div>
+                        <div class="puzzle-entry" data-mode="linear" data-text="#..." data-extracts="5"></div>
+                    </div>
+                    <div class="category cat-d">
+                        <div class="category-letter">D</div>
+                        <div class="puzzle-entry" data-mode="linear" data-text=".....###" data-extracts="6 8 3"></div>
+                    </div>
+                    <div class="category cat-ap">
+                        <div class="category-letter">AP</div>
+                        <div class="puzzle-entry" data-mode="linear" data-text="....##" data-extracts="1 4"></div>
+                    </div>
+                </div>
+                <div class="puzzle-entry final" data-mode="linear" data-text="#### #####" data-extracts="1 2 3 4 5 6 7 8 9"></div>
+            </div>
+            <img id="pic2" src="pictionary2.png" alt="A stick-figure drawing" />
+            <img id="pic3" src="pictionary3.png" alt="A stick-figure drawing" />
+            <img id="pic4" src="pictionary4.png" alt="A stick-figure drawing" />
+            <img id="pic5" src="pictionary5.png" alt="A stick-figure drawing" />
+        </div>
+    </div>
+</div>
+</body>
+</html>

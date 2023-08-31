@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Twister</title>
+    <link rel="stylesheet" href="../pd2023/base-styles.css">
+    <link rel="stylesheet" href="../pd2023/print-styles.css" media="print">
+    <link rel="stylesheet" href="../../puzzlejs/puzzle.css">
+    <script type="text/javascript" src="../../puzzlejs/puzzle.js"></script>
+    <style>
+        .wrapper {
+            display: relative;
+            width: 600px;
+            height: 630px;
+            margin: 0px auto;
+        }
+
+        .wrapper .puzzle-entry {
+            position: absolute;
+        }
+
+        .puzzle-entry {
+            min-width: 600px;
+        }
+
+        .puzzle-entry.twister .cell {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+        }
+
+        .twister .cell.red { background-color: var(--microsoft-red); }
+        .twister .cell.green { background-color: var(--microsoft-green); }
+        .twister .cell.yellow { background-color: var(--microsoft-yellow); }
+        .twister .cell.blue { background-color: var(--microsoft-blue); }
+
+        .twister .cell.north { background-image: url(wind-n.svg); background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .twister .cell.east { background-image: url(wind-e.svg); background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .twister .cell.south { background-image: url(wind-s.svg); background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .twister .cell.west { background-image: url(wind-w.svg); background-size: contain; background-repeat: no-repeat; background-position: center; }
+
+        .twister .cell.dark:not([data-path-code]) { background-color: #00000080; }
+        .twister .cell.dark[data-path-code="0"] { background-color: #00000080; }
+        .twister .cell.dark[data-path-code="null"] { background-color: #00000080; }
+    </style>
+</head>
+<body>
+<div class="page-div">
+    <div class="header-div">
+        <h1>
+            Twister
+            <div class="byline-div">
+                Kenny Y.
+            </div>
+        </h1>
+
+        <div class="divider-div">
+        </div>
+    </div>
+    <div class="content-div">
+        <p>In each of the four color blocks, shade one lettered cell in each row/column such that you can draw a single current of air through all unshaded squares in the puzzle (including those without letters).</p>
+        <p>The air current will form a closed loop, avoid all shaded squares, and visit all unshaded squares. The air current can only flow north, south, east, or west, and it can make a 90-degree turn as often as necessary. For each of the lettered squares the air current passes through, it must exit via the arrow.</p>
+        <div class="wrapper">
+            <div class="puzzle-entry twister" data-mode="notext" data-no-input="true" data-text="10x10" data-fill-classes="red green blue yellow" data-fills="0000011111|0000011111|0000011111|0000011111|0000011111|2222233333|2222233333|2222233333|2222233333|2222233333"></div>
+            <div class="puzzle-entry twister" data-mode="notext" data-no-input="true" data-text="10x10" data-fill-classes="none north east south west" data-fills="2...3.3.4.|.43...4.4.|.3.1.4.3..|2..2.3...3|..1.3..4.4|..2.413...|12.....1.4|3...2..1.4|.2.2.2..1.|..11..4.2."></div>
+            <div class="puzzle-entry twister" data-show-commands="true" data-mode="notext" data-drag-draw-path="true" data-path-style="curved" data-fill-classes="light dark" data-text="T...Q.W.E.|.WO...S.L.|.I.S.G.D..|I..T.U...E|..E.N..E.D|..R.RIA...|SN.....A.R|D...A..M.H|.N.I.N..A.|..SS..I.S." data-fills=".000.0.0.0|0..000.0.0|0.0.0.0.00|.00.0.000.|00.0.00.0.|00.0...000|..00000.0.|.000.00.0.|0.0.0.00.0|00..00.0.0"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

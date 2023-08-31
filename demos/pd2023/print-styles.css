@@ -1,0 +1,64 @@
+@import "base-styles.css";
+
+:root {
+  --inkBlack: #000000;
+}
+
+@page {
+  margin: 0;
+}
+
+/* Structural */
+.page-div {
+  background: none;
+  min-width: initial;
+  margin: 0;
+}
+
+.has-dc {
+  display: inline-block;
+  position: inherit;
+  -webkit-print-color-adjust: exact;
+  width: 20px;
+  height: 20px;
+  vertical-align: top;
+  padding-bottom: 5px;
+}
+
+/* Text */
+h1 {
+  color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+  font-size: 36px;
+  font-family: pd2022-font-title, Tahoma, Verdana, sans-serif;
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-bottom: 0px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.byline-div {
+  font-size: 14px;
+  line-height: 48px;
+  margin: 0;
+  float: right;
+  text-transform: none;
+}
+
+.flavor-div {
+  color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+  margin-top: 10px;
+}
+
+.content-div {
+  color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+  margin: 0;
+  border: none;
+}
+
+.online-only {
+  display: none;
+}

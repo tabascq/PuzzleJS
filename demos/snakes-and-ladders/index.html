@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Snakes and Ladders</title>
+    <link rel="stylesheet" href="../pd2023/base-styles.css">
+    <link rel="stylesheet" href="../pd2023/print-styles.css" media="print">
+    <link rel="stylesheet" href="../../puzzlejs/puzzle.css">
+    <script type="text/javascript" src="../../puzzlejs/puzzle.js"></script>
+    <style>
+        @media print {
+            .content-div {
+                font-size: 14px;
+            }
+        }
+
+        .wrapper {
+            position: relative;
+            width: 550px;
+            height: 550px;
+            margin: 0px auto;
+        }
+
+        @media screen {
+            .wrapper { height: 580px; }
+        }
+
+        .wrapper .puzzle-entry {
+            position: absolute;
+        }
+
+        .puzzle-entry.snakes-and-ladders .cell {
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+        }
+
+        .puzzle-entry.snakes-and-ladders.numbers .text span {
+            transform: translate(-30%, -30%);
+            color: var(--microsoft-red);
+        }
+
+        .puzzle-entry.snakes-and-ladders.letters .text span {
+            transform: translate(30%, 30%);
+            color: black;
+        }
+
+        .puzzle-entry.snakes-and-ladders.letters .cell.given-text {
+            font-size: 30px;
+        }
+
+        .puzzle-entry.snakes-and-ladders.numbers .cell use {
+            stroke: silver;
+        }
+
+        .puzzle-entry.snakes-and-ladders.letters .cell use {
+            stroke: var(--microsoft-blue);
+        }
+
+        .ladder path {
+            stroke-width: 2;
+            stroke: silver;
+        }
+
+        .clue-holder {
+            width: 550px;
+            margin: 0px auto;
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(11, 50px);
+        }
+
+        .clue-list div {
+            text-align: center;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .strikethrough {
+            text-decoration: line-through;
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", e => {
+            document.querySelectorAll(".clue-list div").forEach(d => {
+                d.addEventListener("click", e => { e.currentTarget.classList.toggle("strikethrough"); });
+            });
+        });
+    </script>
+</head>
+<body>
+<div class="page-div">
+    <div class="header-div">
+        <h1>
+            Snakes and Ladders
+            <div class="byline-div">
+                Dana Y.
+            </div>
+        </h1>
+
+        <div class="divider-div">
+        </div>
+    </div>
+    <div class="content-div">
+        <p>The clues below each ladder provide words (<b>in alphabetical order</b>) for that ladder. One piece of each word ladder is provided in the grid. Enter words such that only one letter changes per rung.</p> 
+        <p>Also, solve a slitherlink (draw a loop) <b>treating all the cells as one grid</b>. The numbers indicate how many of that cell&rsquo;s sides are part of the loop. For more information about solving this type of puzzle<span class="online-only">: <a href="https://www.puzzle-loop.com/faq.php" target="_blank">https://www.puzzle-loop.com/faq.php</a></span><span class="print-only">, visit www.puzzle-loop.com/faq.php</span></p>
+        <p>To get the answer, for each row take the letter of the <b>leftmost</b> cell in that row that is both inside the loop and touches the loop on three sides. Some rows will not have any such cell.</p>
+        <div class="wrapper">
+            <div class="puzzle-entry snakes-and-ladders numbers" data-no-input="true" data-mode="notext" data-edge-style="dash" data-text="..13..33..0|2..2....3.2|.33.2......|2.03..23.2.|1...02.2.00|1.2.2..1.2.|.1.1.0....1|.13..3....1|..2.12.30.3|1.1...1...3|1.2..1.1..3"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="ladder" style="position: absolute; width: 590px; height: 590px; top: -20px; left: -20px;" viewBox="0 0 590 590">
+                <path d="M20,20 V570 M220,20 V570 M420,20 V570 M570,20 V570"></path>
+                <path d="M20,70 H570 M20,120 H570 M20,170 H570 M20,220 H570 M20,270 H570 M20,320 H570 M20,370 H570 M20,420 H570 M20,470 H570 M20,520 H570"></path>
+            </svg>
+            <div class="puzzle-entry snakes-and-ladders letters" data-show-commands="true" data-edge-style="none" data-drag-draw-edge="true" data-text="........CAP|...........|...........|...........|....STEP...|...........|...........|...........|...........|...........|FOOT......."></div>
+        </div>
+        <div class="clue-holder">
+            <div class="clue-list" style="grid-column: 1/5">
+                <div>Formal party</div>
+                <div>Font weight</div>
+                <div>Roll of fabric</div>
+                <div>Start a computer</div>
+                <div>Male elephant</div>
+                <div>Season</div>
+                <div>Type of metal</div>
+                <div>A sport</div>
+                <div>Body of water</div>
+                <div>Aquatic bird</div>
+            </div>
+            <div class="clue-list" style="grid-column: 5/9">
+                <div>Integrated circuit</div>
+                <div>Cut roughly</div>
+                <div>Vichyssoise ingredient</div>
+                <div>Poppy or sesame</div>
+                <div>Appear</div>
+                <div>Retail store</div>
+                <div>Part of a wine glass</div>
+                <div>Halt</div>
+                <div>Valueless plant</div>
+                <div>Seven days</div>
+            </div>
+            <div class="clue-list" style="grid-column: 9/12">
+                <div>Flying mammal</div>
+                <div>It can be zero or one</div>
+                <div>Actor&rsquo;s prompt</div>
+                <div>Baking measurement</div>
+                <div>Evergreen</div>
+                <div>In good shape</div>
+                <div>Cut of meat</div>
+                <div>Head covering</div>
+                <div>Color or shade</div>
+                <div>Droning sound</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
