@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dreidel</title>
+    <link rel="stylesheet" href="../pd2023/base-styles.css">
+    <link rel="stylesheet" href="../pd2023/print-styles.css" media="print">
+    <link rel="stylesheet" href="../../puzzlejs/puzzle.css">
+    <script type="text/javascript" src="../../puzzlejs/puzzle.js"></script>
+    <style>
+        .puzzle-entry.dreidel .cell { font-size: 24px; }
+        .puzzle-entry.dreidel .cell.unknown { background-color: lightgray; }
+        .puzzle-entry.dreidel .cell.blue { background-color: #0035b9; text-shadow: none; color: #0035b9; }
+        .puzzle-entry.dreidel .cell.white { background-color: white; }
+
+        .puzzle-entry.dreidel-answer .cell.gold { background-color: gold; text-shadow: none; color: #0035b9; }
+        .puzzle-entry.dreidel-answer .cell.blue { background-color: #0035b9; text-shadow: none; color: gold; }
+
+        @media print {
+            .puzzle-entry.dreidel .cell.unknown { background-color: white; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-div">
+    <div class="header-div">
+        <h1>
+            Dreidel
+            <div class="byline-div">
+                Lexi A.
+            </div>
+        </h1>
+
+        <div class="divider-div">
+        </div>
+    </div>
+    <div class="content-div">
+        <p>
+            This puzzle is known as a &ldquo;paint by numbers&rdquo; or a &ldquo;nonogram&rdquo;. Shade in some of the cells to create an image.  The numbers tell you the size of contiguous blocks of shaded cells, in order. Leave at least one blank cell between shaded regions within a line.
+        </p>
+
+        <div class="puzzle-entry dreidel" data-show-commands="true" data-mode="notext" data-fill-classes="unknown blue white">
+            {
+                "data-edges": "5x5",
+                
+                "data-top-clues": "3 5|4 4|2 4|3|3 6|4 4|2 2|3 2|2 6|2 2 2",
+
+                "data-left-clues": "1 1 2|3 3 2|3 3|1 1 1|2 2 3|1 1 3|3 2 1|6 2|10|8",
+
+                "data-text": [
+                    "ATHIRSHETH",
+                    "JRPBFSORAL",
+                    "RTVELQMWLE",
+                    "TXTERZABND",
+                    "YTWOEGRCDB",
+                    "RDFOARPRVH",
+                    "LRERUYOTVE",
+                    "YCMJXDCTPF",
+                    "IJKCATOPYR",
+                    "OINFHGNCPR"
+                ]
+            }
+        </div>
+
+        <div style="margin: 0px auto; margin-top: 50px; padding-left: 120px;">
+            <div class="puzzle-entry dreidel-answer" data-mode="linear" data-text="........." data-fill-classes="blue gold" data-fills="000011111"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
