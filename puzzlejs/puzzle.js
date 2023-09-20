@@ -488,13 +488,16 @@ function PuzzleEntry(p, index) {
         });
     }
 
-    this.getEventEdgeState = function(e) {
-        var tolerance = e.currentTarget.offsetWidth/5;
-        var cell = e.currentTarget;
-        var closeTop = (e.offsetY <= tolerance);
-        var closeBottom = (e.offsetY >= e.currentTarget.offsetHeight - tolerance);
-        var closeLeft = (e.offsetX <= tolerance);
-        var closeRight = (e.offsetX >= e.currentTarget.offsetWidth - tolerance);
+    this.getEventEdgeState = function(cell, clientX, clientY) {
+        var cellClientRect = cell.getBoundingClientRect();
+        var offsetX = clientX - cellClientRect.x;
+        var offsetY = clientY - cellClientRect.y;
+
+        var tolerance = cell.offsetWidth/5;
+        var closeTop = (offsetY <= tolerance);
+        var closeBottom = (offsetY >= cell.offsetHeight - tolerance);
+        var closeLeft = (offsetX <= tolerance);
+        var closeRight = (offsetX >= cell.offsetWidth - tolerance);
 
         if (closeBottom || closeRight) {
             var col = Array.prototype.indexOf.call(cell.parentElement.children, cell) - this.leftClueDepth;
@@ -585,7 +588,7 @@ function PuzzleEntry(p, index) {
         }
 
         if (this.canDrawOnEdges) {
-            var edgeState = this.getEventEdgeState(e);
+            var edgeState = this.getEventEdgeState(e.currentTarget, e.clientX, e.clientY);
             this.lastEdgeState = null;
             this.setEdgeState(edgeState, (e.button > 0 || e.shiftKey) ? "cycle-back" : "cycle-front");
             if (edgeState.any) {
@@ -610,7 +613,7 @@ function PuzzleEntry(p, index) {
         e.preventDefault();
 
         if (this.canDrawOnEdges && !this.currentFill) {
-            var edgeState = this.getEventEdgeState(e);
+            var edgeState = this.getEventEdgeState(e.currentTarget, e.clientX, e.clientY);
             this.setEdgeState(edgeState, (e.button > 0 || e.shiftKey) ? "cycle-back" : "cycle-front");
         }
     }
@@ -763,7 +766,12 @@ function PuzzleEntry(p, index) {
     this.pathCopyjack = [" ", "╵", "╷", "│", "╴", "┘", "┐", "┤", "╶", "└", "┌", "├", "─", "┴", "┬", "┼"];
     this.updateSvg = function(td) {
         var svg = td.querySelector("svg");
-        if (!svg) { svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "-15 -15 30 30"); td.appendChild(svg); }
+        if (!svg) {
+            svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("viewBox", "-15 -15 30 30");
+            if (!this.canDrawOnEdges) { svg.classList.add("nopointer"); }
+            td.appendChild(svg);
+        }
 
         var pathCode = td.getAttribute("data-path-code");
         if (pathCode) { pathCode = parseInt(pathCode); } else { pathCode = 0; }
