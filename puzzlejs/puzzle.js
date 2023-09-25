@@ -175,6 +175,14 @@ function UndoManager() {
     }
 }
 
+// diagonals ideas:
+// -- no way to theme for now, too finicky?
+// -- line with rounded endpoints
+// -- maybe call "spokes" instead of "path"
+// -- if spokes, then can add a directional marker
+// -- two characters per cell not one
+// -- keyboard: / or \ rotates keys in that direction, then toggles back if re-pressed
+
 function PuzzleEntry(p, index) {
     this.container = p;
     p.puzzleEntry = this;
