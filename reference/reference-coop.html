@@ -1,0 +1,73 @@
+<!-- (c) 2023 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<html>
+    <head>
+        <title>Puzzle.js Reference: Co-op solving</title>
+        <link rel="stylesheet" href="reference-example.css"/>
+        <script type="text/javascript" src="reference-example.js"></script>
+        <link rel="stylesheet" href="../puzzlejs/puzzle.css"/>
+        <link rel="stylesheet" href="../puzzlejs/puzzle-basic-colors.css"/>
+        <script type="text/javascript" src="../puzzlejs/puzzle.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+
+                // This block of code simulates a co-op solving session.
+                document.querySelectorAll(".puzzle-entry").forEach((p, index) => {
+                    // Simulate co-op by setting the playerId (first parameter) to the index of the puzzle on the page.
+                    // Normally the playerId would be the same for all puzzles on the page and shared with a server.
+                    p.puzzleEntry.registerForCoop(index, (changes) =>
+                    {
+                        // This is the callback function that gets notified that edits have been made to the local instance,
+                        // and should be transmitted to the server. Let's simulate the server locally.
+
+                        // find the other puzzle on the page
+                        let otherPuzzleId = 1 - parseInt(changes[0].playerId);
+                        let otherPuzzle = document.querySelectorAll(".puzzle-entry")[otherPuzzleId];
+
+                        // send it the changes we recieved
+                        otherPuzzle.puzzleEntry.changeWithoutUndo(changes);
+                    });
+                });
+            });
+        </script>
+        <style>
+            body {
+                padding: 1rem;
+            }
+
+            body, h1, h2, h3, p, li, td {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            code {
+                background-color: #ddf;
+            }
+
+            .cell[data-coop-text-playerid="0"] {
+                color: blue;
+            }
+
+            .cell[data-coop-text-playerid="1"] {
+                color: red;
+            }
+
+            .example.second {
+                background-color: #fdd;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Puzzle.js Reference: Co-op Solving</h1>
+        <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
+        <p>This page is a reference for co-op support, as well as a local demo. Co-op support is designed to be server-agnostic, and the demo simulates a server in about 20 lines of JavaScript but runs entirely locally.</p>
+        <p>(Reference portion TBD pending finalization of the contract)</p>
+        <div class="example first">
+            <div class="puzzle-entry" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
+        </div>
+        <div class="example second">
+            <div class="puzzle-entry" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
+        </div>
+    </body>
+</html>

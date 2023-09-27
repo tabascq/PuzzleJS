@@ -116,14 +116,16 @@ function UndoManager() {
 
     this.undoUnits = function(puzzle, units) {
         var changes = [];
-        units.forEach(u => { changes.push({locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.oldValue}); });
+        units.forEach(u => { changes.push({locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.oldValue, playerId: puzzle.playerId}); });
         puzzle.changeWithoutUndo(changes);
+        if (puzzle.listener) { puzzle.listener(changes); }
     }
 
     this.redoUnits = function(puzzle, units) {
         var changes = [];
-        units.forEach(u => { changes.push({locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.newValue}); });
+        units.forEach(u => { changes.push({locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.newValue, playerId: puzzle.playerId}); });
         puzzle.changeWithoutUndo(changes);
+        if (puzzle.listener) { puzzle.listener(changes); }
     }
 
     this.undo = function() {
@@ -427,8 +429,12 @@ function PuzzleEntry(p, index) {
         return target.querySelector(".text span").innerText;
     }
 
-    this.changeWithoutUndo = function(changes)
-    {
+    this.registerForCoop = function(playerId, listener) {
+        this.playerId = playerId;
+        this.listener = listener;
+    }
+
+    this.changeWithoutUndo = function(changes) {
         var changedElems = [];
         var svgChangedElems = [];
 
@@ -441,7 +447,7 @@ function PuzzleEntry(p, index) {
             elems.forEach(elem => {
                 if (!changedElems.includes(elem)) { changedElems.push(elem); }
 
-                if (c.author) { elem.setAttribute("data-coop-" + c.propertyKey.replace("data-", "") + "-author", c.author); }
+                if (this.listener) { elem.setAttribute("data-coop-" + c.propertyKey.replace("data-", "") + "-playerId", c.playerId); }
 
                 switch(c.propertyKey) {
                     case "text":
