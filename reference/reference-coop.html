@@ -9,6 +9,11 @@
         <link rel="stylesheet" href="../puzzlejs/puzzle.css"/>
         <link rel="stylesheet" href="../puzzlejs/puzzle-basic-colors.css"/>
         <script type="text/javascript" src="../puzzlejs/puzzle.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+            });
+        </script>
         <style>
             body {
                 padding: 1rem;
@@ -55,8 +60,8 @@
         <ul>
             <li><code>puzzleId</code>: the <a href="reference-options.html#data-puzzle-id"><code>data-puzzle-id</code></a> of the puzzle that is changing.</li>
             <li><code>teamId</code>: the team that is cooperating on the puzzle.</li>
-            <li><code>locationKey</code>: the location of the cell that is changing.</li>
-            <li><code>propertyKey</code>: the property of the cell that is changing.</li>
+            <li><code>locationKey</code>: the location of the cell that is changing. Note: The location strings should be considered undocumented at this point.</li>
+            <li><code>propertyKey</code>: the property of the cell that is changing. Note: The property strings should be considered undocumented at this point.</li>
         </ul>
         <h3>Value properties</h3>
         <ul>
@@ -69,14 +74,18 @@
             <script>
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll(".puzzle-entry").forEach((p, index) => {
+            let log = document.getElementById("log");
+
             // Simulate co-op by setting the playerId (first parameter) to the index of the puzzle on the page.
             // Normally the playerId would be the same for all puzzles on the page and shared with a server.
             let playerId = index;
 
             p.puzzleEntry.registerForCoop("myteam", playerId, (changes) =>
             {
-                // This is the callback function that gets notified that edits have been made to the local instance,
-                // and should be transmitted to the server. Let's simulate the server locally.
+                // This is the callback function that gets notified that changes have been made to the local instance,
+                // and should be transmitted to the server. Let's log the changes and then simulate the server locally.
+                log.value += JSON.stringify(changes) + '\n';
+                log.scrollTop = log.scrollHeight;
 
                 // find the other puzzle on the page
                 let otherPuzzleId = 1 - parseInt(changes[0].playerId);
@@ -90,10 +99,12 @@
 </script>
         </div>
         <div class="example first">
-            <div class="puzzle-entry coop-example" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
+            <div class="puzzle-entry coop-example" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true" data-puzzle-id="coop-demo"></div>
         </div>
         <div class="example second">
-            <div class="puzzle-entry coop-example" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
+            <div class="puzzle-entry coop-example" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true" data-puzzle-id="coop-demo"></div>
         </div>
+        <h3>Demo changes log</h3>
+        <textarea id="log" title="Log" style="width: 100%; height: 100px;"></textarea>
     </body>
 </html>

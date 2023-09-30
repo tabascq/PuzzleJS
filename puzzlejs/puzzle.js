@@ -116,14 +116,14 @@ function UndoManager() {
 
     this.undoUnits = function(puzzle, units) {
         var changes = [];
-        units.forEach(u => { changes.push({puzzleId: puzzle.puzzleId, locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.oldValue, playerId: puzzle.playerId, teamId: puzzle.teamId}); });
+        units.forEach(u => { changes.push({puzzleId: puzzle.puzzleId, teamId: puzzle.teamId, locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.oldValue, playerId: puzzle.playerId}); });
         puzzle.changeWithoutUndo(changes);
         if (puzzle.listener) { puzzle.listener(changes); }
     }
 
     this.redoUnits = function(puzzle, units) {
         var changes = [];
-        units.forEach(u => { changes.push({puzzleId: puzzle.puzzleId, locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.newValue, playerId: puzzle.playerId, teamId: puzzle.teamId}); });
+        units.forEach(u => { changes.push({puzzleId: puzzle.puzzleId, teamId: puzzle.teamId, locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.newValue, playerId: puzzle.playerId}); });
         puzzle.changeWithoutUndo(changes);
         if (puzzle.listener) { puzzle.listener(changes); }
     }
