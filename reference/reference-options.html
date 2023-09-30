@@ -534,6 +534,18 @@
                 <div class="puzzle-entry" data-text="3x3" data-puzzle-id="MyCustomId"></div>
             </div>
         </div>
+        <div class="option" data-name="data-team-id">
+            <p>Allows for a specifically-named identifier to be used for the team, to facilitate co-op scenarios. This can be set programmatically, and can be left blank if the whole world is on the same team.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-team-id="MyTeamId"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-player-id">
+            <p>Allows for a specifically-named identifier to be used for the team member, to facilitate co-op scenarios. This can be set programmatically, and can be left blank if no player-specific information is needed.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-player-id="MyPlayerId"></div>
+            </div>
+        </div>
         <h2>Breaking Changes</h2>
         <p><code>data-state-key</code> has been renamed to <a href="#data-puzzle-id"><code>data-puzzle-id</code></a> since it is now used for multiple scenarios.</p>
     </body>

@@ -27,11 +27,11 @@
                 background-color: #ddf;
             }
 
-            .coop-example .cell[data-coop-text-playerId="0"] {
+            .coop-example .cell[data-coop-text-playerId="player-0"] {
                 color: blue;
             }
 
-            .coop-example .cell[data-coop-text-playerId="1"] {
+            .coop-example .cell[data-coop-text-playerId="player-1"] {
                 color: red;
             }
 
@@ -47,11 +47,10 @@
     <body>
         <h1>Puzzle.js Reference: Co-operative Solving</h1>
         <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
-        <p>This page is a reference for co-op support, as well as a local demo. Co-op support is designed to be server-agnostic, and the demo simulates a server in about 20 lines of JavaScript but runs entirely locally.</p>
+        <p>This page is a reference for co-op support, as well as a local demo. Co-op support is designed to be server-agnostic, and the demo simulates a server in about 25 lines of JavaScript but runs entirely locally.</p>
         <h2>Registering for co-op</h2>
-        <p>On each page where you wish to support co-operative solving, you can register with this function call:</p>
-        <p><code>document.querySelectorAll(".puzzle-entry").forEach(p => { p.puzzleEntry.registerForCoop(teamId, playerId, onLocalChange) });</code></p>
-        <p>where <code>teamId</code> is some string that you choose to identify the team (blank if you do not care), <code>playerId</code> is some string that you choose to identify the team member (blank if you do not care) and <code>onLocalChange</code> is a callback function that will be called whenever a change is made locally. The change will be expressed as an array of seriaizable key-value pairs suitable for storing in a database on the server and communicating to other clients. Since there are many different types of servers, the implementation of that part is currently not provided.</p>
+        <p>On each puzzle where you wish to support co-operative solving, you can programmatically set <a href="reference-options.html#data-team-id"><code>data-team-id</code></a> to identify the team and <a href="reference-options.html#data-player-id"><code>data-player-id</code></a> to identify the team member. Both of these properties are optional; for example, if no team is specified, then the entire world would be on the same team.</p>
+        <p>Then, call <code>addEventListener("puzzlechanged", ...)</code>, which will notify when a change is made locally. The <code>event.detail</code> property will be an array of seriaizable key-value pairs suitable for storing in a database on the server in last-writer-wins fashion and communicating to other clients. Since there are many different types of servers, the implementation of that part is currently not provided.</p>
         <p>When your client receives an array of key-value pairs from the server, it can set them on the puzzle by locating the correct puzzle on the page (if there is more than one) and calling:</p>
         <p><code>p.puzzleEntry.changeWithoutUndo(changes)</code></p>
         <h2>Co-op keys and values</h2>
@@ -59,14 +58,14 @@
         <h3>Key properties</h3>
         <ul>
             <li><code>puzzleId</code>: the <a href="reference-options.html#data-puzzle-id"><code>data-puzzle-id</code></a> of the puzzle that is changing.</li>
-            <li><code>teamId</code>: the team that is cooperating on the puzzle.</li>
+            <li><code>teamId</code>: the <a href="reference-options.html#data-team-id"><code>data-team-id</code></a> of the puzzle that is changing.</li>
             <li><code>locationKey</code>: the location of the cell that is changing. Note: The location strings should be considered undocumented at this point, but they will stabilize in the future.</li>
             <li><code>propertyKey</code>: the property of the cell that is changing. Note: The property strings should be considered undocumented at this point, but they will stabilize in the future.</li>
         </ul>
         <h3>Value properties</h3>
         <ul>
             <li><code>value</code>: the new value of the property.</li>
-            <li><code>playerId</code>: the team member that set the property (can be ignored).</li>
+            <li><code>playerId</code>: the <a href="reference-options.html#data-player-id"><code>data-player-id</code></a> for the team member that set the property (can be ignored).</li>
         </ul>
         <p>When co-op values are set on a puzzle, an attribute is also set on the puzzle of the form <code>data-coop-&lt;propertyKey&gt;-playerId</code>, with a value of the <code>playerId</code> that changed the property. These attributes can be used for styling, like the red/blue coloring in the demo below.</p>
         <h2>Serverless demo</h2>
@@ -74,26 +73,27 @@
             <script>
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll(".puzzle-entry").forEach((p, index) => {
-            let log = document.getElementById("log");
-
-            // Simulate co-op by setting the playerId (first parameter) to the index of the puzzle on the page.
+            // Simulate co-op by basing the playerId on the index of the puzzle on the page.
             // Normally the playerId would be the same for all puzzles on the page and shared with a server.
-            let playerId = index;
+            p.setAttribute("data-team-id", "my-team");
+            p.setAttribute("data-player-id", "player-" + index);
+        });
 
-            p.puzzleEntry.registerForCoop("myteam", playerId, (changes) =>
-            {
-                // This is the callback function that gets notified that changes have been made to the local instance,
-                // and should be transmitted to the server. Let's log the changes and then simulate the server locally.
-                log.value += JSON.stringify(changes) + '\n';
-                log.scrollTop = log.scrollHeight;
+        // This is the notification that changes have been made to the local instance.
+        document.addEventListener("puzzlechanged", e => {
+            let changes = e.detail;
 
-                // find the other puzzle on the page
-                let otherPuzzleId = 1 - parseInt(changes[0].playerId);
-                let otherPuzzle = document.querySelectorAll(".puzzle-entry")[otherPuzzleId];
+            // Log the changes and then simulate the server locally.
+            let log = document.getElementById("log");
+            log.value += JSON.stringify(changes) + '\n';
+            log.scrollTop = log.scrollHeight;
 
-                // send it the changes we recieved
-                otherPuzzle.puzzleEntry.changeWithoutUndo(changes);
-            });
+            // find the "teammate's" puzzle on the page. Note: The [data-player-id] part of the selector is only required for this demo.
+            let otherPlayerId = (changes[0].playerId === "player-0") ? "player-1" : "player-0";
+            let otherPuzzle = document.querySelector(`.puzzle-entry[data-puzzle-id=${changes[0].puzzleId}][data-player-id=${otherPlayerId}]`);
+
+            // send it the changes we recieved.
+            otherPuzzle.puzzleEntry.changeWithoutUndo(changes);
         });
     });
 </script>
