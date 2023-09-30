@@ -9,29 +9,6 @@
         <link rel="stylesheet" href="../puzzlejs/puzzle.css"/>
         <link rel="stylesheet" href="../puzzlejs/puzzle-basic-colors.css"/>
         <script type="text/javascript" src="../puzzlejs/puzzle.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
-
-                // This block of code simulates a co-op solving session.
-                document.querySelectorAll(".puzzle-entry").forEach((p, index) => {
-                    // Simulate co-op by setting the playerId (first parameter) to the index of the puzzle on the page.
-                    // Normally the playerId would be the same for all puzzles on the page and shared with a server.
-                    p.puzzleEntry.registerForCoop(index, (changes) =>
-                    {
-                        // This is the callback function that gets notified that edits have been made to the local instance,
-                        // and should be transmitted to the server. Let's simulate the server locally.
-
-                        // find the other puzzle on the page
-                        let otherPuzzleId = 1 - parseInt(changes[0].playerId);
-                        let otherPuzzle = document.querySelectorAll(".puzzle-entry")[otherPuzzleId];
-
-                        // send it the changes we recieved
-                        otherPuzzle.puzzleEntry.changeWithoutUndo(changes);
-                    });
-                });
-            });
-        </script>
         <style>
             body {
                 padding: 1rem;
@@ -45,12 +22,16 @@
                 background-color: #ddf;
             }
 
-            .cell[data-coop-text-playerid="0"] {
+            .coop-example .cell[data-coop-text-playerId="0"] {
                 color: blue;
             }
 
-            .cell[data-coop-text-playerid="1"] {
+            .coop-example .cell[data-coop-text-playerId="1"] {
                 color: red;
+            }
+
+            .example.code {
+                background-color: #dfd;
             }
 
             .example.second {
@@ -59,15 +40,60 @@
         </style>
     </head>
     <body>
-        <h1>Puzzle.js Reference: Co-op Solving</h1>
+        <h1>Puzzle.js Reference: Co-operative Solving</h1>
         <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
         <p>This page is a reference for co-op support, as well as a local demo. Co-op support is designed to be server-agnostic, and the demo simulates a server in about 20 lines of JavaScript but runs entirely locally.</p>
-        <p>(Reference portion TBD pending finalization of the contract)</p>
+        <h2>Registering for co-op</h2>
+        <p>On each page where you wish to support co-operative solving, you can register with this function call:</p>
+        <p><code>document.querySelectorAll(".puzzle-entry").forEach(p => { p.puzzleEntry.registerForCoop(teamId, playerId, onLocalChange) });</code></p>
+        <p>where <code>teamId</code> is some string that you choose to identify the team (blank if you do not care), <code>playerId</code> is some string that you choose to identify the team member (blank if you do not care) and <code>onLocalChange</code> is a callback function that will be called whenever a change is made locally. The change will be expressed as an array of seriaizable key-value pairs suitable for storing in a database on the server and communicating to other clients. Since there are many different types of servers, the implementation of that part is currently not provided.</p>
+        <p>When your client receives an array of key-value pairs from the server, it can set them on the puzzle by locating the correct puzzle on the page (if there is more than one) and calling:</p>
+        <p><code>p.puzzleEntry.changeWithoutUndo(changes)</code></p>
+        <h2>Co-op keys and values</h2>
+        <p>Each property change is represented as a tuple of six properties. Four of these properties form a composite key, and two of these properties form a composite value.</p>
+        <h3>Key properties</h3>
+        <ul>
+            <li><code>puzzleId</code>: the <a href="reference-options.html#data-puzzle-id"><code>data-puzzle-id</code></a> of the puzzle that is changing.</li>
+            <li><code>teamId</code>: the team that is cooperating on the puzzle.</li>
+            <li><code>locationKey</code>: the location of the cell that is changing.</li>
+            <li><code>propertyKey</code>: the property of the cell that is changing.</li>
+        </ul>
+        <h3>Value properties</h3>
+        <ul>
+            <li><code>value</code>: the new value of the property.</li>
+            <li><code>playerId</code>: the team member that set the property (can be ignored).</li>
+        </ul>
+        <p>When co-op values are set on a puzzle, an attribute is also set on the puzzle of the form <code>data-coop-&lt;propertyKey&gt;-playerId</code>, with a value of the <code>playerId</code> that changed the property. These attributes can be used for styling, like the red/blue coloring in the demo below.</p>
+        <h2>Serverless demo</h2>
+        <div class="example code">
+            <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll(".puzzle-entry").forEach((p, index) => {
+            // Simulate co-op by setting the playerId (first parameter) to the index of the puzzle on the page.
+            // Normally the playerId would be the same for all puzzles on the page and shared with a server.
+            let playerId = index;
+
+            p.puzzleEntry.registerForCoop("myteam", playerId, (changes) =>
+            {
+                // This is the callback function that gets notified that edits have been made to the local instance,
+                // and should be transmitted to the server. Let's simulate the server locally.
+
+                // find the other puzzle on the page
+                let otherPuzzleId = 1 - parseInt(changes[0].playerId);
+                let otherPuzzle = document.querySelectorAll(".puzzle-entry")[otherPuzzleId];
+
+                // send it the changes we recieved
+                otherPuzzle.puzzleEntry.changeWithoutUndo(changes);
+            });
+        });
+    });
+</script>
+        </div>
         <div class="example first">
-            <div class="puzzle-entry" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
+            <div class="puzzle-entry coop-example" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
         </div>
         <div class="example second">
-            <div class="puzzle-entry" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
+            <div class="puzzle-entry coop-example" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
         </div>
     </body>
 </html>

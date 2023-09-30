@@ -528,11 +528,13 @@
                 <div class="puzzle-entry" data-mode="slitherlink" data-text="6x4" data-show-commands="true"></div>
             </div>
         </div>
-        <div class="option" data-name="data-state-key">
-            <p>Allows for a specifically-named key to be used for the saved state in localStorage. When not present, the state key will be constructed from the page URL and the index of the puzzle among all <code>.puzzle-entry</code> objects on the page.</p>
+        <div class="option" data-name="data-puzzle-id">
+            <p>Allows for a specifically-named identifier to be used for the puzzle, both for saved state in localStorage and for co-op scenarios. When not present, the identifier will be constructed from the page URL and the index of the puzzle among all <code>.puzzle-entry</code> objects on the page.</p>
             <div class="example">
-                <div class="puzzle-entry" data-text="3x3" data-state-key="MyCustomKey"></div>
+                <div class="puzzle-entry" data-text="3x3" data-puzzle-id="MyCustomId"></div>
             </div>
         </div>
+        <h2>Breaking Changes</h2>
+        <p><code>data-state-key</code> has been renamed to <a href="#data-puzzle-id"><code>data-puzzle-id</code></a> since it is now used for multiple scenarios.</p>
     </body>
 </html>
