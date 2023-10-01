@@ -157,6 +157,7 @@ function UndoManager() {
         var retVal = false;
 
         if (this.activeGroup && this.activeGroup.units.length) {
+            this.redoUnits(this.activeGroup.puzzleEntry, this.activeGroup.units);
             this.undoStack.push(this.activeGroup);
             this.redoStack = [];
             retVal = true;
@@ -170,7 +171,6 @@ function UndoManager() {
         if (oldValue == newValue) return;
 
         var unit = { "elem": element, "propertyKey": propertyKey, "oldValue": oldValue, "newValue" : newValue };
-        this.redoUnits(this.activeGroup.puzzleEntry, [unit]);
         this.activeGroup.units.push(unit);
     }
 }
