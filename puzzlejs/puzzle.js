@@ -4,6 +4,18 @@
  */
 var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 
+// Spokes to-do:
+// - pointer support including dead zone at corner
+// - keyboard support including / and \ to rotate arrow keys
+// - reticle to indicate when arrow keys are rotated
+// - instructions
+// - documentation
+//   - data-spoke-style
+//   - spoke-*.svg styling
+//   - data-drag-draw-spoke
+// - examples including shading of used cells
+//   - Boggle with blanks
+
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
 // a puzzle can have multiple modes and multiple custom options.
@@ -31,6 +43,9 @@ puzzleModes["default"] = {
     "data-edges": null,
     "data-edge-style": "box",
 
+    // spokes
+    "data-spoke-style": "solid",
+
     // clues
     "data-clue-locations": null,
     "data-clue-indicators": null,
@@ -43,6 +58,7 @@ puzzleModes["default"] = {
     "data-drag-paint-fill": true,
     "data-drag-draw-path": false,
     "data-drag-draw-edge": false,
+    "data-drag-draw-spoke": false,
     "data-unselectable-givens": false,
     "data-extracts": null,
     "data-no-input": false,
@@ -174,14 +190,6 @@ function UndoManager() {
         this.activeGroup.units.push(unit);
     }
 }
-
-// diagonals ideas:
-// -- no way to theme for now, too finicky?
-// -- line with rounded endpoints
-// -- maybe call "spokes" instead of "path"
-// -- if spokes, then can add a directional marker
-// -- two characters per cell not one
-// -- keyboard: / or \ rotates keys in that direction, then toggles back if re-pressed
 
 function PuzzleEntry(p, index) {
     this.container = p;
@@ -753,6 +761,19 @@ function PuzzleEntry(p, index) {
         svg.appendChild(use);
     }
 
+    this.addSpokesToSvg = function(svg, spokeCode, spokePrefix) {
+        for (var i = 0; i < 8; i++) {
+            if (!(spokeCode & (1 << i))) continue;
+
+            var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            var spokePath = this.options["data-spoke-style"];
+            if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
+            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : ""));
+            if (i > 1) { use.setAttributeNS(null, "transform", "rotate(" + ((i >> 1) * 90) + ")"); }
+            svg.appendChild(use);
+        }
+    }
+
     this.pathTranslate = ["o0", "i2", "i0", "l0", "i1", "r2", "r1", "t1", "i3", "r3", "r0", "t3", "l1", "t2", "t0", "x0"];
     this.pathCopyjack = [" ", "╵", "╷", "│", "╴", "┘", "┐", "┤", "╶", "└", "┌", "├", "─", "┴", "┬", "┼"];
     this.updateSvg = function(td) {
@@ -793,6 +814,9 @@ function PuzzleEntry(p, index) {
         if (edgeCode & 2) { this.addEdgeToSvg(svg, "x-edge-bottom"); }
         if (edgeCode & 4) { this.addEdgeToSvg(svg, "x-edge-left"); }
         if (edgeCode & 8) { this.addEdgeToSvg(svg, "x-edge-right"); }
+
+        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
+        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
     }
 
     this.IsFullyLinked = function(code) {
@@ -954,12 +978,18 @@ function PuzzleEntry(p, index) {
             if (!givenPathCode) givenPathCode = 0;
             var pathCodeDelta = pathCode ^ givenPathCode;
 
+            var spokeCode = td.getAttribute("data-spoke-code");
+            var givenSpokeCode = td.getAttribute("data-given-spoke-code");
+            if (!spokeCode) spokeCode = 0;
+            if (!givenSpokeCode) givenSpokeCode = 0;
+            var spokeCodeDelta = spokeCode ^ givenSpokeCode;
+
             var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText.trim();
 
             var cellState = "";
-            if (fillIndex || edgeCodeDelta || pathCodeDelta || text) {
+            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || text) {
                 hasState = true;
-                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16);
+                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16) + (spokeCodeDelta / 16).toString(16) + (spokeCodeDelta % 16).toString(16);
                 if (text) { cellState += "," + text; }
             }
 
@@ -1290,6 +1320,12 @@ function PuzzleEntry(p, index) {
             }
             if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
             if (pathCode) { td.setAttribute("data-path-code", pathCode); }
+
+            var spokeCode = 0;
+            if (cellSavedState && cellSavedState.length > 4) {
+                spokeCode ^= (parseInt(cellSavedState[3], 16) * 16 + parseInt(cellSavedState[4], 16));
+            }
+            if (spokeCode) { td.setAttribute("data-spoke-code", pathCode); }
 
             if (this.options["data-clue-locations"] && textLines[r][c] != '@') {
                 var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
