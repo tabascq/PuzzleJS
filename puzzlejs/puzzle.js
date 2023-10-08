@@ -5,8 +5,7 @@
 var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 
 // Spokes to-do:
-// - keyboard support including / and \ to rotate arrow keys
-// - reticle to indicate when arrow keys are rotated
+// - toggle support
 // - instructions
 // - documentation
 //   - data-spoke-style
@@ -222,6 +221,7 @@ function PuzzleEntry(p, index) {
     if (!this.puzzleId) { this.puzzleId = window.location.pathname + "|" + index; }
     this.inhibitSave = false;
     this.xKeyMode = false;
+    this.tilt = 0;
 
     this.locateScope = function(scopeId) {
         var ancestor = this.container;
@@ -371,6 +371,11 @@ function PuzzleEntry(p, index) {
         e.preventDefault();
     }
 
+    this.setTilt = function(e, tilt) {
+        this.tilt = (this.tilt == tilt) ? 0 : tilt;
+        this.updateSvg(e.target);
+    }
+
     this.keyDown = function(e) {
         this.fShift = e.shiftKey;
 
@@ -381,10 +386,12 @@ function PuzzleEntry(p, index) {
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
-        else if (e.keyCode == 37) { this.move(e.target, 0, -1); } // left
-        else if (e.keyCode == 38) { this.move(e.target, -1, 0); } // up
-        else if (e.keyCode == 39) { this.move(e.target, 0, 1); } // right
-        else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
+        else if (e.keyCode == 37) { this.move(e.target, -this.tilt, -1); } // left
+        else if (e.keyCode == 38) { this.move(e.target, -1, this.tilt); } // up
+        else if (e.keyCode == 39) { this.move(e.target, this.tilt, 1); } // right
+        else if (e.keyCode == 40) { this.move(e.target, 1, -this.tilt); } // down
+        else if (e.keyCode == 191 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, 1); } // /
+        else if (e.keyCode == 220 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, -1); } // \
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
@@ -782,6 +789,16 @@ function PuzzleEntry(p, index) {
         }
     }
 
+    this.addReticleLayer = function(svg, cls) {
+        var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.classList.add(cls);
+        var spokePath = this.options["data-spoke-style"];
+        if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
+        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + "reticle");
+        if (this.tilt != 0) { use.setAttributeNS(null, "transform", "rotate(" + ((this.tilt) * 45) + ")"); }
+        svg.appendChild(use);
+    }
+
     this.pathTranslate = ["o0", "i2", "i0", "l0", "i1", "r2", "r1", "t1", "i3", "r3", "r0", "t3", "l1", "t2", "t0", "x0"];
     this.pathCopyjack = [" ", "╵", "╷", "│", "╴", "┘", "┐", "┤", "╶", "└", "┌", "├", "─", "┴", "┬", "┼"];
     this.updateSvg = function(td) {
@@ -823,8 +840,15 @@ function PuzzleEntry(p, index) {
         if (edgeCode & 4) { this.addEdgeToSvg(svg, "x-edge-left"); }
         if (edgeCode & 8) { this.addEdgeToSvg(svg, "x-edge-right"); }
 
-        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
-        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
+        if (this.options["data-drag-draw-spoke"]) {
+            this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
+            this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
+
+            if (td === this.currentCenterFocus) {
+                this.addReticleLayer(svg, "reticle-back");
+                this.addReticleLayer(svg, "reticle-front");
+            }
+        }
     }
 
     this.IsFullyLinked = function(code, maxLinks) {
@@ -897,10 +921,9 @@ function PuzzleEntry(p, index) {
         if ((colFrom === colTo && rowFrom === rowTo) || Math.abs(colFrom - colTo) > 1 || Math.abs(rowFrom - rowTo) > 1) return false;
 
         const fromVals = [128, 1, 2, 64, 0, 4, 32, 16, 8];
-        const toVals = [8, 16, 32, 4, 0, 64, 2, 1, 128];
 
         var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
-        return this.LinkCellsDirectional("spoke", 8, cellFrom, fromVals[index], cellTo, toVals[index]);
+        return this.LinkCellsDirectional("spoke", 8, cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
     }
 
     this.parseOuterClues = function(clues) {
@@ -1057,8 +1080,15 @@ function PuzzleEntry(p, index) {
     }
 
     this.updateCenterFocus = function(center) {
+        var oldCenter = this.currentCenterFocus;
+
         this.currentCenterFocus = center;
         this.currentCenterFocus.focus();
+
+        if (this.options["data-drag-draw-spoke"]) {
+            if (oldCenter) this.updateSvg(oldCenter);
+            if (center) this.updateSvg(center);
+        }
     }
 
     this.closeAbout = function() {
