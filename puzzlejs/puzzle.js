@@ -5,7 +5,6 @@
 var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 
 // Spokes to-do:
-// - pointer support including dead zone at corner
 // - keyboard support including / and \ to rotate arrow keys
 // - reticle to indicate when arrow keys are rotated
 // - instructions
@@ -14,7 +13,6 @@ var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 //   - spoke-*.svg styling
 //   - data-drag-draw-spoke
 // - examples including shading of used cells
-//   - Boggle with blanks
 
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
@@ -249,12 +247,12 @@ function PuzzleEntry(p, index) {
         var col = dcol + Array.prototype.indexOf.call(td.parentElement.children, td) - this.leftClueDepth;
         var row = drow + Array.prototype.indexOf.call(td.parentElement.parentElement.children, td.parentElement) - this.topClueDepth;
 
-        if (this.fShift && this.options["data-drag-draw-path"]) {
+        if (this.fShift && (this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"])) {
             var tdTo = this.table.querySelector("tr:nth-child(" + (row + this.topClueDepth + 1) + ") td:nth-child(" + (col + this.leftClueDepth + 1) + ")");
             if (tdTo && tdTo.classList.contains("inner-cell")) {
                 this.lastCell = td;
                 this.currentFill = this.findClassInList(td, this.fillClasses);
-                this.dragPaintAndPath(tdTo);
+                this.dragBetweenCells(tdTo);
             }
         }
 
@@ -611,6 +609,14 @@ function PuzzleEntry(p, index) {
 
         e.preventDefault();
 
+        var cellClientRect = e.currentTarget.getBoundingClientRect();
+        var centerOffsetX = e.clientX - cellClientRect.x - e.currentTarget.offsetWidth/2;
+        var centerOffsetY = e.clientY - cellClientRect.y - e.currentTarget.offsetHeight/2;
+
+        if ((centerOffsetX * centerOffsetX + centerOffsetY * centerOffsetY) * 4 < e.currentTarget.offsetWidth * e.currentTarget.offsetHeight) {
+            this.dragBetweenCells(e.currentTarget);
+        }
+
         if (this.canDrawOnEdges && !this.currentFill) {
             var edgeState = this.getEventEdgeState(e.currentTarget, e.clientX, e.clientY);
             this.setEdgeState(edgeState, (e.button > 0 || e.shiftKey) ? "cycle-back" : "cycle-front");
@@ -621,18 +627,27 @@ function PuzzleEntry(p, index) {
         this.pointerIsDown = false;
     }
 
-    this.dragPaintAndPath = function(to) {
+    this.dragBetweenCells = function(to) {
+        if (this.lastCell === to) return;
+
         var wantPaint = this.options["data-drag-paint-fill"] && !!this.currentFill;
         var canPaint = wantPaint;
 
         this.undoManager.startGroup(this);
 
-        if (this.options["data-drag-draw-path"]) {
+        if (wantPaint && (this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"])) {
             var targetFill = this.findClassInList(to, this.fillClasses);
             var setLast = false; 
             if (wantPaint && this.currentFill == this.fillClasses[0]) { this.currentFill = targetFill; setLast = true; }
             if (wantPaint && targetFill != this.fillClasses[0] && targetFill != this.currentFill) { canPaint = false; }
-            else { canPaint &= this.LinkCells(this.lastCell, to); }
+        }
+
+        if (this.options["data-drag-draw-spoke"] && (!wantPaint || canPaint)) {
+            canPaint &= this.LinkCellsSpoke(this.lastCell, to);
+        }
+
+        if (this.options["data-drag-draw-path"] && (!wantPaint || canPaint)) {
+            canPaint &= this.LinkCellsPath(this.lastCell, to);
         }
 
         if (canPaint && !to.classList.contains("given-fill")) {
@@ -647,13 +662,6 @@ function PuzzleEntry(p, index) {
             this.lastCell = to;
             if (didWork) { this.updateCenterFocus(to); }
         }
-    }
-
-    this.pointerEnter = function(e) {
-        if (!this.pointerIsDown) return;
-        if (this.lastCell === e.currentTarget) return;
-
-        this.dragPaintAndPath(e.currentTarget);
     }
 
     this.getOptionArray = function(option, splitchar, special) {
@@ -819,35 +827,37 @@ function PuzzleEntry(p, index) {
         this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
     }
 
-    this.IsFullyLinked = function(code) {
+    this.IsFullyLinked = function(code, maxLinks) {
         var linkCount = 0;
         while (code) { linkCount++; code &= (code - 1); }
-        return (linkCount >= 2);
+        return (linkCount >= maxLinks);
     }
 
-    this.LinkCellsDirectional = function(cellFrom, directionFrom, cellTo, directionTo) {
-        var codeFrom = cellFrom.getAttribute("data-path-code");
-        var codeTo = cellTo.getAttribute("data-path-code");
+    this.LinkCellsDirectional = function(attributeNameBase, maxLinks, cellFrom, directionFrom, cellTo, directionTo) {
+        var attributeName = "data-" + attributeNameBase + "-code";
+        var givenAttributeName = "data-given-" + attributeNameBase + "-code";
+        var codeFrom = cellFrom.getAttribute(attributeName);
+        var codeTo = cellTo.getAttribute(attributeName);
         if (!codeFrom) { codeFrom = 0; }
         if (!codeTo) { codeTo = 0; }
 
-        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && !this.IsFullyLinked(codeFrom) && !this.IsFullyLinked(codeTo)) {
-            this.undoManager.addUnit(cellFrom, "data-path-code", codeFrom, codeFrom | directionFrom);
-            this.undoManager.addUnit(cellTo, "data-path-code", codeTo, codeTo | directionTo);
+        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && !this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)) {
+            this.undoManager.addUnit(cellFrom, attributeName, codeFrom, codeFrom | directionFrom);
+            this.undoManager.addUnit(cellTo, attributeName, codeTo, codeTo | directionTo);
             return true;
         }
         else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
-            var givenCodeFrom = cellFrom.getAttribute("data-given-path-code");
-            var givenCodeTo = cellTo.getAttribute("data-given-path-code");
+            var givenCodeFrom = cellFrom.getAttribute(givenAttributeName);
+            var givenCodeTo = cellTo.getAttribute(givenAttributeName);
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
-                this.undoManager.addUnit(cellFrom, "data-path-code", codeFrom, codeFrom & ~directionFrom);
-                this.undoManager.addUnit(cellTo, "data-path-code", codeTo, codeTo & ~directionTo);
+                this.undoManager.addUnit(cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom);
+                this.undoManager.addUnit(cellTo, attributeName, codeTo, codeTo & ~directionTo);
 
                 if (this.options["data-drag-paint-fill"]) {
-                    if (cellFrom.getAttribute("data-path-code") == 0 && !cellFrom.classList.contains("given-fill")) {
+                    if (cellFrom.getAttribute(attributeName) == 0 && !cellFrom.classList.contains("given-fill")) {
                         this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses[0]);
                     }
-                    if (cellTo.getAttribute("data-path-code") == 0 && !cellTo.classList.contains("given-fill")) {
+                    if (cellTo.getAttribute(attributeName) == 0 && !cellTo.classList.contains("given-fill")) {
                         this.setClassInCycle(cellTo, "class-fill", this.fillClasses, this.fillClasses[0]);
                     }
                 }
@@ -858,7 +868,7 @@ function PuzzleEntry(p, index) {
         return false;
     }
 
-    this.LinkCells = function(cellFrom, cellTo)
+    this.LinkCellsPath = function(cellFrom, cellTo)
     {
         var colFrom = Array.prototype.indexOf.call(cellFrom.parentElement.children, cellFrom) - this.leftClueDepth;
         var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement) - this.topClueDepth;
@@ -866,15 +876,31 @@ function PuzzleEntry(p, index) {
         var rowTo = Array.prototype.indexOf.call(cellTo.parentElement.parentElement.children, cellTo.parentElement) - this.topClueDepth;
 
         if (colFrom === colTo) {
-            if (rowFrom === rowTo - 1) { return this.LinkCellsDirectional(cellFrom, 2, cellTo, 1); }
-            else if (rowFrom === rowTo + 1) { return this.LinkCellsDirectional(cellFrom, 1, cellTo, 2); }
+            if (rowFrom === rowTo - 1) { return this.LinkCellsDirectional("path", 2, cellFrom, 2, cellTo, 1); }
+            else if (rowFrom === rowTo + 1) { return this.LinkCellsDirectional("path", 2, cellFrom, 1, cellTo, 2); }
         }
         else if (rowFrom === rowTo) {
-            if (colFrom === colTo - 1) { return this.LinkCellsDirectional(cellFrom, 8, cellTo, 4); }
-            else if (colFrom === colTo + 1) { return this.LinkCellsDirectional(cellFrom, 4, cellTo, 8); }
+            if (colFrom === colTo - 1) { return this.LinkCellsDirectional("path", 2, cellFrom, 8, cellTo, 4); }
+            else if (colFrom === colTo + 1) { return this.LinkCellsDirectional("path", 2, cellFrom, 4, cellTo, 8); }
         }
 
         return false;
+    }
+
+    this.LinkCellsSpoke = function(cellFrom, cellTo)
+    {
+        var colFrom = Array.prototype.indexOf.call(cellFrom.parentElement.children, cellFrom) - this.leftClueDepth;
+        var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement) - this.topClueDepth;
+        var colTo = Array.prototype.indexOf.call(cellTo.parentElement.children, cellTo) - this.leftClueDepth;
+        var rowTo = Array.prototype.indexOf.call(cellTo.parentElement.parentElement.children, cellTo.parentElement) - this.topClueDepth;
+
+        if ((colFrom === colTo && rowFrom === rowTo) || Math.abs(colFrom - colTo) > 1 || Math.abs(rowFrom - rowTo) > 1) return false;
+
+        const fromVals = [128, 1, 2, 64, 0, 4, 32, 16, 8];
+        const toVals = [8, 16, 32, 4, 0, 64, 2, 1, 128];
+
+        var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
+        return this.LinkCellsDirectional("spoke", 8, cellFrom, fromVals[index], cellTo, toVals[index]);
     }
 
     this.parseOuterClues = function(clues) {
@@ -1135,7 +1161,7 @@ function PuzzleEntry(p, index) {
 
     this.canDrawOnEdges = this.options["data-drag-draw-edge"] && !this.options["data-no-input"];
 
-    this.canHaveCenterFocus = this.options["data-text-characters"] || (fills && this.options["data-fill-cycle"]) || this.options["data-drag-draw-path"];
+    this.canHaveCenterFocus = this.options["data-text-characters"] || (fills && this.options["data-fill-cycle"]) || this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"];
     this.canHaveCornerFocus = this.canDrawOnEdges;
     this.keyboardFocusModel = this.options["data-no-input"] ? "none" : (this.canHaveCornerFocus ? "corner" : "center");
     this.cornerFocus = null;
@@ -1250,7 +1276,6 @@ function PuzzleEntry(p, index) {
                     td.addEventListener("beforeinput", e => { this.beforeInput(e); });
                     td.addEventListener("pointerdown",  e => { this.pointerDown(e); });
                     td.addEventListener("pointermove",  e => { this.pointerMove(e); });
-                    td.addEventListener("pointerenter",  e => { this.pointerEnter(e); });
                     td.addEventListener("pointercancel",  e => { this.pointerCancel(e); });
                     td.addEventListener("contextmenu",  e => { e.preventDefault(); });
                     if (this.options["data-clue-locations"] === "crossword") {
