@@ -72,30 +72,38 @@
         <div class="example code">
             <script>
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll(".puzzle-entry").forEach((p, index) => {
+        document.querySelectorAll(".puzzle-entry").forEach((puzzle, index) => {
             // Simulate co-op by basing the playerId on the index of the puzzle on the page.
             // Normally the playerId would be the same for all puzzles on the page and shared with a server.
-            p.setAttribute("data-team-id", "my-team");
-            p.setAttribute("data-player-id", "player-" + index);
+            puzzle.setAttribute("data-team-id", "my-team");
+            puzzle.setAttribute("data-player-id", "player-" + index);
         });
 
         // This is the notification that changes have been made to the local instance.
         document.addEventListener("puzzlechanged", e => {
             let changes = e.detail;
 
-            // Log the changes and then simulate the server locally.
+            // Log the changes for the demo
             let log = document.getElementById("log");
             log.value += JSON.stringify(changes) + '\n';
             log.scrollTop = log.scrollHeight;
 
-            // find the "teammate's" puzzle on the page. Note: The [data-player-id] part of the selector is only required for this demo.
-            let otherPlayerId = (changes[0].playerId === "player-0") ? "player-1" : "player-0";
-            let otherPuzzle = document.querySelector(`.puzzle-entry[data-puzzle-id=${changes[0].puzzleId}][data-player-id=${otherPlayerId}]`);
-
-            // send it the changes we recieved.
-            otherPuzzle.puzzleEntry.changeWithoutUndo(changes);
+            // Send the changes to the "server"
+            // Just a local call here, replace with your networking infrastructure
+            receiveDemoChanges(changes);
         });
     });
+
+    // Receive changes from the "server"
+    // Just a local call here, replace with your networking infrastructure
+    function receiveDemoChanges(changes) {
+        // find the "teammate's" puzzle on the page. Note: The [data-player-id] part of the selector is only required for this demo.
+        let otherPlayerId = (changes[0].playerId === "player-0") ? "player-1" : "player-0";
+        let otherPuzzle = document.querySelector(`.puzzle-entry[data-puzzle-id=${changes[0].puzzleId}][data-player-id=${otherPlayerId}]`);
+
+        // send it the changes we received.
+        otherPuzzle.puzzleEntry.changeWithoutUndo(changes);
+    }
 </script>
         </div>
         <div class="example first">
