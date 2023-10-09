@@ -47,7 +47,9 @@ puzzleModes["default"] = {
     "data-extracts": null,
     "data-no-input": false,
     "data-show-commands": false,
-    "data-state-key": null
+    "data-puzzle-id": null,
+    "data-team-id": null,
+    "data-player-id": null
 };
 
 puzzleModes["linear"] = {
@@ -114,29 +116,18 @@ function UndoManager() {
     this.redoStack = [];
     this.activeGroup = null;
 
-    // undo/redo support
-    this.redoUnit = function(unit) {
-        var extractId = unit.elem.getAttribute("data-extract-id");
-        var elems = extractId ? document.querySelectorAll("." + extractId) : [unit.elem];
-
-        elems.forEach(elem =>{
-            if (unit.adds) { unit.adds.forEach((a) => { elem.classList.add(a); }); }
-            if (unit.removes) { unit.removes.forEach((a) => { elem.classList.remove(a); }); }
-            if (unit.attribute) { elem.setAttribute(unit.attribute, unit.newValue); }
-            if (unit.oldText || unit.newText) { elem.innerText = unit.newText; }
-        });
+    this.undoUnits = function(puzzle, units) {
+        var changes = [];
+        units.forEach(u => { changes.push({puzzleId: puzzle.puzzleId, teamId: puzzle.container.getAttribute("data-team-id"), locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.oldValue, playerId: puzzle.container.getAttribute("data-player-id")}); });
+        puzzle.changeWithoutUndo(changes);
+        puzzle.container.dispatchEvent(new CustomEvent("puzzlechanged", { detail: changes, bubbles: true }));
     }
 
-    this.undoUnit = function(unit) {
-        var extractId = unit.elem.getAttribute("data-extract-id");
-        var elems = extractId ? document.querySelectorAll("." + extractId) : [unit.elem];
-
-        elems.forEach(elem =>{
-            if (unit.adds) { unit.adds.forEach((a) => { elem.classList.remove(a); }); }
-            if (unit.removes) { unit.removes.forEach((a) => { elem.classList.add(a); }); }
-            if (unit.attribute) { elem.setAttribute(unit.attribute, unit.oldValue); }
-            if (unit.oldText || unit.newText) { elem.innerText = unit.oldText; }
-        });
+    this.redoUnits = function(puzzle, units) {
+        var changes = [];
+        units.forEach(u => { changes.push({puzzleId: puzzle.puzzleId, teamId: puzzle.container.getAttribute("data-team-id"), locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.newValue, playerId: puzzle.container.getAttribute("data-player-id")}); });
+        puzzle.changeWithoutUndo(changes);
+        puzzle.container.dispatchEvent(new CustomEvent("puzzlechanged", { detail: changes, bubbles: true }));
     }
 
     this.undo = function() {
@@ -144,9 +135,8 @@ function UndoManager() {
         if (this.undoStack.length == 0) { return; }
 
         var group = this.undoStack.pop();
-        group.units.forEach((unit) => { this.undoUnit(unit); });
+        this.undoUnits(group.puzzleEntry, group.units);
         this.redoStack.push(group);
-        this.notify(group);
     }
 
     this.redo = function() {
@@ -154,9 +144,8 @@ function UndoManager() {
         if (this.redoStack.length == 0) { return; }
 
         var group = this.redoStack.pop();
-        group.units.forEach((unit) => { this.redoUnit(unit); });
+        this.redoUnits(group.puzzleEntry, group.units);
         this.undoStack.push(group);
-        this.notify(group);
     }
 
     this.startGroup = function(puzzleEntry) {
@@ -168,9 +157,9 @@ function UndoManager() {
         var retVal = false;
 
         if (this.activeGroup && this.activeGroup.units.length) {
+            this.redoUnits(this.activeGroup.puzzleEntry, this.activeGroup.units);
             this.undoStack.push(this.activeGroup);
             this.redoStack = [];
-            this.notify(this.activeGroup);
             retVal = true;
         }
 
@@ -178,45 +167,11 @@ function UndoManager() {
         return retVal;
     }
 
-    this.modifyClass = function(elem, adds, removes) {
-        var trueAdds = [];
-        var trueRemoves = [];
+    this.addUnit = function(element, propertyKey, oldValue, newValue) {
+        if (oldValue == newValue) return;
 
-        adds.forEach((a) => { if (a && !elem.classList.contains(a)) { trueAdds.push(a); }});
-        removes.forEach((r) => { if (r && elem.classList.contains(r)) { trueRemoves.push(r); }});
-
-        if (trueAdds.length == 0 && trueRemoves.length == 0) { return; }
-
-        var unit = { "elem": elem };
-        if (trueAdds.length > 0) { unit.adds = trueAdds; }
-        if (trueRemoves.length > 0) { unit.removes = trueRemoves; }
-
-        this.redoUnit(unit);
+        var unit = { "elem": element, "propertyKey": propertyKey, "oldValue": oldValue, "newValue" : newValue };
         this.activeGroup.units.push(unit);
-    }
-
-    this.modifyAttribute = function(elem, attribute, newValue) {
-        var oldValue = elem.getAttribute(attribute);
-        if (oldValue == newValue) { return; }
-
-        var unit = { "elem": elem, "attribute": attribute, "oldValue": oldValue, "newValue": newValue };
-
-        this.redoUnit(unit);
-        this.activeGroup.units.push(unit);
-    }
-
-    this.modifyText = function(elem, newText) {
-        var oldText = elem.innerText;
-        if (oldText == newText) { return; }
-
-        var unit = { "elem": elem, "oldText": oldText, "newText": newText };
-
-        this.redoUnit(unit);
-        this.activeGroup.units.push(unit);
-    }
-
-    this.notify = function(group) {
-        group.puzzleEntry.onUndoRedo(group.units);
     }
 }
 
@@ -249,8 +204,8 @@ function PuzzleEntry(p, index) {
     this.pointerIsDown = false;
     this.lastCell = null;
     this.currentFill = null;
-    this.stateKey = this.options["data-state-key"];
-    if (!this.stateKey) { this.stateKey = window.location.href + "|" + index; }
+    this.puzzleId = this.options["data-puzzle-id"];
+    if (!this.puzzleId) { this.puzzleId = window.location.pathname + "|" + index; }
     this.inhibitSave = false;
     this.xKeyMode = false;
 
@@ -346,22 +301,22 @@ function PuzzleEntry(p, index) {
         return cls;
     }
 
-    this.cycleClasses = function(td, classes, reverse) {
+    this.cycleClasses = function(td, propertyKey, classes, reverse) {
         var cls = this.findClassInList(td, classes);
 
         if (cls) {
             this.undoManager.startGroup(this);
             cls = classes[(classes.indexOf(cls) + classes.length + (reverse ? -1 : 1)) % classes.length];
-            this.setClassInCycle(td, classes, cls);
+            this.setClassInCycle(td, propertyKey, classes, cls);
             this.undoManager.endGroup();
         }
 
         return cls;
     }
 
-    this.setClassInCycle = function(td, classes, cls) {
+    this.setClassInCycle = function(td, propertyKey, classes, cls) {
         if (classes && !td.classList.contains(cls)) {
-            this.undoManager.modifyClass(td, [cls], classes);
+            this.undoManager.addUnit(td, propertyKey, this.findClassInList(td, classes), cls);
         }
     }
 
@@ -371,9 +326,9 @@ function PuzzleEntry(p, index) {
             if (this.options["data-text-shift-key"] == "rebus" || !val.includes(ch)) { val = val + ch; }
             else { val = val.replace(ch, ""); }
 
-            this.setText(e.target, ["small-text"], [], val);
+            this.setText(e.target, val, true);
         } else {
-            this.setText(e.target, [], ["small-text"], ch);
+            this.setText(e.target, ch, false);
             if (this.options["data-text-advance-on-type"]) { this.move(e.target, this.dy, this.dx); }
         }
     }
@@ -390,9 +345,9 @@ function PuzzleEntry(p, index) {
         }
 
         if (newVal) {
-            this.setText(e.target, [], [], newVal);
+            this.setText(e.target, newVal, e.target.classList.contains("small-text"));
         } else {
-            this.setText(e.target, [], ["small-text"], "");
+            this.setText(e.target, "", false);
             if (this.options["data-text-advance-on-type"]) { this.move(e.target, -this.dy, -this.dx); }
         }
     }
@@ -426,12 +381,12 @@ function PuzzleEntry(p, index) {
                 if (this.options["data-text-advance-on-type"] && this.numCols > 1 && this.numRows > 1) { this.dx = 1 - this.dx; this.dy = 1 - this.dy; }
                 if (this.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
-                if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, this.fillClasses, e.shiftKey); }
+                if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.fillClasses, e.shiftKey); }
             }
         } else if (e.keyCode == 8) { // backspace
             this.handleBackspaceChar(e);
         } else if (e.keyCode == 46) { // delete
-            this.setText(e.target, [], [], "");
+            this.setText(e.target, "", e.target.classList.contains("small-text"));
         } else {
             var code = e.keyCode;
             if (code >= 96 && code <= 105) { code -= 48; }
@@ -461,12 +416,13 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 88) { this.xKeyMode = !this.xKeyMode; this.cornerFocus.classList.toggle("x-mode"); } // toggle "x" mode
     }
 
-    this.setText = function(target, adds, removes, text) {
+    this.setText = function(target, text, smalltext) {
         var textElement = target.querySelector(".text span");
         if (textElement.innerText != text && !target.classList.contains("given-text")) {
+            var wasSmalltext = target.classList.contains("small-text");
             this.undoManager.startGroup(this);
-            this.undoManager.modifyClass(target, adds, removes);
-            this.undoManager.modifyText(textElement, text);
+            if (wasSmalltext != smalltext) { this.undoManager.addUnit(target, "class-small-text", wasSmalltext ? "small-text" : null, smalltext ? "small-text" : null); }
+            this.undoManager.addUnit(target, "text", textElement.innerText, text);
             this.undoManager.endGroup();
         }
     }
@@ -475,17 +431,44 @@ function PuzzleEntry(p, index) {
         return target.querySelector(".text span").innerText;
     }
 
-    this.onUndoRedo = function(units) {
-        units.forEach((u) => {
-            if (u.attribute == "data-path-code" || u.attribute == "data-edge-code" || u.attribute == "data-x-edge-code") {
-                this.updateSvg(u.elem);
-            }
-            if (u.elem instanceof HTMLTableCellElement) {
-                this.processTdForCopyjack(u.elem);
-            } else if (u.elem.parentElement.parentElement instanceof HTMLTableCellElement) {
-                this.processTdForCopyjack(u.elem.parentElement.parentElement);
-            }
+    this.changeWithoutUndo = function(changes) {
+        var changedElems = [];
+        var svgChangedElems = [];
+
+        changes.forEach(c => {
+            var primary = this.lookup[c.locationKey];
+
+            var extractId = primary.getAttribute("data-extract-id");
+            var elems = extractId ? document.querySelectorAll("." + extractId) : [primary];
+
+            elems.forEach(elem => {
+                if (!changedElems.includes(elem)) { changedElems.push(elem); }
+
+                if (c.playerId) { elem.setAttribute("data-coop-" + c.propertyKey.replace("data-", "") + "-playerId", c.playerId); }
+
+                switch(c.propertyKey) {
+                    case "text":
+                        var textElement = elem.querySelector(".text span");
+                        textElement.innerText = c.value;
+                        break;
+                    case "class-small-text":
+                        if (c.value) { elem.classList.add("small-text"); }
+                        else { elem.classList.remove("small-text"); }
+                        break;
+                    case "class-fill":
+                        this.fillClasses.forEach(fc => elem.classList.remove(fc));
+                        if (c.value) { elem.classList.add(c.value); }
+                        break;
+                    default:
+                        if (c.propertyKey.endsWith("-code") && !svgChangedElems.includes(elem)) { svgChangedElems.push(elem); }
+                        elem.setAttribute(c.propertyKey, c.value);
+                        break;
+                }
+            });
         });
+
+        svgChangedElems.forEach(el => { this.updateSvg(el); });
+        changedElems.forEach(el => { this.processTdForCopyjack(el); });
     }
 
     this.getEventEdgeState = function(cell, clientX, clientY) {
@@ -561,8 +544,8 @@ function PuzzleEntry(p, index) {
         if (curEdgeVal != this.fromEdgeVal) return;
 
         this.undoManager.startGroup(this);
-        if (this.fromEdgeVal == 1 || this.toEdgeVal == 1) this.undoManager.modifyAttribute(edgeState.cell, "data-edge-code", curEdgeCode ^ edgeState.edgeCode);
-        if (this.fromEdgeVal == -1 || this.toEdgeVal == -1) this.undoManager.modifyAttribute(edgeState.cell, "data-x-edge-code", curXEdgeCode ^ edgeState.edgeCode);
+        if (this.fromEdgeVal == 1 || this.toEdgeVal == 1) this.undoManager.addUnit(edgeState.cell, "data-edge-code", curEdgeCode, curEdgeCode ^ edgeState.edgeCode);
+        if (this.fromEdgeVal == -1 || this.toEdgeVal == -1) this.undoManager.addUnit(edgeState.cell, "data-x-edge-code", curXEdgeCode, curXEdgeCode ^ edgeState.edgeCode);
         this.undoManager.endGroup();
         this.updateSvg(edgeState.cell);
     }
@@ -597,7 +580,7 @@ function PuzzleEntry(p, index) {
             }
         }
         
-        if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, this.fillClasses, e.button > 0 || e.shiftKey); }
+        if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, "class-fill", this.fillClasses, e.button > 0 || e.shiftKey); }
         else { this.currentFill = this.findClassInList(e.currentTarget, this.fillClasses); }
         
         if (this.canHaveCenterFocus) {
@@ -637,10 +620,10 @@ function PuzzleEntry(p, index) {
         }
 
         if (canPaint && !to.classList.contains("given-fill")) {
-            this.setClassInCycle(to, this.fillClasses, this.currentFill);
+            this.setClassInCycle(to, "class-fill", this.fillClasses, this.currentFill);
         }
 
-        if (canPaint && setLast) { this.setClassInCycle(this.lastCell, this.fillClasses, this.currentFill); }
+        if (canPaint && setLast) { this.setClassInCycle(this.lastCell, "class-fill", this.fillClasses, this.currentFill); }
 
         var didWork = this.undoManager.endGroup();
 
@@ -817,23 +800,23 @@ function PuzzleEntry(p, index) {
         if (!codeTo) { codeTo = 0; }
 
         if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && !this.IsFullyLinked(codeFrom) && !this.IsFullyLinked(codeTo)) {
-            this.undoManager.modifyAttribute(cellFrom, "data-path-code", codeFrom | directionFrom);
-            this.undoManager.modifyAttribute(cellTo, "data-path-code", codeTo | directionTo);
+            this.undoManager.addUnit(cellFrom, "data-path-code", codeFrom, codeFrom | directionFrom);
+            this.undoManager.addUnit(cellTo, "data-path-code", codeTo, codeTo | directionTo);
             return true;
         }
         else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
             var givenCodeFrom = cellFrom.getAttribute("data-given-path-code");
             var givenCodeTo = cellTo.getAttribute("data-given-path-code");
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
-                this.undoManager.modifyAttribute(cellFrom, "data-path-code", codeFrom & ~directionFrom);
-                this.undoManager.modifyAttribute(cellTo, "data-path-code", codeTo & ~directionTo);
+                this.undoManager.addUnit(cellFrom, "data-path-code", codeFrom, codeFrom & ~directionFrom);
+                this.undoManager.addUnit(cellTo, "data-path-code", codeTo, codeTo & ~directionTo);
 
                 if (this.options["data-drag-paint-fill"]) {
                     if (cellFrom.getAttribute("data-path-code") == 0 && !cellFrom.classList.contains("given-fill")) {
-                        this.setClassInCycle(cellFrom, this.fillClasses, this.fillClasses[0]);
+                        this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses[0]);
                     }
                     if (cellTo.getAttribute("data-path-code") == 0 && !cellTo.classList.contains("given-fill")) {
-                        this.setClassInCycle(cellTo, this.fillClasses, this.fillClasses[0]);
+                        this.setClassInCycle(cellTo, "class-fill", this.fillClasses, this.fillClasses[0]);
                     }
                 }
                 return true;
@@ -928,7 +911,7 @@ function PuzzleEntry(p, index) {
     }
 
     this.prepareToReset = function() {
-        localStorage.removeItem(this.stateKey);
+        localStorage.removeItem(this.puzzleId);
 
         this.table.querySelectorAll(".inner-cell.extract .text span").forEach(s => {
             var extractId = s.getAttribute("data-extract-id");
@@ -975,8 +958,8 @@ function PuzzleEntry(p, index) {
             stateArray.push(cellState);
         });
 
-        if (hasState) { localStorage.setItem(this.stateKey, stateArray.join("|")); }
-        else { localStorage.removeItem(this.stateKey); }
+        if (hasState) { localStorage.setItem(this.puzzleId, stateArray.join("|")); }
+        else { localStorage.removeItem(this.puzzleId); }
     }
 
     this.setCornerFocusMode = function(notyet) {
@@ -1078,6 +1061,7 @@ function PuzzleEntry(p, index) {
     }
 
     // --- Construct the interactive player. ---
+    this.lookup = {};
     this.fillClasses = this.getOptionArray("data-fill-classes", " ");
 
     var clueIndicators = this.getOptionArray("data-clue-indicators", " ", "auto");
@@ -1122,7 +1106,7 @@ function PuzzleEntry(p, index) {
     var regularRowBorder = 0;
     var regularColBorder = 0;
 
-    var savedState = localStorage.getItem(this.stateKey);
+    var savedState = localStorage.getItem(this.puzzleId);
     if (savedState) { savedState = savedState.split("|"); }
 
     if (!allowInput) {
@@ -1172,6 +1156,8 @@ function PuzzleEntry(p, index) {
             var td = document.createElement("td");
             td.classList.add("cell");
             td.classList.add("inner-cell");
+            td.id = "cell-" + r + "-" + c;
+            this.lookup[td.id] = td;
             var ch = textLines[r][c];
             
             var textwrapper = document.createElement("div");
