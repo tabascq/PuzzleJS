@@ -45,11 +45,11 @@
         </style>
     </head>
     <body>
-        <h1>Puzzle.js Reference: Co-operative Solving</h1>
+        <h1>Puzzle.js Reference: Cooperative Solving</h1>
         <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
         <p>This page is a reference for co-op support, as well as a local demo. Co-op support is designed to be server-agnostic, and the demo simulates a server in about 25 lines of JavaScript but runs entirely locally.</p>
         <h2>Registering for co-op</h2>
-        <p>On each puzzle where you wish to support co-operative solving, you can programmatically set <a href="reference-options.html#data-team-id"><code>data-team-id</code></a> to identify the team and <a href="reference-options.html#data-player-id"><code>data-player-id</code></a> to identify the team member. Both of these properties are optional; for example, if no team is specified, then the entire world would be on the same team.</p>
+        <p>On each puzzle where you wish to support cooperative solving, you can programmatically set <a href="reference-options.html#data-team-id"><code>data-team-id</code></a> to identify the team and <a href="reference-options.html#data-player-id"><code>data-player-id</code></a> to identify the team member. Both of these properties are optional; for example, if no team is specified, then the entire world would be on the same team.</p>
         <p>Then, call <code>addEventListener("puzzlechanged", ...)</code>, which will notify when a change is made locally. The <code>event.detail</code> property will be an array of seriaizable key-value pairs suitable for storing in a database on the server in last-writer-wins fashion and communicating to other clients. Since there are many different types of servers, the implementation of that part is currently not provided.</p>
         <p>When your client receives an array of key-value pairs from the server, it can set them on the puzzle by locating the correct puzzle on the page (if there is more than one) and calling:</p>
         <p><code>p.puzzleEntry.changeWithoutUndo(changes)</code></p>
