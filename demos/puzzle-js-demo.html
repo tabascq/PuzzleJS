@@ -38,6 +38,12 @@
             .wolves-and-sheep-example .cell.sheep { background: lightgreen; }
             .wolves-and-sheep-example .cell.wolf.given-fill::after { content: "🐺"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
             .wolves-and-sheep-example .cell.sheep.given-fill::after { content: "🐑"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+            .wordsearch-example .cell[data-spoke-code]:not([data-spoke-code="0"]) { background: lightgray; }
+
+            .spokes-example .cell { height: 60px; width: 60px; text-shadow: none; color: white; }
+            .spokes-example .cell .text { transform: translate(0px, -2px); }
+            .spokes-example .cell::before { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); content:""; width: 40px; height: 40px; border-radius: 20px; background: black; }
         </style>
     </head>
     <body>
@@ -259,6 +265,17 @@
             <p>Slitherlink with wolves on the outside and sheep on the inside.</p>
             <div class="example">
                 <div class="puzzle-entry wolves-and-sheep-example" data-show-commands="true" data-text="...3.|.32..|...2.|..30.|....." data-mode="notext slitherlink" data-fill-classes="unknown sheep wolf" data-fills="1...1|.....|..2..|.....|1...1"></div>
+            </div>
+
+            <h2>Wordsearch with hidden message</h2>
+            <div class="example">
+                <div class="puzzle-entry wordsearch-example" data-mode="wordsearch" data-show-commands="true" data-text="vbluew|indigo|oedcnl|leoeal|erlore|tgrsoy"></div>
+            </div>
+
+            <h2>Spokes</h2>
+            <p>Draw a single network consisting of a number of spokes from each circle matching the number in the circle. Spokes cannot cross each other. Although hardly necessary in this simple example, note that you can mark invalid spokes.</p>
+            <div class="example">
+                <div class="puzzle-entry spokes-example" data-mode="spokes" data-show-commands="true" data-text="252|433|100" data-edge-style="none"></div>
             </div>
 
             <button class="clipboard-button"></button>

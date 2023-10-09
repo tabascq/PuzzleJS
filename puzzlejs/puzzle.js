@@ -9,9 +9,10 @@ var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 // - instructions
 // - documentation
 //   - data-spoke-style
+//   - data-spoke-max
+//   - data-spoke-allow-x
 //   - spoke-*.svg styling
 //   - data-drag-draw-spoke
-// - examples including shading of used cells
 
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
@@ -42,6 +43,8 @@ puzzleModes["default"] = {
 
     // spokes
     "data-spoke-style": "solid",
+    "data-spoke-max": null,
+    "data-spoke-allow-x": false,
 
     // clues
     "data-clue-locations": null,
@@ -106,6 +109,16 @@ puzzleModes["slitherlink"] = {
 
 puzzleModes["solution"] = {
     "data-no-input": true
+}
+
+puzzleModes["wordsearch"] = {
+    "data-drag-draw-spoke": true,
+    "data-spoke-only-straight": true
+}
+
+puzzleModes["spokes"] = {
+    "data-drag-draw-spoke": true,
+    "data-spoke-allow-x": true
 }
 
 // Parse string as raw JS objects. e.g. "false" -> false
@@ -852,6 +865,8 @@ function PuzzleEntry(p, index) {
     }
 
     this.IsFullyLinked = function(code, maxLinks) {
+        if (!maxLinks) return false;
+
         var linkCount = 0;
         while (code) { linkCount++; code &= (code - 1); }
         return (linkCount >= maxLinks);
@@ -923,7 +938,7 @@ function PuzzleEntry(p, index) {
         const fromVals = [128, 1, 2, 64, 0, 4, 32, 16, 8];
 
         var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
-        return this.LinkCellsDirectional("spoke", 8, cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
+        return this.LinkCellsDirectional("spoke", this.options["data-spoke-max"], cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
     }
 
     this.parseOuterClues = function(clues) {
