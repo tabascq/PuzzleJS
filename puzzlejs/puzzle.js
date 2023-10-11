@@ -235,6 +235,7 @@ function PuzzleEntry(p, index) {
     this.inhibitSave = false;
     this.xKeyMode = false;
     this.tilt = 0;
+    this.reticleXMode = false;
 
     this.locateScope = function(scopeId) {
         var ancestor = this.container;
@@ -389,6 +390,11 @@ function PuzzleEntry(p, index) {
         this.updateSvg(e.target);
     }
 
+    this.toggleReticle = function(e) {
+        this.reticleXMode = !this.reticleXMode;
+        this.updateSvg(e.target);
+    }
+
     this.keyDown = function(e) {
         this.fShift = e.shiftKey;
 
@@ -405,6 +411,8 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 40) { this.move(e.target, 1, -this.tilt); } // down
         else if (e.keyCode == 191 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, 1); } // /
         else if (e.keyCode == 220 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, -1); } // \
+        else if (e.keyCode == 187 && this.fShift && this.options["data-drag-draw-spoke"]) { this.toggleReticle(e); } // +
+        else if (e.keyCode == 88 && this.options["data-drag-draw-spoke"] && !this.options["data-text-characters"].includes("x")) { this.toggleReticle(e); } // x
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
@@ -808,7 +816,7 @@ function PuzzleEntry(p, index) {
         use.classList.add(cls);
         var spokePath = this.options["data-spoke-style"];
         if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
-        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + "reticle");
+        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + "reticle" + (this.reticleXMode ? "-x" : ""));
         if (this.tilt != 0) { use.setAttributeNS(null, "transform", "rotate(" + ((this.tilt) * 45) + ")"); }
         svg.appendChild(use);
     }
@@ -945,7 +953,7 @@ function PuzzleEntry(p, index) {
         const fromVals = [128, 1, 2, 64, 0, 4, 32, 16, 8];
 
         var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
-        return this.LinkCellsDirectional(rightMouse ? "x-spoke" : "spoke", this.options["data-spoke-max"], cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
+        return this.LinkCellsDirectional((rightMouse ^ this.reticleXMode) ? "x-spoke" : "spoke", this.options["data-spoke-max"], cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
     }
 
     this.parseOuterClues = function(clues) {
