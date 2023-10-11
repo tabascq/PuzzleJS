@@ -265,7 +265,7 @@ function PuzzleEntry(p, index) {
             if (tdTo && tdTo.classList.contains("inner-cell")) {
                 this.lastCell = td;
                 this.currentFill = this.findClassInList(td, this.fillClasses);
-                this.dragBetweenCells(tdTo);
+                this.dragBetweenCells(tdTo, false);
             }
         }
 
@@ -634,7 +634,7 @@ function PuzzleEntry(p, index) {
         var centerOffsetY = e.clientY - cellClientRect.y - e.currentTarget.offsetHeight/2;
 
         if ((centerOffsetX * centerOffsetX + centerOffsetY * centerOffsetY) * 4 < e.currentTarget.offsetWidth * e.currentTarget.offsetHeight) {
-            this.dragBetweenCells(e.currentTarget);
+            this.dragBetweenCells(e.currentTarget, e.buttons > 1);
         }
 
         if (this.canDrawOnEdges && !this.currentFill) {
@@ -647,7 +647,7 @@ function PuzzleEntry(p, index) {
         this.pointerIsDown = false;
     }
 
-    this.dragBetweenCells = function(to) {
+    this.dragBetweenCells = function(to, rightMouse) {
         if (this.lastCell === to) return;
 
         var wantPaint = this.options["data-drag-paint-fill"] && !!this.currentFill;
@@ -663,7 +663,7 @@ function PuzzleEntry(p, index) {
         }
 
         if (this.options["data-drag-draw-spoke"] && (!wantPaint || canPaint)) {
-            canPaint &= this.LinkCellsSpoke(this.lastCell, to);
+            canPaint &= this.LinkCellsSpoke(this.lastCell, to, rightMouse);
         }
 
         if (this.options["data-drag-draw-path"] && (!wantPaint || canPaint)) {
@@ -875,18 +875,24 @@ function PuzzleEntry(p, index) {
 
     this.LinkCellsDirectional = function(attributeNameBase, maxLinks, cellFrom, directionFrom, cellTo, directionTo) {
         var attributeName = "data-" + attributeNameBase + "-code";
-        var givenAttributeName = "data-given-" + attributeNameBase + "-code";
         var codeFrom = cellFrom.getAttribute(attributeName);
         var codeTo = cellTo.getAttribute(attributeName);
         if (!codeFrom) { codeFrom = 0; }
         if (!codeTo) { codeTo = 0; }
 
-        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && !this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)) {
+        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
             this.undoManager.addUnit(cellFrom, attributeName, codeFrom, codeFrom | directionFrom);
             this.undoManager.addUnit(cellTo, attributeName, codeTo, codeTo | directionTo);
+
+            var otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
+            var otherFrom = cellFrom.getAttribute(otherAttributeName);
+            var otherTo = cellTo.getAttribute(otherAttributeName);
+            if (otherFrom) { this.undoManager.addUnit(cellFrom, otherAttributeName, otherFrom, otherFrom & ~directionFrom); }
+            if (otherTo) { this.undoManager.addUnit(cellTo, otherAttributeName, otherTo, otherTo & ~directionTo); }
             return true;
         }
         else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
+            var givenAttributeName = "data-given-" + attributeNameBase + "-code";
             var givenCodeFrom = cellFrom.getAttribute(givenAttributeName);
             var givenCodeTo = cellTo.getAttribute(givenAttributeName);
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
@@ -927,7 +933,7 @@ function PuzzleEntry(p, index) {
         return false;
     }
 
-    this.LinkCellsSpoke = function(cellFrom, cellTo)
+    this.LinkCellsSpoke = function(cellFrom, cellTo, rightMouse)
     {
         var colFrom = Array.prototype.indexOf.call(cellFrom.parentElement.children, cellFrom) - this.leftClueDepth;
         var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement) - this.topClueDepth;
@@ -939,7 +945,7 @@ function PuzzleEntry(p, index) {
         const fromVals = [128, 1, 2, 64, 0, 4, 32, 16, 8];
 
         var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
-        return this.LinkCellsDirectional("spoke", this.options["data-spoke-max"], cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
+        return this.LinkCellsDirectional(rightMouse ? "x-spoke" : "spoke", this.options["data-spoke-max"], cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
     }
 
     this.parseOuterClues = function(clues) {
