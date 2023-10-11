@@ -794,6 +794,7 @@ function PuzzleEntry(p, index) {
             if (!(spokeCode & (1 << i))) continue;
 
             var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            use.classList.add(spokePrefix + "spoke");
             var spokePath = this.options["data-spoke-style"];
             if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
             use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : ""));
@@ -1053,7 +1054,7 @@ function PuzzleEntry(p, index) {
             var cellState = "";
             if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || text) {
                 hasState = true;
-                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16) + (spokeCodeDelta / 16).toString(16) + (spokeCodeDelta % 16).toString(16);
+                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16) + (spokeCodeDelta >> 4).toString(16) + (spokeCodeDelta % 16).toString(16);
                 if (text) { cellState += "," + text; }
             }
 
@@ -1260,7 +1261,7 @@ function PuzzleEntry(p, index) {
         this.numCols = Math.max(this.numCols, textLines[r].length);
         for (var c = 0; c < textLines[r].length; c++) {
             var cellSavedState = null;
-            if (savedState) { cellSavedState = savedState[stateIndex++]; }
+            if (savedState) { cellSavedState = savedState[stateIndex++]; console.log(cellSavedState); }
 
             var td = document.createElement("td");
             td.classList.add("cell");
@@ -1392,10 +1393,10 @@ function PuzzleEntry(p, index) {
             if (pathCode) { td.setAttribute("data-path-code", pathCode); }
 
             var spokeCode = 0;
-            if (cellSavedState && cellSavedState.length > 4) {
+            if (cellSavedState && cellSavedState.length > 4 && (cellSavedState.indexOf(",") > 4 || cellSavedState.indexOf(",") < 0)) {
                 spokeCode ^= (parseInt(cellSavedState[3], 16) * 16 + parseInt(cellSavedState[4], 16));
             }
-            if (spokeCode) { td.setAttribute("data-spoke-code", pathCode); }
+            if (spokeCode) { td.setAttribute("data-spoke-code", spokeCode); }
 
             if (this.options["data-clue-locations"] && textLines[r][c] != '@') {
                 var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
