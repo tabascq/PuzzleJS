@@ -5,7 +5,6 @@
 var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 
 // Spokes to-do:
-// - toggle support
 // - instructions
 // - documentation
 //   - data-spoke-style
@@ -13,6 +12,7 @@ var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 //   - data-spoke-allow-x
 //   - spoke-*.svg styling
 //   - data-drag-draw-spoke
+//   - .spoke, .x-spoke
 
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
