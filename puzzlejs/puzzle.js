@@ -28,6 +28,7 @@ puzzleModes["default"] = {
 
     // paths
     "data-paths": null,
+    "data-path-max-directions": 2,
     "data-path-style": "straight",
 
     // edges
@@ -36,7 +37,7 @@ puzzleModes["default"] = {
 
     // spokes
     "data-spokes": null,
-    "data-spoke-max": null,
+    "data-spoke-max-directions": null,
     "data-spoke-style": "solid",
 
     // clues
@@ -865,6 +866,9 @@ function PuzzleEntry(p, index) {
     this.IsFullyLinked = function(code, maxLinks) {
         if (!maxLinks) return false;
 
+        code = parseInt(code);
+        maxLinks = parseInt(maxLinks);
+
         var linkCount = 0;
         while (code) { linkCount++; code &= (code - 1); }
         return (linkCount >= maxLinks);
@@ -917,14 +921,15 @@ function PuzzleEntry(p, index) {
         var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement) - this.topClueDepth;
         var colTo = Array.prototype.indexOf.call(cellTo.parentElement.children, cellTo) - this.leftClueDepth;
         var rowTo = Array.prototype.indexOf.call(cellTo.parentElement.parentElement.children, cellTo.parentElement) - this.topClueDepth;
+        var maxDirections = this.options["data-path-max-directions"];
 
         if (colFrom === colTo) {
-            if (rowFrom === rowTo - 1) { return this.LinkCellsDirectional("path", 2, cellFrom, 2, cellTo, 1); }
-            else if (rowFrom === rowTo + 1) { return this.LinkCellsDirectional("path", 2, cellFrom, 1, cellTo, 2); }
+            if (rowFrom === rowTo - 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 2, cellTo, 1); }
+            else if (rowFrom === rowTo + 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 1, cellTo, 2); }
         }
         else if (rowFrom === rowTo) {
-            if (colFrom === colTo - 1) { return this.LinkCellsDirectional("path", 2, cellFrom, 8, cellTo, 4); }
-            else if (colFrom === colTo + 1) { return this.LinkCellsDirectional("path", 2, cellFrom, 4, cellTo, 8); }
+            if (colFrom === colTo - 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 8, cellTo, 4); }
+            else if (colFrom === colTo + 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 4, cellTo, 8); }
         }
 
         return false;
@@ -942,7 +947,7 @@ function PuzzleEntry(p, index) {
         const fromVals = [128, 1, 2, 64, 0, 4, 32, 16, 8];
 
         var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
-        return this.LinkCellsDirectional((rightMouse ^ this.reticleXMode) ? "x-spoke" : "spoke", this.options["data-spoke-max"], cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
+        return this.LinkCellsDirectional((rightMouse ^ this.reticleXMode) ? "x-spoke" : "spoke", this.options["data-spoke-max-directions"], cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
     }
 
     this.parseOuterClues = function(clues) {
@@ -1517,7 +1522,7 @@ function PuzzleEntry(p, index) {
         row.classList.add("commands");
         for (var i = 0; i < this.leftClueDepth; i++) { row.insertCell(-1); }
         var cell = row.insertCell(-1);
-        cell.style.maxWidth = table.offsetWidth;
+        cell.style.maxWidth = table.offsetWidth * this.numCols / (this.numCols + this.leftClueDepth + this.rightClueDepth);
         cell.colSpan = this.numCols;
         cell.insertBefore(this.commands, null);
         for (var i = 0; i < this.rightClueDepth; i++) { row.insertCell(-1); }

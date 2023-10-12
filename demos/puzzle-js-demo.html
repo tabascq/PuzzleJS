@@ -39,6 +39,11 @@
             .wolves-and-sheep-example .cell.wolf.given-fill::after { content: "🐺"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
             .wolves-and-sheep-example .cell.sheep.given-fill::after { content: "🐑"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
+            .tents-example .cell.tan { background: tan; }
+            .tents-example .text { display: none; }
+            .tents-example .cell.given-text::after { content: "🌳"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
+            .tents-example .cell[data-path-code]:not([data-path-code="0"]):not(.given-text)::after { content: "🏕️"; font-size: 24px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
+
             .wordsearch-example .cell[data-spoke-code]:not([data-spoke-code="0"]) { background: lightgray; }
 
             .spokes-example .cell { height: 60px; width: 60px; text-shadow: none; color: white; }
@@ -272,6 +277,11 @@
                 <div class="puzzle-entry wolves-and-sheep-example" data-show-commands="true" data-text="...3.|.32..|...2.|..30.|....." data-mode="notext slitherlink" data-fill-classes="unknown sheep wolf" data-fills="1...1|.....|..2..|.....|1...1"></div>
             </div>
 
+            <h2>Tents</h2>
+            <div class="example">
+                <div class="puzzle-entry tents-example" data-show-commands="true" data-text=".x..|...x|x...|..x." data-mode="notext" data-left-clues="1|1|1|1" data-top-clues="1|1|1|1" data-fill-classes="white tan" data-drag-draw-path="true" data-path-max-directions="1"></div>
+            </div>
+
             <h2>Wordsearch with hidden message</h2>
             <div class="example">
                 <div class="puzzle-entry wordsearch-example" data-mode="wordsearch" data-show-commands="true" data-text="vbluew|indigo|oedcnl|leoeal|erlore|tgrsoy"></div>
@@ -286,7 +296,7 @@
             <h2>Hidato</h2>
             <p>Fill the grid with numbers 1-25 such that you can draw a continuous sequential path between 1-25 that only visits each number once.</p>
             <div class="example">
-                <div class="puzzle-entry hidato-example" data-mode="spokes" data-spoke-max="2" data-show-commands="true" data-text="....5|Q...9|.....|....M|1.Y.." data-text-characters="0123456789" data-text-shift-lock="true">
+                <div class="puzzle-entry hidato-example" data-mode="spokes" data-spoke-max-directions="2" data-show-commands="true" data-text="....5|Q...9|.....|....M|1.Y.." data-text-characters="0123456789" data-text-shift-lock="true">
     { "data-text-replacements": {"M": "13", "Q": "17", "Y": "25"} }
 </div>
             </div>
