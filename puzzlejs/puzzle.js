@@ -6,13 +6,6 @@ var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 
 // Spokes to-do:
 // - instructions
-// - documentation
-//   - data-spoke-style
-//   - data-spoke-max
-//   - data-spoke-allow-x
-//   - spoke-*.svg styling
-//   - data-drag-draw-spoke
-//   - .spoke, .x-spoke
 
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
@@ -42,9 +35,9 @@ puzzleModes["default"] = {
     "data-edge-style": "box",
 
     // spokes
-    "data-spoke-style": "solid",
+    "data-spokes": null,
     "data-spoke-max": null,
-    "data-spoke-allow-x": false,
+    "data-spoke-style": "solid",
 
     // clues
     "data-clue-locations": null,
@@ -117,8 +110,7 @@ puzzleModes["wordsearch"] = {
 }
 
 puzzleModes["spokes"] = {
-    "data-drag-draw-spoke": true,
-    "data-spoke-allow-x": true
+    "data-drag-draw-spoke": true
 }
 
 // Parse string as raw JS objects. e.g. "false" -> false
@@ -412,7 +404,7 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 191 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, 1); } // /
         else if (e.keyCode == 220 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, -1); } // \
         else if (e.keyCode == 187 && this.fShift && this.options["data-drag-draw-spoke"]) { this.toggleReticle(e); } // +
-        else if (e.keyCode == 88 && this.options["data-drag-draw-spoke"] && !this.options["data-text-characters"].includes("x")) { this.toggleReticle(e); } // x
+        else if (e.keyCode == 88 && this.options["data-drag-draw-spoke"] && !this.options["data-text-characters"].includes("X")) { this.toggleReticle(e); } // x
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
@@ -816,7 +808,7 @@ function PuzzleEntry(p, index) {
         use.classList.add(cls);
         var spokePath = this.options["data-spoke-style"];
         if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
-        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + "reticle" + (this.reticleXMode ? "-x" : ""));
+        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + (this.reticleXMode ? "x-" : "") + "reticle");
         if (this.tilt != 0) { use.setAttributeNS(null, "transform", "rotate(" + ((this.tilt) * 45) + ")"); }
         svg.appendChild(use);
     }
@@ -862,14 +854,11 @@ function PuzzleEntry(p, index) {
         if (edgeCode & 4) { this.addEdgeToSvg(svg, "x-edge-left"); }
         if (edgeCode & 8) { this.addEdgeToSvg(svg, "x-edge-right"); }
 
-        if (this.options["data-drag-draw-spoke"]) {
-            this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
-            this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
-
-            if (td === this.currentCenterFocus) {
-                this.addReticleLayer(svg, "reticle-back");
-                this.addReticleLayer(svg, "reticle-front");
-            }
+        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
+        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
+        if (this.options["data-drag-draw-spoke"] && td === this.currentCenterFocus) {
+            this.addReticleLayer(svg, "reticle-back");
+            this.addReticleLayer(svg, "reticle-front");
         }
     }
 
@@ -1195,6 +1184,7 @@ function PuzzleEntry(p, index) {
     var solution = this.getOptionArray("data-text-solution", "|");
     var edges = this.getOptionArray("data-edges", "|");
     var paths = this.getOptionArray("data-paths", "|");
+    var spokes = this.getOptionArray("data-spokes", "|");
     var extracts = this.getOptionArray("data-extracts", " ");
     var unselectableGivens = this.options["data-unselectable-givens"];
     var topClues = this.getOptionArray("data-top-clues", "|");
@@ -1407,6 +1397,29 @@ function PuzzleEntry(p, index) {
             if (pathCode) { td.setAttribute("data-path-code", pathCode); }
 
             var spokeCode = 0;
+            if (spokes) {
+                var topRow = spokes[r * 2];
+                var midRow = spokes[r * 2 + 1];
+                var botRow = spokes[r * 2 + 2];
+                var chN = topRow[c * 2 + 1];
+                var chNE = topRow[c * 2 + 2];
+                var chE = midRow[c * 2 + 2];
+                var chSE = botRow[c * 2 + 2];
+                var chS = botRow[c * 2 + 1];
+                var chSW = botRow[c * 2];
+                var chW = midRow[c * 2];
+                var chNW = topRow[c * 2];
+                if (chN != " " && chN != ".") { spokeCode |= 1; }
+                if (chNE == "/" || chNE == "'" || chNE == "X" || chNE == "x") { spokeCode |= 2; }
+                if (chE != " " && chE != ".") { spokeCode |= 4; }
+                if (chSE == "\\" || chSE == "`" || chSE == "X" || chSE == "x") { spokeCode |= 8; }
+                if (chS != " " && chS != ".") { spokeCode |= 16; }
+                if (chSW == "/" || chSW == "'" || chSW == "X" || chSW == "x") { spokeCode |= 32; }
+                if (chW != " " && chW != ".") { spokeCode |= 64; }
+                if (chNW == "\\" || chNW == "`" || chNW == "X" || chNW == "x") { spokeCode |= 128; }
+
+                if (spokeCode) { td.setAttribute("data-spoke-code", spokeCode); td.setAttribute("data-given-spoke-code", spokeCode); }
+            }
             if (cellSavedState && cellSavedState.length > 4 && (cellSavedState.indexOf(",") > 4 || cellSavedState.indexOf(",") < 0)) {
                 spokeCode ^= (parseInt(cellSavedState[3], 16) * 16 + parseInt(cellSavedState[4], 16));
             }
