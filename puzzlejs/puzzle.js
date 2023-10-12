@@ -471,7 +471,7 @@ function PuzzleEntry(p, index) {
             var primary = this.lookup[c.locationKey];
 
             var extractId = primary.getAttribute("data-extract-id");
-            var elems = extractId ? document.querySelectorAll("." + extractId) : [primary];
+            var elems = extractId ? document.querySelectorAll("table:not(.copy-only) ." + extractId) : [primary];
 
             elems.forEach(elem => {
                 if (!changedElems.includes(elem)) { changedElems.push(elem); }
@@ -1301,8 +1301,8 @@ function PuzzleEntry(p, index) {
                 if (extracts) {
                     var code = extracts[extractNum++];
                     var id = "extract-id-" + code;
-                    text.setAttribute("data-extract-id", id);
-                    text.classList.add(id);
+                    td.setAttribute("data-extract-id", id);
+                    td.classList.add(id);
 
                     var extractCode = document.createElement("div");
                     extractCode.contentEditable = false;
