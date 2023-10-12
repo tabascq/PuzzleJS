@@ -4,9 +4,6 @@
  */
 var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
 
-// Spokes to-do:
-// - instructions
-
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
 // a puzzle can have multiple modes and multiple custom options.
@@ -1145,13 +1142,20 @@ function PuzzleEntry(p, index) {
             }
         }
         if (this.canHaveCenterFocus) {
-            lines.push("<tr><td>Navigate between cells</td><td>Arrow keys</td><td>Click a cell</td></tr>");
+            if (this.options["data-drag-draw-spoke"]) {
+                lines.push("<tr><td>Navigate between cells (8 directions)</td><td>Arrow keys, plus / or \\ to toggle axis tilt</td><td>Click a cell</td></tr>");
+            } else {
+                lines.push("<tr><td>Navigate between cells (4 directions)</td><td>Arrow keys</td><td>Click a cell</td></tr>");
+            }
         }
         if (this.fillClasses && this.fillClasses.length > 0 && this.options["data-fill-cycle"]) {
             lines.push("<tr><td>Change cell background (forwards or backwards)</td><td>Space or Shift-Space</td><td>Click/Left-Click or Right/Shift-Click</td></tr>");
         }
         if (this.options["data-drag-draw-path"]) {
-            lines.push("<tr><td>Draw a path between cells</td><td>Shift-arrow keys</td><td>Click one cell, drag to others</td></tr>");
+            lines.push("<tr><td>Draw lines between cells (4 directions)</td><td>Shift-arrow keys</td><td>Click one cell, drag to others</td></tr>");
+        }
+        if (this.options["data-drag-draw-spoke"]) {
+            lines.push("<tr><td>Draw lines between cells (8 directions)</td><td>Shift-arrow keys, plus / or \\ to toggle axis tilt</td><td>Click one cell, drag to others</td></tr>");
         }
         if (this.options["data-drag-draw-edge"]) {
             if (this.canHaveCenterFocus) {
