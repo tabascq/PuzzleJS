@@ -74,6 +74,8 @@
             .color-train-example .cell .edge-left { stroke: blue; }
             .color-train-example .cell .edge-right { stroke: blue; }
             .color-train-example .cell .path { stroke: sienna; }
+            .color-train-example .cell .spoke { stroke: lightgreen; }
+            .color-train-example .cell .x-spoke { stroke: forestgreen; }
 
             .overlapping-example { display: grid; }
             .overlapping-example > * { grid-row: 1/1; grid-column: 1/1; }
@@ -150,10 +152,10 @@
             <div class="puzzle-entry yes-no-example" data-mode="notext" data-text="2x2" data-fill-classes="none yes no" data-fills="1.|.2"></div>
         </div>
 
-        <h2>Paths and Edges</h2>
-        <p>Since paths and edges are made with SVG, they must be styled with the <code>stroke</code> property, not the <code>border</code> property.</p>
+        <h2>Paths, Edges, and Spokes</h2>
+        <p>Since paths, edges, and spokes are made with SVG, they must be styled with the <code>stroke</code> property, not the <code>border</code> property.</p>
         <div class="example">
-            <div class="puzzle-entry color-train-example" data-mode="notext" data-text="4x4" data-edges="2x2" data-path-style="track" data-drag-draw-path="true" data-paths="c6..|.96.|..96|...1"></div>
+            <div class="puzzle-entry color-train-example" data-mode="notext" data-text="4x4" data-edges="2x2" data-path-style="track" data-drag-draw-spoke="true" data-paths="c6..|.96.|..96|...1"></div>
         </div>
 
         <h3 id="custom-paths">Custom Paths</h3>
@@ -209,6 +211,35 @@
         <p>Note that no <code>stroke</code> property is present in the SVG, so that the uses of the SVG can override that.</p>
         <p>Remember that edges are shared between cells, and the right and bottom edge elements will only be used for the right and bottom edges of the grid.</p>
 
+        <h3 id="custom-strokes">Custom Strokes</h3>
+        <p>Strokes describe lines that can go in 8 directions from any cell. They are similar to paths, except that due to the larger number of angles and intersections, the styling possibilities are more limited. There are two spoke style provided for the <code>data-spoke-style</code> option: <code>solid</code> and <code>dash</code>. If something else is desired, you can provide your own SVG file; when the value of <code>data-spoke-style</code> ends with <code>.svg</code>, it will find that SVG file relative to your page. It should be structured like this:</p>
+        <div class="example non-interactive">
+            <svg viewBox="-10 -10 20 20" xmlns="http://www.w3.org/2000/svg">
+    <path id="spoke-n" fill="none" stroke-width="2" stroke-linecap="round" d="M0,0 V-10"></path>
+    <path id="spoke-ne" fill="none" stroke-width="2" stroke-linecap="round" d="M0,0 L10,-10"></path>
+    <path id="x-spoke-n" stroke-width="1" d="M-2,-12 L2,-8 M2,-12 L-2,-8"></path>
+    <path id="x-spoke-ne" stroke-width="1" d="M5,-9 L9,-5 M9,-9 L5,-5"></path>
+    <g id="reticle">
+        <circle cx="0" cy="0" r="9" fill="none"></circle>
+        <path d="M0,-9 V-6"></path>
+    </g>
+    <g id="x-reticle">
+        <circle cx="0" cy="0" r="9" fill="none"></circle>
+        <path d="M-1.5,-9 L1.5,-6 M1.5,-9 L -1.5,-6" fill="none"></path>
+    </g>
+</svg>
+        </div>
+        <p>This SVG is composed of six superimposed elements, and the appropriate components will be referenced with the SVG <code>use</code> element. Most of these elements are single <code>path</code> elements in the example above, but can be groups of elements so long as a parent <code>g</code> element has the appropriate <code>id</code> attribute.</p>
+        <ul>
+            <li><code>spoke-n</code>: a spoke pointing north (which will be rotated for east, south, and west).</li>
+            <li><code>spoke-ne</code>: a spoke pointing northeast (which will be rotated for southeast, southwest, and northwest).</li>
+            <li><code>x-spoke-n</code>: a "no" spoke pointing north (which will be rotated for east, south, and west).</li>
+            <li><code>x-spoke-ne</code>: a "no" spoke pointing northeast (which will be rotated for southeast, southwest, and northwest).</li>
+            <li><code>reticle</code>: an indicator for drawing spokes, that shows which direction corresponds to the up arrow.</li>
+            <li><code>x-reticle</code>: an indicator for drawing "no" spokes, that shows which direction corresponds to the up arrow.</li>
+        </ul>
+        <p>Note that no <code>stroke</code> property is present in the SVG, so that the uses of the SVG can override that.</p>
+
         <h2>Layers</h2>
         <p>If the effect you want is difficult to create with just one grid, consider using two or more overlapping grids and set <code>data-no-input</code> on all but one to remove them from tab order etc. The overlapping puzzles will not share any information with each other. You could of course also use a background image or SVG.</p>
         <div class="example">
@@ -247,6 +278,8 @@
             <tr><td><code>.cell .x-edge-bottom</code></td><td>The X below the cell, if that X is present.</td></tr>
             <tr><td><code>.cell .x-edge-left</code></td><td>The X to the left of the cell, if that X is present.</td></tr>
             <tr><td><code>.cell .x-edge-right</code></td><td>The X to the right of the cell, if that X is present.</td></tr>
+            <tr><td><code>.cell .spoke</code></td><td>Any of the 8 spokes emanating from a cell, if present.</td></tr>
+            <tr><td><code>.cell .x-spoke</code></td><td>Any of the 8 "no" spokes emanating from a cell, if present.</td></tr>
             <tr><td><code>.cell .clue</code></td><td>The interior (e.g. crossword) clue of a cell.</td></tr>
             <tr><td><code>.cell.hovered</code></td><td>A crossword cell when the player is hovering over one of that cell&rsquo;s crossword clues.</td></tr>
             <tr><td><code>.cell.marked</code></td><td>A crossword cell when one of that cell&rsquo;s clues is selected.</td></tr>

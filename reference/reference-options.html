@@ -339,6 +339,18 @@
 </div>
             </div>
         </div>
+        <div class="option" data-name="data-path-max-directions">
+            <p>Specifies the maximum number of path directions that can emanate from a cell. If left blank, then all directions are allowed. If the value is 1, then cells can be paired but longer chains will not be possible. If the value is 2, then chains of any length can be drawn. All other numeric values are also allowed, if you have a use for them.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-path="true" data-path-max-directions=""></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-path="true" data-path-max-directions="1"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-path="true"></div>
+            </div>
+        </div>
         <div class="option" data-name="data-path-style">
             <p>Specifies the way the path is drawn. Three drawing styles are provided: <code>straight</code>, <code>curved</code>, and <code>track</code>.</p>
             <p>If the value ends in <code>.svg</code>, it is assumed to be a custom svg file for rendering paths and the svg is located with a file path relative to the puzzle page. See more information in the <a href="reference-styling.html#custom-paths">Styling Reference</a>.</p>
@@ -399,6 +411,63 @@
 </div>
             </div>
         </div>
+        <div class="option" data-name="data-spokes">
+            <p>Specifies an initial set of spokes between cells.</p>
+            <p><code>data-spokes</code> can be any of the following:</p>
+            <ul>
+                <li>A series of lines separated by <code>|</code> characters.</li>
+                <li>If the option is specified in JSON, an array of strings, one string per line.</li>
+            </ul>
+            <p>Either way, the lines must represent a (2m+1) by (2n+1) grid where the centers are represented by any character (though <code>*</code> is a good idea) and spoke segments are represented by:</p>
+            <ul>
+                <li><code>-</code> for horizontal lines.</li>
+                <li><code>|</code>, <code>l</code>, or <code>I</code> for vertical lines. Note that <code>|</code> is incompatible with the lines-separated-by-<code>|</code> syntax.</li>
+                <li><code>\</code> or <code>`</code> (backwards single quote) for NW/SE lines. Note that <code>\</code> is an escaping character and not recommended since it would really need to be typed twice and thus messes with all the alignment.</li>
+                <li><code>/</code> or <code>'</code> (forwards single quote) for NE/SW lines.</li>
+                <li><code>X</code> or <code>x</code> for both diagonal lines.</li>
+            </ul>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3">
+    { "data-spokes": [
+    "......'",
+    ".*-*-*.",
+    "..`.X|.",
+    ".*.*.*.",
+    "..'.`|.",
+    ".*.*.*.",
+    "'......"
+    ] }
+</div>
+            </div>
+        </div>
+        <div class="option" data-name="data-spoke-max-directions">
+            <p>Specifies the maximum number of spokes that can emanate from a cell. If left blank, then all directions are allowed. If the value is 1, then cells can be paired but longer chains will not be possible. If the value is 2, then chains of any length can be drawn. All other numeric values are also allowed, if you have a use for them.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-max-directions="1"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-max-directions="2"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-spoke-style">
+            <p>Specifies the way the spokes are drawn. Two drawing styles are provided: <code>solid</code> and <code>dash</code>.</p>
+            <p>If the value ends in <code>.svg</code>, it is assumed to be a custom svg file for rendering spokes and the svg is located with a file path relative to the puzzle page. See more information in the <a href="reference-styling.html#custom-spokes">Styling Reference</a>.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-spoke-style="dash">
+    { "data-spokes": [
+    "......'",
+    ".*-*-*.",
+    "..`.X|.",
+    ".*.*.*.",
+    "..'.`|.",
+    ".*.*.*.",
+    "'......"
+    ] }
+</div>
+    </div>
         <div class="option" data-name="data-clue-locations">
             <p>Clue numbers are the numbers that go in the upper left corner of crossword cells, KenKen cells, etc.</p>
             <p>This property has three formats:</p>
@@ -493,6 +562,12 @@
             </div>
             <div class="example">
                 <div class="puzzle-entry" data-text="3x3" data-drag-draw-edge="true"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-drag-draw-spoke">
+            <p>Specifies whether a dragging operation will draw spokes between cells.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true"></div>
             </div>
         </div>
         <div class="option" data-name="data-unselectable-givens">

@@ -25,11 +25,17 @@ puzzleModes["default"] = {
 
     // paths
     "data-paths": null,
+    "data-path-max-directions": 2,
     "data-path-style": "straight",
 
     // edges
     "data-edges": null,
     "data-edge-style": "box",
+
+    // spokes
+    "data-spokes": null,
+    "data-spoke-max-directions": null,
+    "data-spoke-style": "solid",
 
     // clues
     "data-clue-locations": null,
@@ -43,6 +49,7 @@ puzzleModes["default"] = {
     "data-drag-paint-fill": true,
     "data-drag-draw-path": false,
     "data-drag-draw-edge": false,
+    "data-drag-draw-spoke": false,
     "data-unselectable-givens": false,
     "data-extracts": null,
     "data-no-input": false,
@@ -93,6 +100,15 @@ puzzleModes["slitherlink"] = {
 
 puzzleModes["solution"] = {
     "data-no-input": true
+}
+
+puzzleModes["wordsearch"] = {
+    "data-drag-draw-spoke": true,
+    "data-spoke-only-straight": true
+}
+
+puzzleModes["spokes"] = {
+    "data-drag-draw-spoke": true
 }
 
 // Parse string as raw JS objects. e.g. "false" -> false
@@ -157,10 +173,13 @@ function UndoManager() {
         var retVal = false;
 
         if (this.activeGroup && this.activeGroup.units.length) {
-            this.redoUnits(this.activeGroup.puzzleEntry, this.activeGroup.units);
-            this.undoStack.push(this.activeGroup);
-            this.redoStack = [];
-            retVal = true;
+            try {
+                this.redoUnits(this.activeGroup.puzzleEntry, this.activeGroup.units);
+                this.undoStack.push(this.activeGroup);
+                this.redoStack = [];
+                retVal = true;
+            }
+            catch { }
         }
 
         this.activeGroup = null;
@@ -208,6 +227,8 @@ function PuzzleEntry(p, index) {
     if (!this.puzzleId) { this.puzzleId = window.location.pathname + "|" + index; }
     this.inhibitSave = false;
     this.xKeyMode = false;
+    this.tilt = 0;
+    this.reticleXMode = false;
 
     this.locateScope = function(scopeId) {
         var ancestor = this.container;
@@ -233,12 +254,12 @@ function PuzzleEntry(p, index) {
         var col = dcol + Array.prototype.indexOf.call(td.parentElement.children, td) - this.leftClueDepth;
         var row = drow + Array.prototype.indexOf.call(td.parentElement.parentElement.children, td.parentElement) - this.topClueDepth;
 
-        if (this.fShift && this.options["data-drag-draw-path"]) {
+        if (this.fShift && (this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"])) {
             var tdTo = this.table.querySelector("tr:nth-child(" + (row + this.topClueDepth + 1) + ") td:nth-child(" + (col + this.leftClueDepth + 1) + ")");
             if (tdTo && tdTo.classList.contains("inner-cell")) {
                 this.lastCell = td;
                 this.currentFill = this.findClassInList(td, this.fillClasses);
-                this.dragPaintAndPath(tdTo);
+                this.dragBetweenCells(tdTo, false);
             }
         }
 
@@ -357,6 +378,16 @@ function PuzzleEntry(p, index) {
         e.preventDefault();
     }
 
+    this.setTilt = function(e, tilt) {
+        this.tilt = (this.tilt == tilt) ? 0 : tilt;
+        this.updateSvg(e.target);
+    }
+
+    this.toggleReticle = function(e) {
+        this.reticleXMode = !this.reticleXMode;
+        this.updateSvg(e.target);
+    }
+
     this.keyDown = function(e) {
         this.fShift = e.shiftKey;
 
@@ -367,10 +398,14 @@ function PuzzleEntry(p, index) {
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
-        else if (e.keyCode == 37) { this.move(e.target, 0, -1); } // left
-        else if (e.keyCode == 38) { this.move(e.target, -1, 0); } // up
-        else if (e.keyCode == 39) { this.move(e.target, 0, 1); } // right
-        else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
+        else if (e.keyCode == 37) { this.move(e.target, -this.tilt, -1); } // left
+        else if (e.keyCode == 38) { this.move(e.target, -1, this.tilt); } // up
+        else if (e.keyCode == 39) { this.move(e.target, this.tilt, 1); } // right
+        else if (e.keyCode == 40) { this.move(e.target, 1, -this.tilt); } // down
+        else if (e.keyCode == 191 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, 1); } // /
+        else if (e.keyCode == 220 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, -1); } // \
+        else if (e.keyCode == 187 && this.fShift && this.options["data-drag-draw-spoke"]) { this.toggleReticle(e); } // +
+        else if (e.keyCode == 88 && this.options["data-drag-draw-spoke"] && !this.options["data-text-characters"].includes("X")) { this.toggleReticle(e); } // x
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
@@ -439,7 +474,7 @@ function PuzzleEntry(p, index) {
             var primary = this.lookup[c.locationKey];
 
             var extractId = primary.getAttribute("data-extract-id");
-            var elems = extractId ? document.querySelectorAll("." + extractId) : [primary];
+            var elems = extractId ? document.querySelectorAll("table:not(.copy-only) ." + extractId) : [primary];
 
             elems.forEach(elem => {
                 if (!changedElems.includes(elem)) { changedElems.push(elem); }
@@ -595,6 +630,14 @@ function PuzzleEntry(p, index) {
 
         e.preventDefault();
 
+        var cellClientRect = e.currentTarget.getBoundingClientRect();
+        var centerOffsetX = e.clientX - cellClientRect.x - e.currentTarget.offsetWidth/2;
+        var centerOffsetY = e.clientY - cellClientRect.y - e.currentTarget.offsetHeight/2;
+
+        if ((centerOffsetX * centerOffsetX + centerOffsetY * centerOffsetY) * 4 < e.currentTarget.offsetWidth * e.currentTarget.offsetHeight) {
+            this.dragBetweenCells(e.currentTarget, e.buttons > 1);
+        }
+
         if (this.canDrawOnEdges && !this.currentFill) {
             var edgeState = this.getEventEdgeState(e.currentTarget, e.clientX, e.clientY);
             this.setEdgeState(edgeState, (e.button > 0 || e.shiftKey) ? "cycle-back" : "cycle-front");
@@ -605,18 +648,27 @@ function PuzzleEntry(p, index) {
         this.pointerIsDown = false;
     }
 
-    this.dragPaintAndPath = function(to) {
+    this.dragBetweenCells = function(to, rightMouse) {
+        if (this.lastCell === to) return;
+
         var wantPaint = this.options["data-drag-paint-fill"] && !!this.currentFill;
         var canPaint = wantPaint;
 
         this.undoManager.startGroup(this);
 
-        if (this.options["data-drag-draw-path"]) {
+        if (wantPaint && (this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"])) {
             var targetFill = this.findClassInList(to, this.fillClasses);
             var setLast = false; 
             if (wantPaint && this.currentFill == this.fillClasses[0]) { this.currentFill = targetFill; setLast = true; }
             if (wantPaint && targetFill != this.fillClasses[0] && targetFill != this.currentFill) { canPaint = false; }
-            else { canPaint &= this.LinkCells(this.lastCell, to); }
+        }
+
+        if (this.options["data-drag-draw-spoke"] && (!wantPaint || canPaint)) {
+            canPaint &= this.LinkCellsSpoke(this.lastCell, to, rightMouse);
+        }
+
+        if (this.options["data-drag-draw-path"] && (!wantPaint || canPaint)) {
+            canPaint &= this.LinkCellsPath(this.lastCell, to);
         }
 
         if (canPaint && !to.classList.contains("given-fill")) {
@@ -631,13 +683,6 @@ function PuzzleEntry(p, index) {
             this.lastCell = to;
             if (didWork) { this.updateCenterFocus(to); }
         }
-    }
-
-    this.pointerEnter = function(e) {
-        if (!this.pointerIsDown) return;
-        if (this.lastCell === e.currentTarget) return;
-
-        this.dragPaintAndPath(e.currentTarget);
     }
 
     this.getOptionArray = function(option, splitchar, special) {
@@ -745,6 +790,30 @@ function PuzzleEntry(p, index) {
         svg.appendChild(use);
     }
 
+    this.addSpokesToSvg = function(svg, spokeCode, spokePrefix) {
+        for (var i = 0; i < 8; i++) {
+            if (!(spokeCode & (1 << i))) continue;
+
+            var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            use.classList.add(spokePrefix + "spoke");
+            var spokePath = this.options["data-spoke-style"];
+            if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
+            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : ""));
+            if (i > 1) { use.setAttributeNS(null, "transform", "rotate(" + ((i >> 1) * 90) + ")"); }
+            svg.appendChild(use);
+        }
+    }
+
+    this.addReticleLayer = function(svg, cls) {
+        var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.classList.add(cls);
+        var spokePath = this.options["data-spoke-style"];
+        if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
+        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + (this.reticleXMode ? "x-" : "") + "reticle");
+        if (this.tilt != 0) { use.setAttributeNS(null, "transform", "rotate(" + ((this.tilt) * 45) + ")"); }
+        svg.appendChild(use);
+    }
+
     this.pathTranslate = ["o0", "i2", "i0", "l0", "i1", "r2", "r1", "t1", "i3", "r3", "r0", "t3", "l1", "t2", "t0", "x0"];
     this.pathCopyjack = [" ", "╵", "╷", "│", "╴", "┘", "┐", "┤", "╶", "└", "┌", "├", "─", "┴", "┬", "┼"];
     this.updateSvg = function(td) {
@@ -785,37 +854,57 @@ function PuzzleEntry(p, index) {
         if (edgeCode & 2) { this.addEdgeToSvg(svg, "x-edge-bottom"); }
         if (edgeCode & 4) { this.addEdgeToSvg(svg, "x-edge-left"); }
         if (edgeCode & 8) { this.addEdgeToSvg(svg, "x-edge-right"); }
+
+        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
+        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
+        if (this.options["data-drag-draw-spoke"] && td === this.currentCenterFocus) {
+            this.addReticleLayer(svg, "reticle-back");
+            this.addReticleLayer(svg, "reticle-front");
+        }
     }
 
-    this.IsFullyLinked = function(code) {
+    this.IsFullyLinked = function(code, maxLinks) {
+        if (!maxLinks) return false;
+
+        code = parseInt(code);
+        maxLinks = parseInt(maxLinks);
+
         var linkCount = 0;
         while (code) { linkCount++; code &= (code - 1); }
-        return (linkCount >= 2);
+        return (linkCount >= maxLinks);
     }
 
-    this.LinkCellsDirectional = function(cellFrom, directionFrom, cellTo, directionTo) {
-        var codeFrom = cellFrom.getAttribute("data-path-code");
-        var codeTo = cellTo.getAttribute("data-path-code");
+    this.LinkCellsDirectional = function(attributeNameBase, maxLinks, cellFrom, directionFrom, cellTo, directionTo) {
+        var attributeName = "data-" + attributeNameBase + "-code";
+        var codeFrom = cellFrom.getAttribute(attributeName);
+        var codeTo = cellTo.getAttribute(attributeName);
         if (!codeFrom) { codeFrom = 0; }
         if (!codeTo) { codeTo = 0; }
 
-        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && !this.IsFullyLinked(codeFrom) && !this.IsFullyLinked(codeTo)) {
-            this.undoManager.addUnit(cellFrom, "data-path-code", codeFrom, codeFrom | directionFrom);
-            this.undoManager.addUnit(cellTo, "data-path-code", codeTo, codeTo | directionTo);
+        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
+            this.undoManager.addUnit(cellFrom, attributeName, codeFrom, codeFrom | directionFrom);
+            this.undoManager.addUnit(cellTo, attributeName, codeTo, codeTo | directionTo);
+
+            var otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
+            var otherFrom = cellFrom.getAttribute(otherAttributeName);
+            var otherTo = cellTo.getAttribute(otherAttributeName);
+            if (otherFrom) { this.undoManager.addUnit(cellFrom, otherAttributeName, otherFrom, otherFrom & ~directionFrom); }
+            if (otherTo) { this.undoManager.addUnit(cellTo, otherAttributeName, otherTo, otherTo & ~directionTo); }
             return true;
         }
         else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
-            var givenCodeFrom = cellFrom.getAttribute("data-given-path-code");
-            var givenCodeTo = cellTo.getAttribute("data-given-path-code");
+            var givenAttributeName = "data-given-" + attributeNameBase + "-code";
+            var givenCodeFrom = cellFrom.getAttribute(givenAttributeName);
+            var givenCodeTo = cellTo.getAttribute(givenAttributeName);
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
-                this.undoManager.addUnit(cellFrom, "data-path-code", codeFrom, codeFrom & ~directionFrom);
-                this.undoManager.addUnit(cellTo, "data-path-code", codeTo, codeTo & ~directionTo);
+                this.undoManager.addUnit(cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom);
+                this.undoManager.addUnit(cellTo, attributeName, codeTo, codeTo & ~directionTo);
 
                 if (this.options["data-drag-paint-fill"]) {
-                    if (cellFrom.getAttribute("data-path-code") == 0 && !cellFrom.classList.contains("given-fill")) {
+                    if ((codeFrom & ~directionFrom) == 0 && !attributeNameBase.startsWith("x-") && !cellFrom.classList.contains("given-fill")) {
                         this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses[0]);
                     }
-                    if (cellTo.getAttribute("data-path-code") == 0 && !cellTo.classList.contains("given-fill")) {
+                    if ((codeTo & ~directionTo) == 0 && !attributeNameBase.startsWith("x-") && !cellTo.classList.contains("given-fill")) {
                         this.setClassInCycle(cellTo, "class-fill", this.fillClasses, this.fillClasses[0]);
                     }
                 }
@@ -826,23 +915,39 @@ function PuzzleEntry(p, index) {
         return false;
     }
 
-    this.LinkCells = function(cellFrom, cellTo)
+    this.LinkCellsPath = function(cellFrom, cellTo)
+    {
+        var colFrom = Array.prototype.indexOf.call(cellFrom.parentElement.children, cellFrom) - this.leftClueDepth;
+        var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement) - this.topClueDepth;
+        var colTo = Array.prototype.indexOf.call(cellTo.parentElement.children, cellTo) - this.leftClueDepth;
+        var rowTo = Array.prototype.indexOf.call(cellTo.parentElement.parentElement.children, cellTo.parentElement) - this.topClueDepth;
+        var maxDirections = this.options["data-path-max-directions"];
+
+        if (colFrom === colTo) {
+            if (rowFrom === rowTo - 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 2, cellTo, 1); }
+            else if (rowFrom === rowTo + 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 1, cellTo, 2); }
+        }
+        else if (rowFrom === rowTo) {
+            if (colFrom === colTo - 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 8, cellTo, 4); }
+            else if (colFrom === colTo + 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 4, cellTo, 8); }
+        }
+
+        return false;
+    }
+
+    this.LinkCellsSpoke = function(cellFrom, cellTo, rightMouse)
     {
         var colFrom = Array.prototype.indexOf.call(cellFrom.parentElement.children, cellFrom) - this.leftClueDepth;
         var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement) - this.topClueDepth;
         var colTo = Array.prototype.indexOf.call(cellTo.parentElement.children, cellTo) - this.leftClueDepth;
         var rowTo = Array.prototype.indexOf.call(cellTo.parentElement.parentElement.children, cellTo.parentElement) - this.topClueDepth;
 
-        if (colFrom === colTo) {
-            if (rowFrom === rowTo - 1) { return this.LinkCellsDirectional(cellFrom, 2, cellTo, 1); }
-            else if (rowFrom === rowTo + 1) { return this.LinkCellsDirectional(cellFrom, 1, cellTo, 2); }
-        }
-        else if (rowFrom === rowTo) {
-            if (colFrom === colTo - 1) { return this.LinkCellsDirectional(cellFrom, 8, cellTo, 4); }
-            else if (colFrom === colTo + 1) { return this.LinkCellsDirectional(cellFrom, 4, cellTo, 8); }
-        }
+        if ((colFrom === colTo && rowFrom === rowTo) || Math.abs(colFrom - colTo) > 1 || Math.abs(rowFrom - rowTo) > 1) return false;
 
-        return false;
+        const fromVals = [128, 1, 2, 64, 0, 4, 32, 16, 8];
+
+        var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
+        return this.LinkCellsDirectional((rightMouse ^ this.reticleXMode) ? "x-spoke" : "spoke", this.options["data-spoke-max-directions"], cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
     }
 
     this.parseOuterClues = function(clues) {
@@ -946,12 +1051,18 @@ function PuzzleEntry(p, index) {
             if (!givenPathCode) givenPathCode = 0;
             var pathCodeDelta = pathCode ^ givenPathCode;
 
+            var spokeCode = td.getAttribute("data-spoke-code");
+            var givenSpokeCode = td.getAttribute("data-given-spoke-code");
+            if (!spokeCode) spokeCode = 0;
+            if (!givenSpokeCode) givenSpokeCode = 0;
+            var spokeCodeDelta = spokeCode ^ givenSpokeCode;
+
             var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText.trim();
 
             var cellState = "";
-            if (fillIndex || edgeCodeDelta || pathCodeDelta || text) {
+            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || text) {
                 hasState = true;
-                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16);
+                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16) + (spokeCodeDelta >> 4).toString(16) + (spokeCodeDelta % 16).toString(16);
                 if (text) { cellState += "," + text; }
             }
 
@@ -993,8 +1104,15 @@ function PuzzleEntry(p, index) {
     }
 
     this.updateCenterFocus = function(center) {
+        var oldCenter = this.currentCenterFocus;
+
         this.currentCenterFocus = center;
         this.currentCenterFocus.focus();
+
+        if (this.options["data-drag-draw-spoke"]) {
+            if (oldCenter) this.updateSvg(oldCenter);
+            if (center) this.updateSvg(center);
+        }
     }
 
     this.closeAbout = function() {
@@ -1027,13 +1145,20 @@ function PuzzleEntry(p, index) {
             }
         }
         if (this.canHaveCenterFocus) {
-            lines.push("<tr><td>Navigate between cells</td><td>Arrow keys</td><td>Click a cell</td></tr>");
+            if (this.options["data-drag-draw-spoke"]) {
+                lines.push("<tr><td>Navigate between cells (8 directions)</td><td>Arrow keys, plus / or \\ to toggle axis tilt</td><td>Click a cell</td></tr>");
+            } else {
+                lines.push("<tr><td>Navigate between cells (4 directions)</td><td>Arrow keys</td><td>Click a cell</td></tr>");
+            }
         }
         if (this.fillClasses && this.fillClasses.length > 0 && this.options["data-fill-cycle"]) {
             lines.push("<tr><td>Change cell background (forwards or backwards)</td><td>Space or Shift-Space</td><td>Click/Left-Click or Right/Shift-Click</td></tr>");
         }
         if (this.options["data-drag-draw-path"]) {
-            lines.push("<tr><td>Draw a path between cells</td><td>Shift-arrow keys</td><td>Click one cell, drag to others</td></tr>");
+            lines.push("<tr><td>Draw lines between cells (4 directions)</td><td>Shift-arrow keys</td><td>Click one cell, drag to others</td></tr>");
+        }
+        if (this.options["data-drag-draw-spoke"]) {
+            lines.push("<tr><td>Draw lines between cells (8 directions)</td><td>Shift-arrow keys, plus / or \\ to toggle axis tilt</td><td>Click one cell, drag to others</td></tr>");
         }
         if (this.options["data-drag-draw-edge"]) {
             if (this.canHaveCenterFocus) {
@@ -1071,6 +1196,7 @@ function PuzzleEntry(p, index) {
     var solution = this.getOptionArray("data-text-solution", "|");
     var edges = this.getOptionArray("data-edges", "|");
     var paths = this.getOptionArray("data-paths", "|");
+    var spokes = this.getOptionArray("data-spokes", "|");
     var extracts = this.getOptionArray("data-extracts", " ");
     var unselectableGivens = this.options["data-unselectable-givens"];
     var topClues = this.getOptionArray("data-top-clues", "|");
@@ -1097,7 +1223,7 @@ function PuzzleEntry(p, index) {
 
     this.canDrawOnEdges = this.options["data-drag-draw-edge"] && !this.options["data-no-input"];
 
-    this.canHaveCenterFocus = this.options["data-text-characters"] || (fills && this.options["data-fill-cycle"]) || this.options["data-drag-draw-path"];
+    this.canHaveCenterFocus = this.options["data-text-characters"] || (fills && this.options["data-fill-cycle"]) || this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"];
     this.canHaveCornerFocus = this.canDrawOnEdges;
     this.keyboardFocusModel = this.options["data-no-input"] ? "none" : (this.canHaveCornerFocus ? "corner" : "center");
     this.cornerFocus = null;
@@ -1151,7 +1277,7 @@ function PuzzleEntry(p, index) {
         this.numCols = Math.max(this.numCols, textLines[r].length);
         for (var c = 0; c < textLines[r].length; c++) {
             var cellSavedState = null;
-            if (savedState) { cellSavedState = savedState[stateIndex++]; }
+            if (savedState) { cellSavedState = savedState[stateIndex++]; console.log(cellSavedState); }
 
             var td = document.createElement("td");
             td.classList.add("cell");
@@ -1178,8 +1304,8 @@ function PuzzleEntry(p, index) {
                 if (extracts) {
                     var code = extracts[extractNum++];
                     var id = "extract-id-" + code;
-                    text.setAttribute("data-extract-id", id);
-                    text.classList.add(id);
+                    td.setAttribute("data-extract-id", id);
+                    td.classList.add(id);
 
                     var extractCode = document.createElement("div");
                     extractCode.contentEditable = false;
@@ -1212,7 +1338,6 @@ function PuzzleEntry(p, index) {
                     td.addEventListener("beforeinput", e => { this.beforeInput(e); });
                     td.addEventListener("pointerdown",  e => { this.pointerDown(e); });
                     td.addEventListener("pointermove",  e => { this.pointerMove(e); });
-                    td.addEventListener("pointerenter",  e => { this.pointerEnter(e); });
                     td.addEventListener("pointercancel",  e => { this.pointerCancel(e); });
                     td.addEventListener("contextmenu",  e => { e.preventDefault(); });
                     if (this.options["data-clue-locations"] === "crossword") {
@@ -1282,6 +1407,35 @@ function PuzzleEntry(p, index) {
             }
             if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
             if (pathCode) { td.setAttribute("data-path-code", pathCode); }
+
+            var spokeCode = 0;
+            if (spokes) {
+                var topRow = spokes[r * 2];
+                var midRow = spokes[r * 2 + 1];
+                var botRow = spokes[r * 2 + 2];
+                var chN = topRow[c * 2 + 1];
+                var chNE = topRow[c * 2 + 2];
+                var chE = midRow[c * 2 + 2];
+                var chSE = botRow[c * 2 + 2];
+                var chS = botRow[c * 2 + 1];
+                var chSW = botRow[c * 2];
+                var chW = midRow[c * 2];
+                var chNW = topRow[c * 2];
+                if (chN != " " && chN != ".") { spokeCode |= 1; }
+                if (chNE == "/" || chNE == "'" || chNE == "X" || chNE == "x") { spokeCode |= 2; }
+                if (chE != " " && chE != ".") { spokeCode |= 4; }
+                if (chSE == "\\" || chSE == "`" || chSE == "X" || chSE == "x") { spokeCode |= 8; }
+                if (chS != " " && chS != ".") { spokeCode |= 16; }
+                if (chSW == "/" || chSW == "'" || chSW == "X" || chSW == "x") { spokeCode |= 32; }
+                if (chW != " " && chW != ".") { spokeCode |= 64; }
+                if (chNW == "\\" || chNW == "`" || chNW == "X" || chNW == "x") { spokeCode |= 128; }
+
+                if (spokeCode) { td.setAttribute("data-spoke-code", spokeCode); td.setAttribute("data-given-spoke-code", spokeCode); }
+            }
+            if (cellSavedState && cellSavedState.length > 4 && (cellSavedState.indexOf(",") > 4 || cellSavedState.indexOf(",") < 0)) {
+                spokeCode ^= (parseInt(cellSavedState[3], 16) * 16 + parseInt(cellSavedState[4], 16));
+            }
+            if (spokeCode) { td.setAttribute("data-spoke-code", spokeCode); }
 
             if (this.options["data-clue-locations"] && textLines[r][c] != '@') {
                 var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
@@ -1375,7 +1529,7 @@ function PuzzleEntry(p, index) {
         row.classList.add("commands");
         for (var i = 0; i < this.leftClueDepth; i++) { row.insertCell(-1); }
         var cell = row.insertCell(-1);
-        cell.style.maxWidth = table.offsetWidth;
+        cell.style.maxWidth = table.offsetWidth * this.numCols / (this.numCols + this.leftClueDepth + this.rightClueDepth);
         cell.colSpan = this.numCols;
         cell.insertBefore(this.commands, null);
         for (var i = 0; i < this.rightClueDepth; i++) { row.insertCell(-1); }

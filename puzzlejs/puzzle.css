@@ -81,6 +81,7 @@
     background: none;
     border: 0px solid black;
     transform: translate(-50%, -50%);
+    z-index: 10;
 }
 
 .puzzle-entry .corner-focus.x-mode::after {
@@ -104,6 +105,7 @@
 .puzzle-entry .interesting::after {
     content: "";
     position: absolute;
+    z-index: 5;
     top: 50%;
     left: 50%;
     width: 80%;
@@ -206,6 +208,16 @@
 .puzzle-entry use {
     fill: black;
     stroke: black;
+}
+
+.puzzle-entry .reticle-back {
+    stroke-width: 2px;
+    stroke: blue;
+}
+
+.puzzle-entry .reticle-front {
+    stroke-width: 1px;
+    stroke: lightblue;
 }
 
 .puzzle-commands {
