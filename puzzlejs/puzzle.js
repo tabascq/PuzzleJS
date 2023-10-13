@@ -173,10 +173,13 @@ function UndoManager() {
         var retVal = false;
 
         if (this.activeGroup && this.activeGroup.units.length) {
-            this.redoUnits(this.activeGroup.puzzleEntry, this.activeGroup.units);
-            this.undoStack.push(this.activeGroup);
-            this.redoStack = [];
-            retVal = true;
+            try {
+                this.redoUnits(this.activeGroup.puzzleEntry, this.activeGroup.units);
+                this.undoStack.push(this.activeGroup);
+                this.redoStack = [];
+                retVal = true;
+            }
+            catch { }
         }
 
         this.activeGroup = null;
@@ -898,10 +901,10 @@ function PuzzleEntry(p, index) {
                 this.undoManager.addUnit(cellTo, attributeName, codeTo, codeTo & ~directionTo);
 
                 if (this.options["data-drag-paint-fill"]) {
-                    if (cellFrom.getAttribute(attributeName) == 0 && !cellFrom.classList.contains("given-fill")) {
+                    if ((codeFrom & ~directionFrom) == 0 && !attributeNameBase.startsWith("x-") && !cellFrom.classList.contains("given-fill")) {
                         this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses[0]);
                     }
-                    if (cellTo.getAttribute(attributeName) == 0 && !cellTo.classList.contains("given-fill")) {
+                    if ((codeTo & ~directionTo) == 0 && !attributeNameBase.startsWith("x-") && !cellTo.classList.contains("given-fill")) {
                         this.setClassInCycle(cellTo, "class-fill", this.fillClasses, this.fillClasses[0]);
                     }
                 }
