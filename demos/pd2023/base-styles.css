@@ -21,13 +21,6 @@
   --microsoft-green: rgb(127, 186, 0);
 }
 
-@font-face {
-  font-family: "pd2022-font-title";
-  src: url("LTtilt.ttf");
-  font-weight: normal;
-  font-style: normal;
-}
-
 /* Structural */
 .page-div {
   min-width: var(--min-width);
@@ -63,7 +56,7 @@ body {
 
 h1 {
   /* Text */
-  font-family: pd2022-font-title;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: var(--ink-black);
   font-size: 48px;
   font-weight: bold;
