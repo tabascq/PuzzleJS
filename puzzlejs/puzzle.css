@@ -26,6 +26,11 @@
     user-select: none;
 }
 
+.puzzle-entry tr {
+    display: block;
+    height: 40px;
+}
+
 .puzzle-entry td {
     width: 40px;
     height: 40px;
