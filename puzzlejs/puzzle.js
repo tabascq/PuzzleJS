@@ -993,7 +993,7 @@ function PuzzleEntry(p, index) {
         // Reset the font size to avoid row overflow.
         copyTd.style.fontSize = '1em';
         // Copy any text inside the td. This includes text inside divs within the td.
-        copyTd.innerText = inputTd.innerText;
+        copyTd.innerHTML = inputTd.innerHTML;
         // If the td has a "value", overwrite the innertext.
         const text = inputTd.querySelector('.text span');
         if (text && text.innerText) {
@@ -1553,10 +1553,12 @@ function PuzzleEntry(p, index) {
         this.container.insertBefore(this.copyjackVersion, this.table);
         // Populate the copy-only table.
         for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
+            if (tr.classList.contains('no-copy')) continue;
             const copyTr = document.createElement('tr');
             copyTr.style.userSelect = 'auto';
             this.copyjackVersion.appendChild(copyTr);
             for (const [j, td] of Array.from(tr.getElementsByTagName('td')).entries()) {
+                if (td.classList.contains('no-copy')) continue;
                 td.dataset.coord = [i, j];
                 const copyTd = document.createElement('td');
                 copyTd.style.userSelect = 'auto';
