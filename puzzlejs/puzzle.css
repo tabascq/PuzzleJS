@@ -26,9 +26,18 @@
     user-select: none;
 }
 
+.puzzle-entry {
+    --cell-size: 40px;
+}
+
+.puzzle-entry tr {
+    display: block;
+    height: var(--cell-size);
+}
+
 .puzzle-entry td {
-    width: 40px;
-    height: 40px;
+    width: var(--cell-size);
+    height: var(--cell-size);
     padding: 0px;
     position: relative;
     background: transparent;
