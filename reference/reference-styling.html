@@ -40,9 +40,7 @@
 
             .basic-text-example .cell { color: red; font-style: italic; font-family:'Times New Roman', Times, serif; }
 
-            .big-example { --cell-size: 80px; font-size: 64px; }
-            .big-example .cell { font-size: 64px; }
-            .big-example .cell.small-text { font-size: 20px; }
+            .big-example { --puzzle-cell-size: 80px; }
 
             .outline-text-example .cell { background: yellow; color: red; text-shadow: none; }
 
@@ -118,7 +116,7 @@
         </div>
 
         <h2>Size</h2>
-        <p>Cell size can currently be changed simply by setting the CSS variable <code>--cell-size</code> on a puzzle. If the cells contain text, you may also want to change the <code>font-size</code> property, as well as for small text.</p>
+        <p>Cell size can currently be changed simply by setting the CSS variable <code>--puzzle-cell-size</code> on a puzzle. If the cells contain text, you may also want to change the <code>font-size</code> property to increase or decrease the font size, as well as for <code>.small-text</code>. That said, font sizes will scale by default along with cell size.</p>
         <div class="example">
             <div class="puzzle-entry big-example" data-text="bi|g."></div>
         </div>
@@ -255,10 +253,10 @@
         </div>
 
         <h2>CSS Variables</h2>
-        <p>These CSS variables can be set in a CSS rule on a puzzle.</p>
+        <p>These CSS variables can be set in a CSS rule on a puzzle. The CSS rules may also be <a href="https://www.w3schools.com/css/css3_variables_javascript.asp" target="_blank">modified through JavaScript</a>.</p>
         <table class="reference-table">
             <tr><th>Variable</th><th>Meaning</th></tr>
-            <tr><td><code>--cell-size</code></td><td>The size of a single cell of the grid. This variable will control both the cell height and the cell width. If you want cells to be rectangular, set the CSS <code>width</code> property in a rule with the <code>.puzzle-entry .cell</code> selector as well as setting the <code>--cell-size</code> variable in a rule with the <code>.puzzle-entry</code> selector.</td></tr>
+            <tr><td><code>--puzzle-cell-size</code></td><td>The size of a single cell of the grid. This variable will control both the cell height and the cell width. If you want cells to be rectangular, set the CSS <code>width</code> property in a rule with the <code>.puzzle-entry .cell</code> selector as well as setting the <code>--puzzle-cell-size</code> variable in a rule with the <code>.puzzle-entry</code> selector.</td></tr>
         </table>
 
         <h2>Many Helpful CSS Selectors</h2>
@@ -305,6 +303,6 @@
         </table>
 
         <h2 id="BreakingChanges">Breaking Changes</h2>
-        <p>Cell sizing is now controlled best from a <code>--cell-size</code> CSS variable set on the puzzle, rather than by the <code>width</code> and <code>height</code> properties of a cell.</p>
+        <p>Cell sizing is now controlled best from a <code>--puzzle-cell-size</code> CSS variable set on the puzzle, rather than by the <code>width</code> and <code>height</code> properties of a cell.</p>
     </body>
 </html>

@@ -26,23 +26,23 @@
     user-select: none;
 }
 
-.puzzle-entry {
-    --cell-size: 40px;
+:root {
+    --puzzle-cell-size: 40px;
 }
 
 .puzzle-entry tr {
     display: block;
-    height: var(--cell-size);
+    height: var(--puzzle-cell-size);
 }
 
 .puzzle-entry td {
-    width: var(--cell-size);
-    height: var(--cell-size);
+    width: var(--puzzle-cell-size);
+    height: var(--puzzle-cell-size);
     padding: 0px;
     position: relative;
     background: transparent;
     text-align: center;
-    font-size: 32px;
+    font-size: calc(var(--puzzle-cell-size) * 0.8);
     font-weight: bold;
     font-family: monospace;
     border: none;
@@ -148,7 +148,7 @@
     left: 2px;
     z-index: 3;
     text-align: left;
-    font-size: 12px;
+    font-size: calc(var(--puzzle-cell-size) * 0.3);
     text-shadow: none;
     color: black;
     font-weight: normal;
@@ -161,7 +161,7 @@
     right: 2px;
     z-index: 3;
     text-align: right;
-    font-size: 12px;
+    font-size: calc(var(--puzzle-cell-size) * 0.3);
     text-shadow: none;
     color: black;
     font-weight: normal;
@@ -169,7 +169,7 @@
 }
 
 .puzzle-entry .small-text {
-    font-size: 12px;
+    font-size: calc(var(--puzzle-cell-size) * 0.3);
 }
 
 .puzzle-entry td.extract {
@@ -227,6 +227,10 @@
 .puzzle-entry .reticle-front {
     stroke-width: 1px;
     stroke: lightblue;
+}
+
+.commands {
+    margin: 0px auto;
 }
 
 .puzzle-commands {
