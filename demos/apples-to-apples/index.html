@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="../../puzzlejs/puzzle.css">
     <script type="text/javascript" src="../../puzzlejs/puzzle.js"></script>
     <style>
-        .apples-to-apples { min-width: 800px; }
-        .apples-to-apples .cell { width: 25px; height: 25px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; text-shadow: none; }
+        .apples-to-apples { min-width: 800px; --puzzle-cell-size: 25px; }
+        .apples-to-apples .cell { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; text-shadow: none; }
         .apples-to-apples .cell.golden-delicious { background-color: #ffffb5; }
         .apples-to-apples .cell.granny-smith { background-color: #bce292; }
         .apples-to-apples .cell.fuji { background-color: #b20000; color: white; }
@@ -26,7 +26,8 @@
 
         @media print {
             .content-div p { font-size: 14px; }
-            .apples-to-apples .cell { width: 20px; height: 20px; font-size: 10px; }
+            .apples-to-apples { --puzzle-cell-size: 20px; }
+            .apples-to-apples .cell { font-size: 10px; }
         }
     </style>
 </head>

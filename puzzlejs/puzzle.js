@@ -1530,6 +1530,8 @@ function PuzzleEntry(p, index) {
         for (var i = 0; i < this.leftClueDepth; i++) { row.insertCell(-1); }
         var cell = row.insertCell(-1);
         cell.style.maxWidth = table.offsetWidth * this.numCols / (this.numCols + this.leftClueDepth + this.rightClueDepth);
+        cell.style.margin = "0px auto";
+        cell.style.display = "block";
         cell.colSpan = this.numCols;
         cell.insertBefore(this.commands, null);
         for (var i = 0; i < this.rightClueDepth; i++) { row.insertCell(-1); }

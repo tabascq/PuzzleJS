@@ -46,7 +46,8 @@
 
             .wordsearch-example .cell[data-spoke-code]:not([data-spoke-code="0"]) { background: lightgray; }
 
-            .spokes-example .cell { height: 60px; width: 60px; text-shadow: none; color: white; }
+            .spokes-example { --puzzle-cell-size: 60px; }
+            .spokes-example .cell { text-shadow: none; color: white; font-size: 32px; }
             .spokes-example .cell .text { transform: translate(0px, -2px); }
             .spokes-example .cell::before { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); content:""; width: 40px; height: 40px; border-radius: 20px; background: black; }
 

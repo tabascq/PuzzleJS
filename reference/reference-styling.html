@@ -34,10 +34,13 @@
                 background: white;
             }
 
+            .reference-table td:first-child {
+                min-width: 150px;
+            }
+
             .basic-text-example .cell { color: red; font-style: italic; font-family:'Times New Roman', Times, serif; }
 
-            .big-example .cell { width: 80px; height: 80px; font-size: 64px; }
-            .big-example .cell.small-text { font-size: 20px; }
+            .big-example { --puzzle-cell-size: 80px; }
 
             .outline-text-example .cell { background: yellow; color: red; text-shadow: none; }
 
@@ -113,7 +116,7 @@
         </div>
 
         <h2>Size</h2>
-        <p>Cell size can currently be changed simply by setting <code>width</code> and <code>height</code> on a cell. If the cell contains text, you may also want to change the <code>font-size</code> property, as well as for small text.</p>
+        <p>Cell size can currently be changed simply by setting the CSS variable <code>--puzzle-cell-size</code> on a puzzle. If the cells contain text, you may also want to change the <code>font-size</code> property to increase or decrease the font size, as well as for <code>.small-text</code>. That said, font sizes will scale by default along with cell size.</p>
         <div class="example">
             <div class="puzzle-entry big-example" data-text="bi|g."></div>
         </div>
@@ -249,9 +252,16 @@
 </div>
         </div>
 
+        <h2>CSS Variables</h2>
+        <p>These CSS variables can be set in a CSS rule on a puzzle. The CSS rules may also be <a href="https://www.w3schools.com/css/css3_variables_javascript.asp" target="_blank">modified through JavaScript</a>.</p>
+        <table class="reference-table">
+            <tr><th>Variable</th><th>Meaning</th></tr>
+            <tr><td><code>--puzzle-cell-size</code></td><td>The size of a single cell of the grid. This variable will control both the cell height and the cell width. If you want cells to be rectangular, set the CSS <code>width</code> property in a rule with the <code>.puzzle-entry .cell</code> selector as well as setting the <code>--puzzle-cell-size</code> variable in a rule with the <code>.puzzle-entry</code> selector.</td></tr>
+        </table>
+
         <h2>Many Helpful CSS Selectors</h2>
         <p>This is certainly not an exhaustive list of selectors, but it includes nearly all classes that PuzzleJS sets on output elements.</p>
-        <table>
+        <table class="reference-table">
             <tr><th>Selector</th><th>Selects</th></tr>
             <tr><td><code>.cell</code></td><td>A cell of the puzzle grid: interior, exterior, etc.</td></tr>
             <tr><td><code>.cell.inner-cell</code></td><td>A cell of the main (interior) area of the puzzle grid.</td></tr>
@@ -293,6 +303,6 @@
         </table>
 
         <h2 id="BreakingChanges">Breaking Changes</h2>
-        <p>There are no breaking changes to styling at this time.</p>
+        <p>Cell sizing is now controlled best from a <code>--puzzle-cell-size</code> CSS variable set on the puzzle, rather than by the <code>width</code> and <code>height</code> properties of a cell.</p>
     </body>
 </html>
