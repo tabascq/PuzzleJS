@@ -902,10 +902,10 @@ function PuzzleEntry(p, index) {
 
                 if (this.options["data-drag-paint-fill"]) {
                     if ((codeFrom & ~directionFrom) == 0 && !attributeNameBase.startsWith("x-") && !cellFrom.classList.contains("given-fill")) {
-                        this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses[0]);
+                        this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses ? this.fillClasses[0] : null);
                     }
                     if ((codeTo & ~directionTo) == 0 && !attributeNameBase.startsWith("x-") && !cellTo.classList.contains("given-fill")) {
-                        this.setClassInCycle(cellTo, "class-fill", this.fillClasses, this.fillClasses[0]);
+                        this.setClassInCycle(cellTo, "class-fill", this.fillClasses, this.fillClasses ? this.fillClasses[0] : null);
                     }
                 }
                 return true;
