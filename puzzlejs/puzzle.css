@@ -30,7 +30,7 @@
     --puzzle-cell-size: 40px;
 }
 
-.puzzle-entry tr {
+.puzzle-entry > table > tr {
     display: block;
     height: var(--puzzle-cell-size);
 }
