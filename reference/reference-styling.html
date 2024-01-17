@@ -61,9 +61,9 @@
             .yes-no-example .cell.no::before { content: "❎"; font-size: 36px; }
 
             .connect-a-fruit-example .cell.kiwi .path { stroke: green; }
-            .connect-a-fruit-example .cell.kiwi.given-fill::before { content: "🥝" }
+            .connect-a-fruit-example .cell.kiwi.given-fill::before { content: "🥝"; font-size: 24px; }
             .connect-a-fruit-example .cell.tangerine .path { stroke: orange; }
-            .connect-a-fruit-example .cell.tangerine.given-fill::before { content: "🍊" }
+            .connect-a-fruit-example .cell.tangerine.given-fill::before { content: "🍊"; font-size: 24px; }
 
             .connect-a-fruit-2-example .cell::before { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
             .connect-a-fruit-2-example .cell.kiwi .path { stroke: green; }
@@ -85,6 +85,9 @@
             .overlapping-example .cell::before { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
             .overlapping-example .cell.black-dot::before { content:""; width: 30px; height: 30px; border-radius: 15px; background: black; }
             .overlapping-example .cell.white-dot::before { content:""; width: 30px; height: 30px; border-radius: 15px; background: white; border: 1px solid black; }
+
+            .commands-example.puzzle-entry { grid-template-columns: auto auto; }
+            .commands-example .puzzle-commands { flex-direction: column; justify-content: start; }
         </style>
     </head>
     <body>
@@ -252,6 +255,12 @@
 </div>
         </div>
 
+        <h2>Commands</h2>
+        <p>Commands can be moved from their default bottom placement by modifying the <code>puzzle-entry</code> and/or <code>puzzle-commands styles.</code></p>
+        <div class="example">
+            <div class="puzzle-entry commands-example" data-mode="notext" data-text="3x3" data-show-commands="true"></div>
+        </div>
+
         <h2>CSS Variables</h2>
         <p>These CSS variables can be set in a CSS rule on a puzzle. The CSS rules may also be <a href="https://www.w3schools.com/css/css3_variables_javascript.asp" target="_blank">modified through JavaScript</a>.</p>
         <table class="reference-table">
@@ -263,6 +272,9 @@
         <p>This is certainly not an exhaustive list of selectors, but it includes nearly all classes that PuzzleJS sets on output elements.</p>
         <table class="reference-table">
             <tr><th>Selector</th><th>Selects</th></tr>
+            <tr><td><code>.puzzle-entry</code></td><td>The root of the puzzle, which includes the content and the commands, if requested</td></tr>
+            <tr><td><code>.puzzle-entry-content</code></td><td>The content of the puzzle, which includes the grid and any other content placed in the <code>puzzle-entry</code></td></tr>
+            <tr><td><code>.puzzle-grid</code></td><td>The puzzle grid itself.</td></tr>
             <tr><td><code>.cell</code></td><td>A cell of the puzzle grid: interior, exterior, etc.</td></tr>
             <tr><td><code>.cell.inner-cell</code></td><td>A cell of the main (interior) area of the puzzle grid.</td></tr>
             <tr><td><code>.cell.unselectable</code></td><td>A cell that has no border and can&rsquo;t be selected.</td></tr>

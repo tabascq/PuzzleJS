@@ -1213,6 +1213,7 @@ function PuzzleEntry(p, index) {
 
     var allowInput = !this.options["data-no-input"];
     var table = document.createElement("table");
+    table.classList.add("puzzle-grid");
     var clueNum = 0;
     var extractNum = 0;
 
