@@ -1213,8 +1213,14 @@ function PuzzleEntry(p, index) {
 
     var allowInput = !this.options["data-no-input"];
     var table = document.createElement("table");
+    table.classList.add("puzzle-grid");
     var clueNum = 0;
     var extractNum = 0;
+
+    var content = document.createElement("div");
+    content.classList.add("puzzle-entry-content");
+    this.container.childNodes.forEach(n => { content.appendChild(n); })
+    this.container.appendChild(content);
 
     var acrossClues = this.container.querySelectorAll(".crossword-clues.across li");
     var acrossClueIndex = 0;
@@ -1504,7 +1510,7 @@ function PuzzleEntry(p, index) {
 
     this.table = table;
 
-    this.container.insertBefore(table, this.container.firstChild);
+    content.insertBefore(table, content.firstChild);
 
     this.dx = 0;
     this.dy = 0;
@@ -1524,17 +1530,7 @@ function PuzzleEntry(p, index) {
         // TODO shouldn't need a reload
         this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { this.prepareToReset(); window.location.reload(); });
 
-        // add as an extra row of the table because everything else breaks layout somewhere
-        var row = table.insertRow(-1);
-        row.classList.add("commands");
-        for (var i = 0; i < this.leftClueDepth; i++) { row.insertCell(-1); }
-        var cell = row.insertCell(-1);
-        cell.style.maxWidth = table.offsetWidth * this.numCols / (this.numCols + this.leftClueDepth + this.rightClueDepth);
-        cell.style.margin = "0px auto";
-        cell.style.display = "block";
-        cell.colSpan = this.numCols;
-        cell.insertBefore(this.commands, null);
-        for (var i = 0; i < this.rightClueDepth; i++) { row.insertCell(-1); }
+        this.container.appendChild(this.commands);
     }
 
     if (this.keyboardFocusModel == "corner") {
@@ -1552,7 +1548,7 @@ function PuzzleEntry(p, index) {
         this.copyjackVersion = document.createElement('table');
         this.copyjackVersion.classList.add('copy-only');
         this.copyjackVersion.style.userSelect = 'auto'; // Needed for Firefox compatibility.
-        this.container.insertBefore(this.copyjackVersion, this.table);
+        content.insertBefore(this.copyjackVersion, this.table);
         // Populate the copy-only table.
         for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
             if (tr.classList.contains('no-copy')) continue;
@@ -1585,4 +1581,6 @@ function PuzzleEntry(p, index) {
 
         window.addEventListener("beforeunload", e => { this.saveState(); });
     }
+
+    this.container.classList.add("loaded");
 }

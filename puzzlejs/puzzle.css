@@ -3,15 +3,25 @@
  * https://github.com/tabascq/PuzzleJS
  */
 .puzzle-entry {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
+    display: grid;
+    gap: 10px;
 
     /* Make background colors print faithfully. */
    -webkit-print-color-adjust: exact;
    -moz-print-color-adjust: exact;
    -ms-print-color-adjust: exact;
    print-color-adjust: exact;
+}
+
+.puzzle-entry:not(.loaded) {
+    display: none !important;
+}
+
+.puzzle-entry-content {
+    display: flex;
+    gap: 20px;
+    flex-flow: row wrap;
+    margin: 0px auto;
 }
 
 .puzzle-entry.no-input * {
@@ -30,7 +40,7 @@
     --puzzle-cell-size: 40px;
 }
 
-.puzzle-entry > table > tr {
+.puzzle-entry .puzzle-grid > tr {
     display: block;
     height: var(--puzzle-cell-size);
 }
@@ -53,10 +63,6 @@
     text-transform: uppercase;
     caret-color: transparent;
     touch-action: pinch-zoom;
-}
-
-.puzzle-entry .commands td {
-    cursor: default; /* The puzzle commands row itself is not interactable. */
 }
 
 .puzzle-entry .text {
@@ -234,7 +240,6 @@
 }
 
 .puzzle-commands {
-    padding-top: 15px;
     display: flex;
     justify-content: center;
 }
