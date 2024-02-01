@@ -1,4 +1,4 @@
-<!-- (c) 2023 Kenny Young -->
+<!-- (c) 2024 Kenny Young -->
 <!-- This code is licensed under the MIT License. -->
 <!-- https://github.com/tabascq/PuzzleJS -->
 <html>
@@ -24,7 +24,7 @@
                 background-color: #ddf;
             }
 
-            .acrostic-example .puzzle-entry { font-size: 20px; padding-bottom: 10px; }
+            .acrostic-example .text { font-size: 20px; top: -3px; }
 
             .path-paint-example .cell.path { stroke: #0000003f; }
 
@@ -210,18 +210,20 @@
                 <div class="puzzle-entry" data-mode="linear" data-text="#### ## #|##### ###" data-extracts="G O A T A T I T O N K G N Y M"></div>
             </div>
 
-            <h2>Acrostic</h2>
+            <h2>Acrostic (with multiple grids in one puzzle)</h2>
             <div class="example">
-                <div class="acrostic-example" style="min-width: 400px; background-color: white; padding: 10px;">
-    <div class="puzzle-entry" data-mode="linear" data-text="#####@#|#######" data-extracts="C1 A2 C3 C4 C5 B6 C7 B8 B9 B10 A11 C12 A13"></div>
-    <br/>
-    <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
-        <div>Not new</div>
-        <div class="puzzle-entry" data-text="###" data-extracts="A11 A2 A13"></div>
-        <div>Left, on a map</div>
-        <div class="puzzle-entry" data-text="####" data-extracts="B10 B6 B8 B9"></div>
-        <div>Lights, Camera, ____!</div>
-        <div class="puzzle-entry" data-text="######" data-extracts="C7 C1 C5 C3 C12 C4"></div>
+                <div class="puzzle-entry acrostic-example" data-mode="linear" data-show-commands="true">
+    <div style="min-width: 400px; background-color: white; padding: 10px;">
+        <div class="puzzle-grid" data-text="#####@#|#######" data-extracts="C1 A2 C3 C4 C5 B6 C7 B8 B9 B10 A11 C12 A13"></div>
+        <br/>
+        <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
+            <div>Not new</div>
+            <div class="puzzle-grid" data-text="###" data-extracts="A11 A2 A13"></div>
+            <div>Left, on a map</div>
+            <div class="puzzle-grid" data-text="####" data-extracts="B10 B6 B8 B9"></div>
+            <div>Lights, Camera, ____!</div>
+            <div class="puzzle-grid" data-text="######" data-extracts="C7 C1 C5 C3 C12 C4"></div>
+        </div>
     </div>
 </div>
             </div>

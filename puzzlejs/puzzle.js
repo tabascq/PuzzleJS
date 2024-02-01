@@ -1,4 +1,4 @@
-/* (c) 2023 Kenny Young
+/* (c) 2024 Kenny Young
  * This code is licensed under the MIT License.
  * https://github.com/tabascq/PuzzleJS
  */
@@ -123,74 +123,93 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function resetAllPuzzleStateOnPage() {
-    document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+    document.querySelectorAll(".puzzle-grid").forEach((g) => { g.puzzleGrid.prepareToReset(); });
     window.location.reload();
 }
 
 function UndoManager() {
     this.undoStack = [];
     this.redoStack = [];
-    this.activeGroup = null;
+    this.activeAction = null;
 
-    this.undoUnits = function(puzzle, units) {
-        var changes = [];
-        units.forEach(u => { changes.push({puzzleId: puzzle.puzzleId, teamId: puzzle.container.getAttribute("data-team-id"), locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.oldValue, playerId: puzzle.container.getAttribute("data-player-id")}); });
-        puzzle.changeWithoutUndo(changes);
-        puzzle.container.dispatchEvent(new CustomEvent("puzzlechanged", { detail: changes, bubbles: true }));
+    this.undoAction = function(action) {
+        var teamId = action.puzzleEntry.container.getAttribute("data-team-id");
+        var playerId = action.puzzleEntry.container.getAttribute("data-player-id");
+
+        action.groups.forEach(g => {
+            var changes = [];
+            var puzzleId = g.puzzleGrid.puzzleId;
+            g.units.forEach(u => { changes.push({puzzleId: puzzleId, teamId: teamId, locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.oldValue, playerId: playerId}); });
+            g.puzzleGrid.changeWithoutUndo(changes);
+            g.puzzleGrid.container.dispatchEvent(new CustomEvent("puzzlechanged", { detail: changes, bubbles: true }));
+        });
     }
 
-    this.redoUnits = function(puzzle, units) {
-        var changes = [];
-        units.forEach(u => { changes.push({puzzleId: puzzle.puzzleId, teamId: puzzle.container.getAttribute("data-team-id"), locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.newValue, playerId: puzzle.container.getAttribute("data-player-id")}); });
-        puzzle.changeWithoutUndo(changes);
-        puzzle.container.dispatchEvent(new CustomEvent("puzzlechanged", { detail: changes, bubbles: true }));
+    this.redoAction = function(action) {
+        var teamId = action.puzzleEntry.container.getAttribute("data-team-id");
+        var playerId = action.puzzleEntry.container.getAttribute("data-player-id");
+        
+        action.groups.forEach(g => {
+            var changes = [];
+            var puzzleId = g.puzzleGrid.puzzleId;
+            g.units.forEach(u => { changes.push({puzzleId: puzzleId, teamId: teamId, locationKey: u.elem.id, propertyKey: u.propertyKey, value: u.newValue, playerId: playerId}); });
+            g.puzzleGrid.changeWithoutUndo(changes);
+            g.puzzleGrid.container.dispatchEvent(new CustomEvent("puzzlechanged", { detail: changes, bubbles: true }));
+        });
     }
 
     this.undo = function() {
-        if (this.activeGroup) { this.endGroup(); }
+        if (this.activeAction) { this.endAction(); }
         if (this.undoStack.length == 0) { return; }
 
-        var group = this.undoStack.pop();
-        this.undoUnits(group.puzzleEntry, group.units);
-        this.redoStack.push(group);
+        var action = this.undoStack.pop();
+        this.undoAction(action);
+        this.redoStack.push(action);
     }
 
     this.redo = function() {
-        if (this.activeGroup) { this.endGroup(); }
+        if (this.activeAction) { this.endAction(); }
         if (this.redoStack.length == 0) { return; }
 
-        var group = this.redoStack.pop();
-        this.redoUnits(group.puzzleEntry, group.units);
-        this.undoStack.push(group);
+        var action = this.redoStack.pop();
+        this.redoAction(action);
+        this.undoStack.push(action);
     }
 
-    this.startGroup = function(puzzleEntry) {
-        if (this.activeGroup) { this.endGroup(); }
-        this.activeGroup = { puzzleEntry: puzzleEntry, units: [] };
+    this.startAction = function(puzzleEntry) {
+        this.activeAction = { puzzleEntry: puzzleEntry, groups: [], totalUnits: 0 };
     }
 
-    this.endGroup = function() {
+    this.endAction = function() {
         var retVal = false;
 
-        if (this.activeGroup && this.activeGroup.units.length) {
+        if (this.activeAction && this.activeAction.groups.length > 0) {
             try {
-                this.redoUnits(this.activeGroup.puzzleEntry, this.activeGroup.units);
-                this.undoStack.push(this.activeGroup);
+                this.redoAction(this.activeAction);
+                this.undoStack.push(this.activeAction);
                 this.redoStack = [];
                 retVal = true;
             }
             catch { }
         }
 
-        this.activeGroup = null;
+        this.activeAction = null;
         return retVal;
     }
 
-    this.addUnit = function(element, propertyKey, oldValue, newValue) {
+    this.addUnit = function(puzzleGrid, element, propertyKey, oldValue, newValue) {
         if (oldValue == newValue) return;
 
+        var group;
+
+        this.activeAction.groups.forEach(g => { if (g.puzzleGrid == puzzleGrid) { g = group; } });
+        if (!group) {
+            group = { puzzleGrid: puzzleGrid, units: [] };
+            this.activeAction.groups.push(group);
+        }
+
         var unit = { "elem": element, "propertyKey": propertyKey, "oldValue": oldValue, "newValue" : newValue };
-        this.activeGroup.units.push(unit);
+        group.units.push(unit);
     }
 }
 
@@ -208,24 +227,27 @@ function PuzzleEntry(p, index) {
     modes.forEach(m => { for (const [key, value] of Object.entries(puzzleModes[m])) { this.options[key] = value; } });
 
     // Finally, any explicitly-specified attributes win.
-    for (const [key, value] of Object.entries(this.options)) {
-        if (this.container.hasAttribute(key)) { this.options[key] = parseFalseStrings(this.container.getAttribute(key)); }
+    this.readLocalOptions = function(element, options) {
+        for (const [key, value] of Object.entries(options)) {
+            if (element.hasAttribute(key)) { options[key] = parseFalseStrings(element.getAttribute(key)); }
+        }
+
+        if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
+            try {
+                var json = JSON.parse(element.firstChild.textContent);
+                for (const[key, value] of Object.entries(json)) { options[key] = value; }
+                element.removeChild(element.firstChild);
+            } catch {}
+        }
     }
 
-    if (this.container.firstChild && this.container.firstChild.nodeType === Node.TEXT_NODE) {
-        try {
-            var json = JSON.parse(this.container.firstChild.textContent);
-            for (const[key, value] of Object.entries(json)) { this.options[key] = value; }
-            this.container.removeChild(this.container.firstChild);
-        } catch {}
-    }
+    this.readLocalOptions(this.container, this.options);
 
     this.pointerIsDown = false;
     this.lastCell = null;
     this.currentFill = null;
     this.puzzleId = this.options["data-puzzle-id"];
     if (!this.puzzleId) { this.puzzleId = window.location.pathname + "|" + index; }
-    this.inhibitSave = false;
     this.xKeyMode = false;
     this.tilt = 0;
     this.reticleXMode = false;
@@ -248,14 +270,54 @@ function PuzzleEntry(p, index) {
     // Assume that if a button with class 'clipboard-button' exists, we're using copyjack.
     this.isUsingCopyjack = document.querySelector('button.clipboard-button') !== null;
 
+    this.puzzleGridFromCell = function(cell) {
+        var ancestor = cell;
+        while (ancestor) {
+            if (ancestor.puzzleGrid) return ancestor.puzzleGrid;
+            ancestor = ancestor.parentElement;
+        }
+
+        return this.activeGrid;
+    }
+
+    this.dirCodeFromDxDy = function(dx, dy) { return dy * 3 + dx + 4; }
+    this.dxFromDirCode = function(dirCode) { return (dirCode % 3) - 1; }
+    this.dyFromDirCode = function(dirCode) { return (dirCode - (dirCode % 3)) / 3 - 1; }
+    this.rotateDirCode = function(dirCode, rotate) {
+        if (!rotate) return dirCode;
+
+        const dirRotates = [0, 1, 2, 5, 8, 7, 6, 3];
+        var dirIndex = dirRotates.indexOf(dirCode) + rotate;
+        while (dirIndex < 0) dirIndex += 8;
+        dirIndex = dirIndex % 8;
+        return dirRotates[dirIndex];
+    }
+
     // --- Functions to update state ---
     // keyboard support
     this.move = function(td, drow, dcol) {
-        var col = dcol + Array.prototype.indexOf.call(td.parentElement.children, td) - this.leftClueDepth;
-        var row = drow + Array.prototype.indexOf.call(td.parentElement.parentElement.children, td.parentElement) - this.topClueDepth;
+        var puzzleGrid = this.puzzleGridFromCell(td);
+        var puzzleGridOrig = puzzleGrid;
+
+        var dirCode = this.dirCodeFromDxDy(dcol, drow);
+        dirCode = this.rotateDirCode(dirCode, puzzleGrid.tilt + this.tilt);
+
+        drow = this.dyFromDirCode(dirCode);
+        dcol = this.dxFromDirCode(dirCode);
+
+        var parts = td.id.split("-");
+        var row = drow + parseInt(parts[1]);
+        var col = dcol + parseInt(parts[2]);
 
         if (this.fShift && (this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"])) {
-            var tdTo = this.table.querySelector("tr:nth-child(" + (row + this.topClueDepth + 1) + ") td:nth-child(" + (col + this.leftClueDepth + 1) + ")");
+            var tdTo;
+            if (td.cellLinks && td.cellLinks[dirCode]) {
+                tdTo = td.cellLinks[dirCode];
+            }
+            else {
+                tdTo = puzzleGrid.lookup["cell-" + row + "-" + col];
+            }
+
             if (tdTo && tdTo.classList.contains("inner-cell")) {
                 this.lastCell = td;
                 this.currentFill = this.findClassInList(td, this.fillClasses);
@@ -264,7 +326,13 @@ function PuzzleEntry(p, index) {
         }
 
         while (true) {
-            var td = this.table.querySelector("tr:nth-child(" + (row + this.topClueDepth + 1) + ") td:nth-child(" + (col + this.leftClueDepth + 1) + ")");
+            if (td.cellLinks && td.cellLinks[dirCode]) {
+                td = td.cellLinks[dirCode];
+                puzzleGrid = this.puzzleGridFromCell(td);
+            }
+            else {
+                td = puzzleGrid.lookup["cell-" + row + "-" + col];
+            }
 
             if (!td) {
                 return false;
@@ -278,6 +346,10 @@ function PuzzleEntry(p, index) {
                     this.dy = Math.abs(drow);
                 }
                 this.updateCenterFocus(td);
+                if (puzzleGrid != puzzleGridOrig) {
+                    var detail = { oldGridId: puzzleGridOrig.puzzleId, newGridId: puzzleGrid.puzzleId };
+                    this.container.dispatchEvent(new CustomEvent("puzzlegridnavigate", { detail: detail, bubbles: true }));
+                }
                 return true;
             }
 
@@ -287,22 +359,58 @@ function PuzzleEntry(p, index) {
     }
 
     this.moveCorner = function(dy, dx) {
+        var dirCode = this.dirCodeFromDxDy(dx, dy);
+        dirCode = this.rotateDirCode(dirCode, this.activeGrid.tilt);
+
+        // check to see if we should hop to an adjacent grid
+        if (this.activeGrid.sideLinks && 
+            ((dirCode == 1 && this.cornerFocusY == 0) || (dirCode == 7 && this.cornerFocusY == this.activeGrid.numRows) ||
+             (dirCode == 3 && this.cornerFocusX == 0) || (dirCode == 5 && this.cornerFocusX == this.activeGrid.numCols))) {
+            var sideLink = this.activeGrid.sideLinks[dirCode];
+            var adjacentDir;
+
+            for (const [key, value] of Object.entries(sideLink.puzzleGrid.sideLinks)) { if (value.puzzleGrid == this.activeGrid) { adjacentDir = key; }}
+
+            if (adjacentDir == 1 || adjacentDir == 3 || adjacentDir == 5 || adjacentDir == 7) {
+                var edgeIsX = dirCode == 1 || dirCode == 7;
+                var edgeVal = edgeIsX ? this.cornerFocusX : this.cornerFocusY;
+                if (!sideLink.align) { edgeVal = (edgeIsX ? this.activeGrid.numCols : this.activeGrid.numRows) - edgeVal; }
+
+                var detail = { oldGridId: this.activeGrid.puzzleId, newGridId: sideLink.puzzleGrid.puzzleId };
+
+                this.activeGrid = sideLink.puzzleGrid;
+                dirCode = 8 - adjacentDir;
+                if (adjacentDir == 1 || adjacentDir == 7) {
+                    this.cornerFocusX = edgeVal;
+                    this.cornerFocusY = (adjacentDir == 1) ? 0 : this.activeGrid.numRows;
+                } else {
+                    this.cornerFocusX = (adjacentDir == 3) ? 0 : this.activeGrid.numCols;
+                    this.cornerFocusY = edgeVal;
+                }
+
+                this.container.dispatchEvent(new CustomEvent("puzzlegridnavigate", { detail: detail, bubbles: true }));
+            }
+        }
+
+        dy = this.dyFromDirCode(dirCode);
+        dx = this.dxFromDirCode(dirCode);
+        
         var newX = dx + this.cornerFocusX;
         var newY = dy + this.cornerFocusY;
 
         newX = Math.max(newX, 0);
-        newX = Math.min(newX, this.numCols);
+        newX = Math.min(newX, this.activeGrid.numCols);
         newY = Math.max(newY, 0);
-        newY = Math.min(newY, this.numRows);
+        newY = Math.min(newY, this.activeGrid.numRows);
 
         if (this.fShift && (this.cornerFocusX != newX || this.cornerFocusY != newY)) {
             var xMin = Math.min(this.cornerFocusX, newX);
             var xMax = Math.max(this.cornerFocusX, newX);
             var yMin = Math.min(this.cornerFocusY, newY);
             var yMax = Math.max(this.cornerFocusY, newY);
-            var xCell = Math.min(xMin, this.numCols - 1);
-            var yCell = Math.min(yMin, this.numRows - 1);
-            var edgeState = { cell: this.table.children[this.topClueDepth + yCell].children[this.leftClueDepth + xCell], edgeCode: 0 };
+            var xCell = Math.min(xMin, this.activeGrid.numCols - 1);
+            var yCell = Math.min(yMin, this.activeGrid.numRows - 1);
+            var edgeState = { puzzleGrid: this.activeGrid, cell: this.activeGrid.lookup["cell-" + yCell + "-" + xCell], edgeCode: 0 };
 
             if (xMax != xMin) { edgeState.edgeCode |= (yCell == yMax ? 1 : 2); }
             if (yMax != yMin) { edgeState.edgeCode |= (xCell == xMax ? 4 : 8); }
@@ -326,10 +434,10 @@ function PuzzleEntry(p, index) {
         var cls = this.findClassInList(td, classes);
 
         if (cls) {
-            this.undoManager.startGroup(this);
+            this.undoManager.startAction(this);
             cls = classes[(classes.indexOf(cls) + classes.length + (reverse ? -1 : 1)) % classes.length];
             this.setClassInCycle(td, propertyKey, classes, cls);
-            this.undoManager.endGroup();
+            this.undoManager.endAction();
         }
 
         return cls;
@@ -337,7 +445,7 @@ function PuzzleEntry(p, index) {
 
     this.setClassInCycle = function(td, propertyKey, classes, cls) {
         if (classes && !td.classList.contains(cls)) {
-            this.undoManager.addUnit(td, propertyKey, this.findClassInList(td, classes), cls);
+            this.undoManager.addUnit(this.locateGrid(td), td, propertyKey, this.findClassInList(td, classes), cls);
         }
     }
 
@@ -398,10 +506,10 @@ function PuzzleEntry(p, index) {
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
-        else if (e.keyCode == 37) { this.move(e.target, -this.tilt, -1); } // left
-        else if (e.keyCode == 38) { this.move(e.target, -1, this.tilt); } // up
-        else if (e.keyCode == 39) { this.move(e.target, this.tilt, 1); } // right
-        else if (e.keyCode == 40) { this.move(e.target, 1, -this.tilt); } // down
+        else if (e.keyCode == 37) { this.move(e.target, 0, -1); } // left
+        else if (e.keyCode == 38) { this.move(e.target, -1, 0); } // up
+        else if (e.keyCode == 39) { this.move(e.target, 0, 1); } // right
+        else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
         else if (e.keyCode == 191 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, 1); } // /
         else if (e.keyCode == 220 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, -1); } // \
         else if (e.keyCode == 187 && this.fShift && this.options["data-drag-draw-spoke"]) { this.toggleReticle(e); } // +
@@ -413,7 +521,7 @@ function PuzzleEntry(p, index) {
             } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
-                if (this.options["data-text-advance-on-type"] && this.numCols > 1 && this.numRows > 1) { this.dx = 1 - this.dx; this.dy = 1 - this.dy; }
+                if (this.options["data-text-advance-on-type"] && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.dx = 1 - this.dx; this.dy = 1 - this.dy; }
                 if (this.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
                 if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.fillClasses, e.shiftKey); }
@@ -454,11 +562,12 @@ function PuzzleEntry(p, index) {
     this.setText = function(target, text, smalltext) {
         var textElement = target.querySelector(".text span");
         if (textElement.innerText != text && !target.classList.contains("given-text")) {
+            var grid = this.locateGrid(target);
             var wasSmalltext = target.classList.contains("small-text");
-            this.undoManager.startGroup(this);
-            if (wasSmalltext != smalltext) { this.undoManager.addUnit(target, "class-small-text", wasSmalltext ? "small-text" : null, smalltext ? "small-text" : null); }
-            this.undoManager.addUnit(target, "text", textElement.innerText, text);
-            this.undoManager.endGroup();
+            this.undoManager.startAction(this);
+            if (wasSmalltext != smalltext) { this.undoManager.addUnit(grid, target, "class-small-text", wasSmalltext ? "small-text" : null, smalltext ? "small-text" : null); }
+            this.undoManager.addUnit(grid, target, "text", textElement.innerText, text);
+            this.undoManager.endAction();
         }
     }
 
@@ -466,65 +575,51 @@ function PuzzleEntry(p, index) {
         return target.querySelector(".text span").innerText;
     }
 
-    this.changeWithoutUndo = function(changes) {
-        var changedElems = [];
-        var svgChangedElems = [];
+    this.precisionHitTestSubregion = function(cell, clientX, clientY, style) {
+        var region = document.createElement('div');
+        region.style.cssText = "z-index:10000;" + style;
+        cell.appendChild(region);
 
-        changes.forEach(c => {
-            var primary = this.lookup[c.locationKey];
+        var hit = (document.elementFromPoint(clientX, clientY) == region);
+        cell.removeChild(region);
 
-            var extractId = primary.getAttribute("data-extract-id");
-            var elems = extractId ? document.querySelectorAll("table:not(.copy-only) ." + extractId) : [primary];
-
-            elems.forEach(elem => {
-                if (!changedElems.includes(elem)) { changedElems.push(elem); }
-
-                if (c.playerId) { elem.setAttribute("data-coop-" + c.propertyKey.replace("data-", "") + "-playerId", c.playerId); }
-
-                switch(c.propertyKey) {
-                    case "text":
-                        var textElement = elem.querySelector(".text span");
-                        textElement.innerText = c.value;
-                        break;
-                    case "class-small-text":
-                        if (c.value) { elem.classList.add("small-text"); }
-                        else { elem.classList.remove("small-text"); }
-                        break;
-                    case "class-fill":
-                        this.fillClasses.forEach(fc => elem.classList.remove(fc));
-                        if (c.value) { elem.classList.add(c.value); }
-                        break;
-                    default:
-                        if (c.propertyKey.endsWith("-code") && !svgChangedElems.includes(elem)) { svgChangedElems.push(elem); }
-                        elem.setAttribute(c.propertyKey, c.value);
-                        break;
-                }
-            });
-        });
-
-        svgChangedElems.forEach(el => { this.updateSvg(el); });
-        changedElems.forEach(el => { this.processTdForCopyjack(el); });
+        return hit;
     }
 
     this.getEventEdgeState = function(cell, clientX, clientY) {
-        var cellClientRect = cell.getBoundingClientRect();
-        var offsetX = clientX - cellClientRect.x;
-        var offsetY = clientY - cellClientRect.y;
+        var closeTop;
+        var closeBottom;
+        var closeLeft;
+        var closeRight;
 
-        var tolerance = cell.offsetWidth/5;
-        var closeTop = (offsetY <= tolerance);
-        var closeBottom = (offsetY >= cell.offsetHeight - tolerance);
-        var closeLeft = (offsetX <= tolerance);
-        var closeRight = (offsetX >= cell.offsetWidth - tolerance);
+        var puzzleGrid = this.puzzleGridFromCell(cell);
+
+        if (!this.usePrecisionHitTesting) {
+            var tolerance = cell.offsetWidth/5;
+            var cellClientRect = cell.getBoundingClientRect();
+            var offsetX = clientX - cellClientRect.x;
+            var offsetY = clientY - cellClientRect.y;
+    
+            closeTop = (offsetY <= tolerance);
+            closeBottom = (offsetY >= cell.offsetHeight - tolerance);
+            closeLeft = (offsetX <= tolerance);
+            closeRight = (offsetX >= cell.offsetWidth - tolerance);
+        } else {
+            closeTop = this.precisionHitTestSubregion(cell, clientX, clientY, "position: absolute; left: 0%; top: 0%; width: 100%; height: 20%;");
+            closeBottom = this.precisionHitTestSubregion(cell, clientX, clientY, "position: absolute; left: 0%; top: 80%; width: 100%; height: 20%;");
+            closeLeft = this.precisionHitTestSubregion(cell, clientX, clientY, "position: absolute; top: 0%; left: 0%; height: 100%; width: 20%;");
+            closeRight = this.precisionHitTestSubregion(cell, clientX, clientY, "position: absolute; top: 0%; left: 80%; height: 100%; width: 20%;");
+        }
 
         if (closeBottom || closeRight) {
-            var col = Array.prototype.indexOf.call(cell.parentElement.children, cell) - this.leftClueDepth;
-            var row = Array.prototype.indexOf.call(cell.parentElement.parentElement.children, cell.parentElement) - this.topClueDepth;
+            var parts = cell.id.split("-");
+            var row = parseInt(parts[1]);
+            var col = parseInt(parts[2]);
 
-            if (closeBottom && row < this.numRows - 1) { closeBottom = false; closeTop = true; row++; }
-            if (closeRight && col < this.numCols - 1) { closeRight = false; closeLeft = true; col++; }
+            if (closeBottom && row < puzzleGrid.numRows - 1) { closeBottom = false; closeTop = true; row++; }
+            if (closeRight && col < puzzleGrid.numCols - 1) { closeRight = false; closeLeft = true; col++; }
 
-            cell = cell.parentElement.parentElement.children[row + this.topClueDepth].children[col + this.leftClueDepth];
+            cell = puzzleGrid.lookup["cell-" + row + "-" + col];
         }
 
         var any = closeLeft || closeRight || closeTop || closeBottom;
@@ -541,17 +636,43 @@ function PuzzleEntry(p, index) {
         else if (closeRight && !closeTop && !closeBottom) { edgeCode = 8; }
 
         if (edgeCode == 0 && (closeTop || closeBottom || closeLeft || closeRight)) {
-            var col = Array.prototype.indexOf.call(cell.parentElement.children, cell) - this.leftClueDepth;
-            var row = Array.prototype.indexOf.call(cell.parentElement.parentElement.children, cell.parentElement) - this.topClueDepth;
+            var parts = cell.id.split("-");
+            var row = parseInt(parts[1]);
+            var col = parseInt(parts[2]);
             if (this.canHaveCornerFocus) {
                 this.setCornerFocusMode();
+                this.activeGrid = puzzleGrid;
                 this.cornerFocusX = col + (closeRight ? 1 : 0);
                 this.cornerFocusY = row + (closeBottom ? 1 : 0);
                 this.updateCornerFocus();
             }
         }
 
-        return { cell: cell, edgeCode: edgeCode, any: any };
+        return { puzzleGrid: puzzleGrid, cell: cell, edgeCode: edgeCode, any: any };
+    }
+
+    this.setEdgeCode = function(edgeState, codeName, oldCode) {
+        this.undoManager.addUnit(edgeState.puzzleGrid, edgeState.cell, codeName, oldCode, oldCode ^ edgeState.edgeCode);
+
+        if (!edgeState.cell.cellLinks) return;
+
+        const edgeDirCodes = [1, 2, 4, 8];
+        const linkDirCodes = [1, 7, 3, 5];
+        const linkCodeTranslate = [0, 1, 0, 4, 0, 8, 0, 2, 0];
+
+        for (var codeIndex = 0; codeIndex < 4; codeIndex++) {
+            if (edgeState.edgeCode & edgeDirCodes[codeIndex]) {
+                var link = edgeState.cell.cellLinks[linkDirCodes[codeIndex]];
+                if (link) {
+                    for (const [key, value] of Object.entries(link.cellLinks)) {
+                        if (value == edgeState.cell) {
+                            var oldLinkCode = link.getAttribute(codeName);
+                            this.undoManager.addUnit(this.locateGrid(link), link, codeName, oldLinkCode, oldLinkCode ^ linkCodeTranslate[key]);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     this.setEdgeState = function(edgeState, mode) {
@@ -578,11 +699,10 @@ function PuzzleEntry(p, index) {
 
         if (curEdgeVal != this.fromEdgeVal) return;
 
-        this.undoManager.startGroup(this);
-        if (this.fromEdgeVal == 1 || this.toEdgeVal == 1) this.undoManager.addUnit(edgeState.cell, "data-edge-code", curEdgeCode, curEdgeCode ^ edgeState.edgeCode);
-        if (this.fromEdgeVal == -1 || this.toEdgeVal == -1) this.undoManager.addUnit(edgeState.cell, "data-x-edge-code", curXEdgeCode, curXEdgeCode ^ edgeState.edgeCode);
-        this.undoManager.endGroup();
-        this.updateSvg(edgeState.cell);
+        this.undoManager.startAction(this);
+        if (this.fromEdgeVal == 1 || this.toEdgeVal == 1) this.setEdgeCode(edgeState, "data-edge-code", curEdgeCode);
+        if (this.fromEdgeVal == -1 || this.toEdgeVal == -1) this.setEdgeCode(edgeState, "data-x-edge-code", curXEdgeCode);
+        this.undoManager.endAction();
     }
 
     this.pointerDown = function(e) {
@@ -592,7 +712,7 @@ function PuzzleEntry(p, index) {
 
         if (e.target.hasPointerCapture(e.pointerId)) { e.target.releasePointerCapture(e.pointerId); }
 
-        if ((document.activeElement == e.currentTarget) && this.options["data-text-advance-on-type"] && this.numCols > 1 && this.numRows > 1) {
+        if ((document.activeElement == e.currentTarget) && this.options["data-text-advance-on-type"] && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) {
             this.dx = 1 - this.dx; this.dy = 1 - this.dy;
             e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
         }
@@ -630,13 +750,19 @@ function PuzzleEntry(p, index) {
 
         e.preventDefault();
 
-        var cellClientRect = e.currentTarget.getBoundingClientRect();
-        var centerOffsetX = e.clientX - cellClientRect.x - e.currentTarget.offsetWidth/2;
-        var centerOffsetY = e.clientY - cellClientRect.y - e.currentTarget.offsetHeight/2;
+        var dragBetweenCells;
 
-        if ((centerOffsetX * centerOffsetX + centerOffsetY * centerOffsetY) * 4 < e.currentTarget.offsetWidth * e.currentTarget.offsetHeight) {
-            this.dragBetweenCells(e.currentTarget, e.buttons > 1);
+        if (!this.usePrecisionHitTesting) {
+            var cellClientRect = e.currentTarget.getBoundingClientRect();
+            var centerOffsetX = e.clientX - cellClientRect.x - e.currentTarget.offsetWidth/2;
+            var centerOffsetY = e.clientY - cellClientRect.y - e.currentTarget.offsetHeight/2;
+    
+            dragBetweenCells = ((centerOffsetX * centerOffsetX + centerOffsetY * centerOffsetY) * 4 < e.currentTarget.offsetWidth * e.currentTarget.offsetHeight);
+        } else {
+            dragBetweenCells = this.precisionHitTestSubregion(e.currentTarget, e.clientX, e.clientY, "top: 0; left: 0; width: 100%; height: 100%; border-radius: 100%")
         }
+
+        if (dragBetweenCells) { this.dragBetweenCells(e.currentTarget, e.buttons > 1); }
 
         if (this.canDrawOnEdges && !this.currentFill) {
             var edgeState = this.getEventEdgeState(e.currentTarget, e.clientX, e.clientY);
@@ -654,7 +780,7 @@ function PuzzleEntry(p, index) {
         var wantPaint = this.options["data-drag-paint-fill"] && !!this.currentFill;
         var canPaint = wantPaint;
 
-        this.undoManager.startGroup(this);
+        this.undoManager.startAction(this);
 
         if (wantPaint && (this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"])) {
             var targetFill = this.findClassInList(to, this.fillClasses);
@@ -677,7 +803,7 @@ function PuzzleEntry(p, index) {
 
         if (canPaint && setLast) { this.setClassInCycle(this.lastCell, "class-fill", this.fillClasses, this.currentFill); }
 
-        var didWork = this.undoManager.endGroup();
+        var didWork = this.undoManager.endAction();
 
         if (!wantPaint || canPaint) {
             this.lastCell = to;
@@ -685,42 +811,37 @@ function PuzzleEntry(p, index) {
         }
     }
 
-    this.getOptionArray = function(option, splitchar, special) {
-        var val = this.options[option];
+    this.getOptionArray = function(options, option, splitchar, special) {
+        var val = options[option];
         if (!val || Array.isArray(val) || val == special) { return val; }
         return val.split(splitchar);
     }
 
-    this.getOptionDict = function(option) {
-        var val = this.options[option];
+    this.getOptionDict = function(options, option) {
+        var val = options[option];
         // TODO attribute version
         return val;
-    }
-
-    this.translate = function(ch, replacements) {
-        if (!replacements || !replacements[ch]) return ch;
-        return replacements[ch];
     }
 
     this.cluePointerEnter = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
-        if (downcluenumber) { this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("hovered"); }); }
+        if (acrosscluenumber) { this.content.querySelectorAll(".cell[data-across-cluenumber='" + acrosscluenumber + "']").forEach(cell => { cell.classList.add("hovered"); }); }
+        if (downcluenumber) { this.content.querySelectorAll(".cell[data-down-cluenumber='" + downcluenumber + "']").forEach(cell => { cell.classList.add("hovered"); }); }
     }
 
     this.cluePointerLeave = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("hovered"); }); }
-        if (downcluenumber) { this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("hovered"); }); }
+        if (acrosscluenumber) { this.content.querySelectorAll(".cell[data-across-cluenumber='" + acrosscluenumber + "']").forEach(cell => { cell.classList.remove("hovered"); }); }
+        if (downcluenumber) { this.content.querySelectorAll(".cell[data-down-cluenumber='" + downcluenumber + "']").forEach(cell => { cell.classList.remove("hovered"); }); }
     }
 
     this.clueClick = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.dx = 1; this.dy = 0; this.table.querySelector("td[data-across-cluenumber='" + acrosscluenumber + "']").focus(); }
-        if (downcluenumber) { this.dx = 0; this.dy = 1; this.table.querySelector("td[data-down-cluenumber='" + downcluenumber + "']").focus(); }
+        if (acrosscluenumber) { this.dx = 1; this.dy = 0; this.content.querySelector(".cell[data-across-cluenumber='" + acrosscluenumber + "']").focus(); }
+        if (downcluenumber) { this.dx = 0; this.dy = 1; this.content.querySelector(".cell[data-down-cluenumber='" + downcluenumber + "']").focus(); }
     }
 
     this.scrollClue = function(li) {
@@ -735,8 +856,8 @@ function PuzzleEntry(p, index) {
         if (this.options["data-clue-locations"] !== "crossword") return;
         
         // Strip highlighting on all cells.
-        this.table.querySelectorAll("td[data-across-cluenumber]").forEach(td => { td.classList.remove("marked"); });
-        this.table.querySelectorAll("td[data-down-cluenumber]").forEach(td => { td.classList.remove("marked"); });
+        this.content.querySelectorAll(".cell[data-across-cluenumber]").forEach(td => { td.classList.remove("marked"); });
+        this.content.querySelectorAll(".cell[data-down-cluenumber]").forEach(td => { td.classList.remove("marked"); });
         // Now reapply the highlighting to relevant cells and clues.
         var acrosscluenumber = cell.getAttribute("data-across-cluenumber");
         var downcluenumber = cell.getAttribute("data-down-cluenumber");
@@ -747,7 +868,7 @@ function PuzzleEntry(p, index) {
                 this.scrollClue(li);
             }
             if (this.dx !== 0) {
-                this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("marked"); });
+                this.content.querySelectorAll(".cell[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.add("marked"); });
             }
         }
         if (downcluenumber) {
@@ -757,7 +878,7 @@ function PuzzleEntry(p, index) {
                 this.scrollClue(li);
             }
             if (this.dy !== 0) {
-                this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("marked"); });
+                this.content.querySelectorAll(".cell[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.add("marked"); });
             }
         }
     }
@@ -770,97 +891,28 @@ function PuzzleEntry(p, index) {
         if (acrosscluenumber) {
             this.container.querySelectorAll("li[data-across-cluenumber='" + acrosscluenumber + "']").forEach(li => { li.classList.remove("marked"); });
             if (this.dx !== 0) {
-                this.table.querySelectorAll("td[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("marked"); });
+                this.content.querySelectorAll(".cell[data-across-cluenumber='" + acrosscluenumber + "']").forEach(td => { td.classList.remove("marked"); });
             }
         }
         if (downcluenumber) {
             this.container.querySelectorAll("li[data-down-cluenumber='" + downcluenumber + "']").forEach(li => { li.classList.remove("marked"); });
             if (this.dy !== 0) {
-                this.table.querySelectorAll("td[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("marked"); });
+                this.content.querySelectorAll(".cell[data-down-cluenumber='" + downcluenumber + "']").forEach(td => { td.classList.remove("marked"); });
             }
         }
     }
 
-    this.addEdgeToSvg = function(svg, edgeName) {
-        var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        use.classList.add(edgeName);
-        var edgePath = this.options["data-edge-style"];
-        if (!edgePath.endsWith(".svg")) { edgePath = puzzleJsFolderPath + "edge-" + edgePath + ".svg"; }
-        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", edgePath + "#" + edgeName);
-        svg.appendChild(use);
-    }
+    this.locateGrid = function(element) {
+        if (this.puzzleGrids.length == 1) { return this.puzzleGrids[0]; }
 
-    this.addSpokesToSvg = function(svg, spokeCode, spokePrefix) {
-        for (var i = 0; i < 8; i++) {
-            if (!(spokeCode & (1 << i))) continue;
-
-            var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-            use.classList.add(spokePrefix + "spoke");
-            var spokePath = this.options["data-spoke-style"];
-            if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
-            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : ""));
-            if (i > 1) { use.setAttributeNS(null, "transform", "rotate(" + ((i >> 1) * 90) + ")"); }
-            svg.appendChild(use);
+        while (element) {
+            if (element.puzzleGrid) return element.puzzleGrid;
+            element = element.parentElement;
         }
     }
 
-    this.addReticleLayer = function(svg, cls) {
-        var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        use.classList.add(cls);
-        var spokePath = this.options["data-spoke-style"];
-        if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
-        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + (this.reticleXMode ? "x-" : "") + "reticle");
-        if (this.tilt != 0) { use.setAttributeNS(null, "transform", "rotate(" + ((this.tilt) * 45) + ")"); }
-        svg.appendChild(use);
-    }
-
-    this.pathTranslate = ["o0", "i2", "i0", "l0", "i1", "r2", "r1", "t1", "i3", "r3", "r0", "t3", "l1", "t2", "t0", "x0"];
-    this.pathCopyjack = [" ", "╵", "╷", "│", "╴", "┘", "┐", "┤", "╶", "└", "┌", "├", "─", "┴", "┬", "┼"];
     this.updateSvg = function(td) {
-        var svg = td.querySelector("svg");
-        if (!svg) {
-            svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            svg.setAttribute("viewBox", "-15 -15 30 30");
-            if (!this.canDrawOnEdges) { svg.classList.add("nopointer"); }
-            td.appendChild(svg);
-        }
-
-        var pathCode = td.getAttribute("data-path-code");
-        if (pathCode) { pathCode = parseInt(pathCode); } else { pathCode = 0; }
-        var translatedData = this.pathTranslate[pathCode];
-
-        svg.innerHTML = "";
-
-        if (pathCode) {
-            var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-            use.classList.add("path");
-            var pathPath = this.options["data-path-style"];
-            if (!pathPath.endsWith(".svg")) { pathPath = puzzleJsFolderPath + "path-" + pathPath + ".svg"; }
-            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", pathPath + "#path-" + translatedData[0]);
-            if (translatedData[1] != "0") { use.setAttributeNS(null, "transform", "rotate(" + parseInt(translatedData[1] * 90) + ")"); }
-            svg.appendChild(use);
-        }
-        
-        if (!td.classList.contains("unselectable")) { this.addEdgeToSvg(svg, "edge-base"); }
-
-        var edgeCode = td.getAttribute("data-edge-code");
-        if (edgeCode & 1) { this.addEdgeToSvg(svg, "edge-top"); }
-        if (edgeCode & 2) { this.addEdgeToSvg(svg, "edge-bottom"); }
-        if (edgeCode & 4) { this.addEdgeToSvg(svg, "edge-left"); }
-        if (edgeCode & 8) { this.addEdgeToSvg(svg, "edge-right"); }
-
-        edgeCode = td.getAttribute("data-x-edge-code");
-        if (edgeCode & 1) { this.addEdgeToSvg(svg, "x-edge-top"); }
-        if (edgeCode & 2) { this.addEdgeToSvg(svg, "x-edge-bottom"); }
-        if (edgeCode & 4) { this.addEdgeToSvg(svg, "x-edge-left"); }
-        if (edgeCode & 8) { this.addEdgeToSvg(svg, "x-edge-right"); }
-
-        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
-        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
-        if (this.options["data-drag-draw-spoke"] && td === this.currentCenterFocus) {
-            this.addReticleLayer(svg, "reticle-back");
-            this.addReticleLayer(svg, "reticle-front");
-        }
+        this.locateGrid(td).updateSvg(td);
     }
 
     this.IsFullyLinked = function(code, maxLinks) {
@@ -880,16 +932,19 @@ function PuzzleEntry(p, index) {
         var codeTo = cellTo.getAttribute(attributeName);
         if (!codeFrom) { codeFrom = 0; }
         if (!codeTo) { codeTo = 0; }
+        var fromGrid = this.puzzleGridFromCell(cellFrom);
+        var toGrid = this.puzzleGridFromCell(cellTo);
 
         if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
-            this.undoManager.addUnit(cellFrom, attributeName, codeFrom, codeFrom | directionFrom);
-            this.undoManager.addUnit(cellTo, attributeName, codeTo, codeTo | directionTo);
-
             var otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
             var otherFrom = cellFrom.getAttribute(otherAttributeName);
             var otherTo = cellTo.getAttribute(otherAttributeName);
-            if (otherFrom) { this.undoManager.addUnit(cellFrom, otherAttributeName, otherFrom, otherFrom & ~directionFrom); }
-            if (otherTo) { this.undoManager.addUnit(cellTo, otherAttributeName, otherTo, otherTo & ~directionTo); }
+
+            this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom | directionFrom);
+            this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo | directionTo);
+
+            if (otherFrom) { this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom & ~directionFrom); }
+            if (otherTo) { this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo & ~directionTo); }
             return true;
         }
         else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
@@ -897,9 +952,8 @@ function PuzzleEntry(p, index) {
             var givenCodeFrom = cellFrom.getAttribute(givenAttributeName);
             var givenCodeTo = cellTo.getAttribute(givenAttributeName);
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
-                this.undoManager.addUnit(cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom);
-                this.undoManager.addUnit(cellTo, attributeName, codeTo, codeTo & ~directionTo);
-
+                this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom);
+                this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo & ~directionTo);
                 if (this.options["data-drag-paint-fill"]) {
                     if ((codeFrom & ~directionFrom) == 0 && !attributeNameBase.startsWith("x-") && !cellFrom.classList.contains("given-fill")) {
                         this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses ? this.fillClasses[0] : null);
@@ -917,160 +971,79 @@ function PuzzleEntry(p, index) {
 
     this.LinkCellsPath = function(cellFrom, cellTo)
     {
-        var colFrom = Array.prototype.indexOf.call(cellFrom.parentElement.children, cellFrom) - this.leftClueDepth;
-        var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement) - this.topClueDepth;
-        var colTo = Array.prototype.indexOf.call(cellTo.parentElement.children, cellTo) - this.leftClueDepth;
-        var rowTo = Array.prototype.indexOf.call(cellTo.parentElement.parentElement.children, cellTo.parentElement) - this.topClueDepth;
         var maxDirections = this.options["data-path-max-directions"];
 
-        if (colFrom === colTo) {
-            if (rowFrom === rowTo - 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 2, cellTo, 1); }
-            else if (rowFrom === rowTo + 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 1, cellTo, 2); }
-        }
-        else if (rowFrom === rowTo) {
-            if (colFrom === colTo - 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 8, cellTo, 4); }
-            else if (colFrom === colTo + 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 4, cellTo, 8); }
+        if (this.puzzleGridFromCell(cellFrom) == this.puzzleGridFromCell(cellTo)) {
+            var partsFrom = cellFrom.id.split("-");
+            var rowFrom = parseInt(partsFrom[1]);
+            var colFrom = parseInt(partsFrom[2]);
+            var partsTo = cellTo.id.split("-");
+            var rowTo = parseInt(partsTo[1]);
+            var colTo = parseInt(partsTo[2]);
+
+            if (colFrom === colTo) {
+                if (rowFrom === rowTo - 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 2, cellTo, 1); }
+                else if (rowFrom === rowTo + 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 1, cellTo, 2); }
+            }
+            else if (rowFrom === rowTo) {
+                if (colFrom === colTo - 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 8, cellTo, 4); }
+                else if (colFrom === colTo + 1) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, 4, cellTo, 8); }
+            }
+        } else {
+            var fromDir, toDir;
+            const fromVals = [0, 1, 0, 4, 0, 8, 0, 2, 0];
+
+            if (cellFrom.cellLinks) {
+                for (const [key, value] of Object.entries(cellFrom.cellLinks)) {
+                    if (value == cellTo) { fromDir = fromVals[key]; }
+                }
+            }
+            if (cellTo.cellLinks) {
+                for (const [key, value] of Object.entries(cellTo.cellLinks)) {
+                    if (value == cellFrom) { toDir = fromVals[key]; }
+                }
+            }
+
+            if (fromDir && toDir) { return this.LinkCellsDirectional("path", maxDirections, cellFrom, fromDir, cellTo, toDir); }
         }
 
         return false;
     }
 
-    this.LinkCellsSpoke = function(cellFrom, cellTo, rightMouse)
-    {
-        var colFrom = Array.prototype.indexOf.call(cellFrom.parentElement.children, cellFrom) - this.leftClueDepth;
-        var rowFrom = Array.prototype.indexOf.call(cellFrom.parentElement.parentElement.children, cellFrom.parentElement) - this.topClueDepth;
-        var colTo = Array.prototype.indexOf.call(cellTo.parentElement.children, cellTo) - this.leftClueDepth;
-        var rowTo = Array.prototype.indexOf.call(cellTo.parentElement.parentElement.children, cellTo.parentElement) - this.topClueDepth;
-
-        if ((colFrom === colTo && rowFrom === rowTo) || Math.abs(colFrom - colTo) > 1 || Math.abs(rowFrom - rowTo) > 1) return false;
+    this.LinkCellsSpoke = function(cellFrom, cellTo, rightMouse) {
+        var fromDir, toDir;
 
         const fromVals = [128, 1, 2, 64, 0, 4, 32, 16, 8];
-
-        var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
-        return this.LinkCellsDirectional((rightMouse ^ this.reticleXMode) ? "x-spoke" : "spoke", this.options["data-spoke-max-directions"], cellFrom, fromVals[index], cellTo, fromVals[8 - index]);
-    }
-
-    this.parseOuterClues = function(clues) {
-        var clueDepth = 0;
-        if (clues) { for (var i = 0; i < clues.length; i++) { clues[i] = clues[i].split(" "); clueDepth = Math.max(clues[i].length, clueDepth); } }
-        return clueDepth;    
-    }
-
-    this.addEmptyOuterCell = function(tr) {
-        var td = document.createElement("td");
-        td.classList.add("cell");
-        td.classList.add("outer-cell");
-        td.classList.add("unselectable");
-        tr.appendChild(td);
-    }
-
-    this.addOuterClue = function(tr, clues, clueIndex, cls) {
-        var td = document.createElement("td");
-        td.classList.add("cell");
-        td.classList.add("outer-cell");
-        if (clueIndex >= 0 && clueIndex < clues.length && clues[clueIndex]) {
-            td.textContent = clues[clueIndex];
-            td.classList.add(cls);
-            td.addEventListener("pointerdown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else if (e.shiftKey) { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
-            td.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
-        } else { td.classList.add("unselectable"); }
-
-        tr.appendChild(td);
-    }
-
-    // Copyjack support.
-    //
-    // Reads from inputTd, a td that's part of an interactive puzzle element.
-    // Expects that inputTd.dataset.copyjack is copyTd, a td that's part of this.copyjackVersion.
-    // Styles copyTd such that clipboard copies it correctly.
-    this.processTdForCopyjack = function(inputTd) {
-        if (!this.isUsingCopyjack) return;
-        const [i, j] = inputTd.dataset.coord.split(",")
-        const copyTd = this.copyjackVersion.getElementsByTagName('tr')[i].getElementsByTagName('td')[j];
-        // Set class names.
-        // Remove "transient" class names such as 'marked'.
-        copyTd.className = inputTd.className.replace(/marked/g, '');
-        // Reset the font size to avoid row overflow.
-        copyTd.style.fontSize = '1em';
-        // Copy any text inside the td. This includes text inside divs within the td.
-        copyTd.innerHTML = inputTd.innerHTML;
-        // If the td has a "value", overwrite the innertext.
-        const text = inputTd.querySelector('.text span');
-        if (text && text.innerText) {
-            copyTd.innerText = text.innerText;
-        }
-
-        // Do edges.
-        const edgeCode = inputTd.dataset.edgeCode;
-        copyTd.style.borderTop = (edgeCode & 1) ? '3px solid black' : '';
-        copyTd.style.borderBottom = (edgeCode & 2) ? '3px solid black' : '';
-        copyTd.style.borderLeft = (edgeCode & 4) ? '3px solid black' : '';
-        copyTd.style.borderRight = (edgeCode & 8) ? '3px solid black' : '';
-
-        // Do paths.
-        const pathCode = inputTd.dataset.pathCode;
-        if (!copyTd.innerText && pathCode) {
-            // If the cell has content, don't overwrite it.
-            copyTd.innerText = this.pathCopyjack[pathCode];
-        }
-    }
-
-    this.prepareToReset = function() {
-        localStorage.removeItem(this.puzzleId);
-
-        this.table.querySelectorAll(".inner-cell.extract .text span").forEach(s => {
-            var extractId = s.getAttribute("data-extract-id");
-
-            if (extractId) {
-                document.querySelectorAll("." + extractId).forEach(elem => { elem.innerText = ""; });
+    
+        if (this.puzzleGridFromCell(cellFrom) == this.puzzleGridFromCell(cellTo)) {
+            var partsFrom = cellFrom.id.split("-");
+            var rowFrom = parseInt(partsFrom[1]);
+            var colFrom = parseInt(partsFrom[2]);
+            var partsTo = cellTo.id.split("-");
+            var rowTo = parseInt(partsTo[1]);
+            var colTo = parseInt(partsTo[2]);
+    
+            if ((colFrom === colTo && rowFrom === rowTo) || Math.abs(colFrom - colTo) > 1 || Math.abs(rowFrom - rowTo) > 1) return false;
+    
+            var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
+            fromDir = fromVals[index];
+            toDir = fromVals[8 - index];
+        } else {
+            if (cellFrom.cellLinks) {
+                for (const [key, value] of Object.entries(cellFrom.cellLinks)) {
+                    if (value == cellTo) { fromDir = fromVals[key]; }
+                }
             }
-        });
-
-        this.inhibitSave = true;
-    }
-
-    this.saveState = function() {
-        if (this.inhibitSave) return;
-
-        var stateArray = [];
-        var hasState = false;
-
-        this.table.querySelectorAll(".inner-cell").forEach(td => {
-            var fillIndex = 0;
-            if (this.fillClasses && !td.classList.contains("given-fill")) { fillIndex = this.fillClasses.indexOf(this.findClassInList(td, this.fillClasses)); }
-
-            var edgeCode = td.getAttribute("data-edge-code");
-            var givenEdgeCode = td.getAttribute("data-given-edge-code");
-            if (!edgeCode) edgeCode = 0;
-            if (!givenEdgeCode) givenEdgeCode = 0;
-            var edgeCodeDelta = edgeCode ^ givenEdgeCode;
-
-            var pathCode = td.getAttribute("data-path-code");
-            var givenPathCode = td.getAttribute("data-given-path-code");
-            if (!pathCode) pathCode = 0;
-            if (!givenPathCode) givenPathCode = 0;
-            var pathCodeDelta = pathCode ^ givenPathCode;
-
-            var spokeCode = td.getAttribute("data-spoke-code");
-            var givenSpokeCode = td.getAttribute("data-given-spoke-code");
-            if (!spokeCode) spokeCode = 0;
-            if (!givenSpokeCode) givenSpokeCode = 0;
-            var spokeCodeDelta = spokeCode ^ givenSpokeCode;
-
-            var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText.trim();
-
-            var cellState = "";
-            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || text) {
-                hasState = true;
-                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16) + (spokeCodeDelta >> 4).toString(16) + (spokeCodeDelta % 16).toString(16);
-                if (text) { cellState += "," + text; }
+            if (cellTo.cellLinks) {
+                for (const [key, value] of Object.entries(cellTo.cellLinks)) {
+                    if (value == cellFrom) { toDir = fromVals[key]; }
+                }
             }
 
-            stateArray.push(cellState);
-        });
+            if (!fromDir || !toDir) return false;
+        }
 
-        if (hasState) { localStorage.setItem(this.puzzleId, stateArray.join("|")); }
-        else { localStorage.removeItem(this.puzzleId); }
+        return this.LinkCellsDirectional((rightMouse ^ this.reticleXMode) ? "x-spoke" : "spoke", this.options["data-spoke-max-directions"], cellFrom, fromDir, cellTo, toDir);
     }
 
     this.setCornerFocusMode = function(notyet) {
@@ -1080,7 +1053,7 @@ function PuzzleEntry(p, index) {
             this.cornerFocus = document.createElement("div");
             this.cornerFocus.classList.add("corner-focus");
             this.cornerFocus.addEventListener("keydown",  e => { this.keyDownCorner(e); });
-            this.table.appendChild(this.cornerFocus);
+            this.activeGrid.grid.appendChild(this.cornerFocus);
 
             this.cornerFocusX = 0;
             this.cornerFocusY = 0;
@@ -1098,7 +1071,8 @@ function PuzzleEntry(p, index) {
     }
 
     this.updateCornerFocus = function() {
-        var topLeftTD = this.table.children[this.topClueDepth].children[this.leftClueDepth];
+        var topLeftTD = this.activeGrid.lookup["cell-0-0"];
+        if (this.cornerFocus.parentElement != this.activeGrid.grid) { this.cornerFocus.parentElement.removeChild(this.cornerFocus); this.activeGrid.grid.appendChild(this.cornerFocus); this.cornerFocus.focus(); }
         this.cornerFocus.style.left = (topLeftTD.offsetLeft + this.cornerFocusX * topLeftTD.offsetWidth) + "px";
         this.cornerFocus.style.top = (topLeftTD.offsetTop + this.cornerFocusY * topLeftTD.offsetHeight) + "px";
     }
@@ -1168,7 +1142,7 @@ function PuzzleEntry(p, index) {
             }
         }
         lines.push("<tr><td>Mark a cell as 'interesting'</td><td>Ctrl+Space</td><td>Ctrl+Click</td></tr>");
-        if (this.leftClueDepth || this.rightClueDepth || this.topClueDepth || this.bottomClueDepth) {
+        if (this.activeGrid.leftClueDepth || this.activeGrid.rightClueDepth || this.activeGrid.topClueDepth || this.activeGrid.bottomClueDepth) {
             lines.push("<tr><td>Mark an external clue as 'satisfied'</td><td>N/A</td><td>Right+Click</td></tr>");
         }
         lines.push("</table></div>");
@@ -1186,54 +1160,380 @@ function PuzzleEntry(p, index) {
     }
 
     // --- Construct the interactive player. ---
-    this.lookup = {};
-    this.fillClasses = this.getOptionArray("data-fill-classes", " ");
+    this.fillClasses = this.getOptionArray(this.options, "data-fill-classes", " ");
 
-    var clueIndicators = this.getOptionArray("data-clue-indicators", " ", "auto");
-    var textLines = this.getOptionArray("data-text", "|");
-    var textReplacements = this.getOptionDict("data-text-replacements");
-    var fills = this.getOptionArray("data-fills", "|");
-    var solution = this.getOptionArray("data-text-solution", "|");
-    var edges = this.getOptionArray("data-edges", "|");
-    var paths = this.getOptionArray("data-paths", "|");
-    var spokes = this.getOptionArray("data-spokes", "|");
-    var extracts = this.getOptionArray("data-extracts", " ");
+    this.content = document.createElement("div");
+    this.content.classList.add("puzzle-entry-content");
+    while (this.container.childNodes.length > 0) { this.content.appendChild(this.container.childNodes[0]); }
+    this.container.appendChild(this.content);
+
+    this.puzzleGrids = [];
+    this.usePrecisionHitTesting = false;
+
+    this.canDrawOnEdges = this.options["data-drag-draw-edge"] && !this.options["data-no-input"];
+
+    this.canHaveCenterFocus = this.options["data-text-characters"] || (this.fillClasses && this.options["data-fill-cycle"]) || this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"];
+    this.canHaveCornerFocus = this.canDrawOnEdges;
+    this.keyboardFocusModel = this.options["data-no-input"] ? "none" : (this.canHaveCornerFocus ? "corner" : "center");
+    this.cornerFocus = null;
+    this.firstCenterFocus = null;
+
+    // load all the subgrids
+    this.container.querySelectorAll(".puzzle-grid").forEach((g, index) => {
+        // start with a copy of the global options and then add local modifications
+        var gridOptions = {};
+        for (const [key, value] of Object.entries(this.options)) { gridOptions[key] = value; }
+        this.readLocalOptions(g, gridOptions);
+        var gridPuzzleId = gridOptions["data-puzzle-id"];
+        if (gridPuzzleId == this.options["data-puzzle-id"]) { gridPuzzleId = this.puzzleId + "|" + index; }
+        this.puzzleGrids.push(new PuzzleGrid(this, gridOptions, g, gridPuzzleId));
+    });
+    
+    // if there are no subgrids, this is the one true grid
+    if (!this.puzzleGrids.length) { this.puzzleGrids.push(new PuzzleGrid(this, this.options, this.content, this.puzzleId)); }
+    this.activeGrid = this.puzzleGrids[0];
+
+    this.dx = 0;
+    this.dy = 0;
+    if (this.options["data-text-advance-on-type"]) {
+        if (this.activeGrid.numCols > 1) { this.dx = 1; }        
+        else if (this.activeGrid.numRows > 1) { this.dy = 1; }        
+    }
+
+    if (this.options["data-show-commands"]) {
+        this.commands = document.createElement("div");
+        this.commands.classList.add("puzzle-commands");
+        this.commands.classList.add("no-copy");
+        this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button>";
+        this.commands.querySelector(".puzzle-about-button").addEventListener("click", e => { this.aboutPopup(); });
+        this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
+        this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
+        // TODO shouldn't need a reload
+        this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { this.puzzleGrids.forEach(g => { g.prepareToReset(); }); window.location.reload(); });
+
+        this.container.appendChild(this.commands);
+    }
+
+    if (this.keyboardFocusModel == "corner") {
+        this.setCornerFocusMode(true);        
+    }
+
+    var allowInput = false;
+    this.puzzleGrids.forEach(p => { if (!p.options["data-no-input"]) allowInput = true; });
+
+    if (allowInput) {
+        this.container.querySelectorAll(".crossword-clues li").forEach((clue) => {
+            clue.addEventListener("pointerenter", e => { this.cluePointerEnter(e); });
+            clue.addEventListener("pointerleave", e => { this.cluePointerLeave(e); });
+            clue.addEventListener("click", e => { this.clueClick(e); });
+            clue.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
+        });
+
+        window.addEventListener("pointerup", e => {this.pointerIsDown = false; });
+
+        document.addEventListener("keyup", function(e) { this.fShift = e.shiftKey; });
+        document.addEventListener("keydown", function(e) { this.fShift = e.shiftKey; });
+    }
+
+    this.container.classList.add("loaded");
+}
+
+function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
+    this.puzzleEntry = puzzleEntry;
+    this.container = container;
+    this.options = options;
+    this.container.puzzleGrid = this;
+    this.puzzleId = puzzleId;
+    this.tilt = 0;
+
+    this.inhibitSave = false;
+
+    this.parseOuterClues = function(clues) {
+        var clueDepth = 0;
+        if (clues) { for (var i = 0; i < clues.length; i++) { clues[i] = clues[i].split(" "); clueDepth = Math.max(clues[i].length, clueDepth); } }
+        return clueDepth;    
+    }
+
+    this.addEmptyOuterCell = function(tr) {
+        var td = document.createElement("td");
+        td.classList.add("cell");
+        td.classList.add("outer-cell");
+        td.classList.add("unselectable");
+        tr.appendChild(td);
+    }
+
+    this.addOuterClue = function(tr, clues, clueIndex, cls) {
+        var td = document.createElement("td");
+        td.classList.add("cell");
+        td.classList.add("outer-cell");
+        if (clueIndex >= 0 && clueIndex < clues.length && clues[clueIndex]) {
+            td.textContent = clues[clueIndex];
+            td.classList.add(cls);
+            td.addEventListener("pointerdown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else if (e.shiftKey) { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
+            td.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
+        } else { td.classList.add("unselectable"); }
+
+        tr.appendChild(td);
+    }
+
+    this.prepareToReset = function() {
+        localStorage.removeItem(this.puzzleId);
+
+        this.container.querySelectorAll(".inner-cell.extract .text span").forEach(s => {
+            var extractId = s.getAttribute("data-extract-id");
+
+            if (extractId) {
+                document.querySelectorAll("." + extractId).forEach(elem => { elem.innerText = ""; });
+            }
+        });
+
+        this.inhibitSave = true;
+    }
+
+    this.saveState = function() {
+        if (this.inhibitSave) return;
+
+        var stateArray = [];
+        var hasState = false;
+
+        this.container.querySelectorAll(".puzzle-grid-content .inner-cell").forEach(td => {
+            var fillIndex = 0;
+            if (this.puzzleEntry.fillClasses && !td.classList.contains("given-fill")) { fillIndex = this.puzzleEntry.fillClasses.indexOf(this.puzzleEntry.findClassInList(td, this.puzzleEntry.fillClasses)); }
+
+            var edgeCode = td.getAttribute("data-edge-code");
+            var givenEdgeCode = td.getAttribute("data-given-edge-code");
+            if (!edgeCode) edgeCode = 0;
+            if (!givenEdgeCode) givenEdgeCode = 0;
+            var edgeCodeDelta = edgeCode ^ givenEdgeCode;
+
+            var pathCode = td.getAttribute("data-path-code");
+            var givenPathCode = td.getAttribute("data-given-path-code");
+            if (!pathCode) pathCode = 0;
+            if (!givenPathCode) givenPathCode = 0;
+            var pathCodeDelta = pathCode ^ givenPathCode;
+
+            var spokeCode = td.getAttribute("data-spoke-code");
+            var givenSpokeCode = td.getAttribute("data-given-spoke-code");
+            if (!spokeCode) spokeCode = 0;
+            if (!givenSpokeCode) givenSpokeCode = 0;
+            var spokeCodeDelta = spokeCode ^ givenSpokeCode;
+
+            var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText.trim();
+
+            var cellState = "";
+            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || text) {
+                hasState = true;
+                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16) + (spokeCodeDelta >> 4).toString(16) + (spokeCodeDelta % 16).toString(16);
+                if (text) { cellState += "," + text; }
+            }
+
+            stateArray.push(cellState);
+        });
+
+        if (hasState) { localStorage.setItem(this.puzzleId, stateArray.join("|")); }
+        else { localStorage.removeItem(this.puzzleId); }
+    }
+
+    this.changeWithoutUndo = function(changes) {
+        var changedElems = [];
+        var svgChangedElems = [];
+
+        changes.forEach(c => {
+            var primary = this.lookup[c.locationKey];
+
+            var extractId = primary.getAttribute("data-extract-id");
+            var elems = extractId ? document.querySelectorAll("table:not(.copy-only) ." + extractId) : [primary];
+
+            elems.forEach(elem => {
+                if (!changedElems.includes(elem)) { changedElems.push(elem); }
+
+                if (c.playerId) { elem.setAttribute("data-coop-" + c.propertyKey.replace("data-", "") + "-playerId", c.playerId); }
+
+                switch(c.propertyKey) {
+                    case "text":
+                        var textElement = elem.querySelector(".text span");
+                        textElement.innerText = c.value;
+                        break;
+                    case "class-small-text":
+                        if (c.value) { elem.classList.add("small-text"); }
+                        else { elem.classList.remove("small-text"); }
+                        break;
+                    case "class-fill":
+                        this.puzzleEntry.fillClasses.forEach(fc => elem.classList.remove(fc));
+                        if (c.value) { elem.classList.add(c.value); }
+                        break;
+                    default:
+                        if (c.propertyKey.endsWith("-code") && !svgChangedElems.includes(elem)) { svgChangedElems.push(elem); }
+                        elem.setAttribute(c.propertyKey, c.value);
+                        break;
+                }
+            });
+        });
+
+        svgChangedElems.forEach(el => { this.updateSvg(el); });
+        changedElems.forEach(el => { this.processTdForCopyjack(el); });
+    }
+
+    this.addEdgeToSvg = function(svg, edgeName) {
+        var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.classList.add(edgeName);
+        var edgePath = this.options["data-edge-style"];
+        if (!edgePath.endsWith(".svg")) { edgePath = puzzleJsFolderPath + "edge-" + edgePath + ".svg"; }
+        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", edgePath + "#" + edgeName);
+        svg.appendChild(use);
+    }
+
+    this.addSpokesToSvg = function(svg, spokeCode, spokePrefix) {
+        for (var i = 0; i < 8; i++) {
+            if (!(spokeCode & (1 << i))) continue;
+
+            var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            use.classList.add(spokePrefix + "spoke");
+            var spokePath = this.options["data-spoke-style"];
+            if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
+            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : ""));
+            if (i > 1) { use.setAttributeNS(null, "transform", "rotate(" + ((i >> 1) * 90) + ")"); }
+            svg.appendChild(use);
+        }
+    }
+
+    this.addReticleLayer = function(svg, cls) {
+        var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.classList.add(cls);
+        var spokePath = this.options["data-spoke-style"];
+        if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
+        use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + (this.reticleXMode ? "x-" : "") + "reticle");
+        if (this.puzzleEntry.tilt + this.tilt != 0) { use.setAttributeNS(null, "transform", "rotate(" + ((this.puzzleEntry.tilt + this.tilt) * 45) + ")"); }
+        svg.appendChild(use);
+    }
+
+    this.pathTranslate = ["o0", "i2", "i0", "l0", "i1", "r2", "r1", "t1", "i3", "r3", "r0", "t3", "l1", "t2", "t0", "x0"];
+    this.updateSvg = function(td) {
+        var svg = td.querySelector("svg");
+        if (!svg) {
+            svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("viewBox", "-15 -15 30 30");
+            if (!this.canDrawOnEdges) { svg.classList.add("nopointer"); }
+            td.appendChild(svg);
+        }
+
+        var pathCode = td.getAttribute("data-path-code");
+        if (pathCode) { pathCode = parseInt(pathCode); } else { pathCode = 0; }
+        var translatedData = this.pathTranslate[pathCode];
+
+        svg.innerHTML = "";
+
+        if (pathCode) {
+            var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            use.classList.add("path");
+            var pathPath = this.options["data-path-style"];
+            if (!pathPath.endsWith(".svg")) { pathPath = puzzleJsFolderPath + "path-" + pathPath + ".svg"; }
+            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", pathPath + "#path-" + translatedData[0]);
+            if (translatedData[1] != "0") { use.setAttributeNS(null, "transform", "rotate(" + parseInt(translatedData[1] * 90) + ")"); }
+            svg.appendChild(use);
+        }
+        
+        if (!td.classList.contains("unselectable")) { this.addEdgeToSvg(svg, "edge-base"); }
+
+        var edgeCode = td.getAttribute("data-edge-code");
+        if (edgeCode & 1) { this.addEdgeToSvg(svg, "edge-top"); }
+        if (edgeCode & 2) { this.addEdgeToSvg(svg, "edge-bottom"); }
+        if (edgeCode & 4) { this.addEdgeToSvg(svg, "edge-left"); }
+        if (edgeCode & 8) { this.addEdgeToSvg(svg, "edge-right"); }
+
+        edgeCode = td.getAttribute("data-x-edge-code");
+        if (edgeCode & 1) { this.addEdgeToSvg(svg, "x-edge-top"); }
+        if (edgeCode & 2) { this.addEdgeToSvg(svg, "x-edge-bottom"); }
+        if (edgeCode & 4) { this.addEdgeToSvg(svg, "x-edge-left"); }
+        if (edgeCode & 8) { this.addEdgeToSvg(svg, "x-edge-right"); }
+
+        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
+        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
+        if (this.options["data-drag-draw-spoke"] && td === this.puzzleEntry.currentCenterFocus) {
+            this.addReticleLayer(svg, "reticle-back");
+            this.addReticleLayer(svg, "reticle-front");
+        }
+    }
+
+    this.translate = function(ch, replacements) {
+        if (!replacements || !replacements[ch]) return ch;
+        return replacements[ch];
+    }
+
+    // Copyjack support.
+    //
+    // Reads from inputTd, a td that's part of an interactive puzzle element.
+    // Expects that inputTd.dataset.copyjack is copyTd, a td that's part of this.copyjackVersion.
+    // Styles copyTd such that clipboard copies it correctly.
+    this.pathCopyjack = [" ", "╵", "╷", "│", "╴", "┘", "┐", "┤", "╶", "└", "┌", "├", "─", "┴", "┬", "┼"];
+    this.processTdForCopyjack = function(inputTd) {
+        if (!this.puzzleEntry.isUsingCopyjack) return;
+        const [i, j] = inputTd.dataset.coord.split(",")
+        const copyTd = this.copyjackVersion.getElementsByTagName('tr')[i].getElementsByTagName('td')[j];
+        // Set class names.
+        // Remove "transient" class names such as 'marked'.
+        copyTd.className = inputTd.className.replace(/marked/g, '');
+        // Reset the font size to avoid row overflow.
+        copyTd.style.fontSize = '1em';
+        // Copy any text inside the td. This includes text inside divs within the td.
+        copyTd.innerHTML = inputTd.innerHTML;
+        // If the td has a "value", overwrite the innertext.
+        const text = inputTd.querySelector('.text span');
+        if (text && text.innerText) {
+            copyTd.innerText = text.innerText;
+        }
+
+        // Do edges.
+        const edgeCode = inputTd.dataset.edgeCode;
+        copyTd.style.borderTop = (edgeCode & 1) ? '3px solid black' : '';
+        copyTd.style.borderBottom = (edgeCode & 2) ? '3px solid black' : '';
+        copyTd.style.borderLeft = (edgeCode & 4) ? '3px solid black' : '';
+        copyTd.style.borderRight = (edgeCode & 8) ? '3px solid black' : '';
+
+        // Do paths.
+        const pathCode = inputTd.dataset.pathCode;
+        if (!copyTd.innerText && pathCode) {
+            // If the cell has content, don't overwrite it.
+            copyTd.innerText = this.pathCopyjack[pathCode];
+        }
+    }
+
+    this.lookup = {};
+
+    var clueIndicators = puzzleEntry.getOptionArray(this.options, "data-clue-indicators", " ", "auto");
+    var textLines = puzzleEntry.getOptionArray(this.options, "data-text", "|");
+    var textReplacements = puzzleEntry.getOptionDict(this.options, "data-text-replacements");
+    var fills = puzzleEntry.getOptionArray(this.options, "data-fills", "|");
+    var solution = puzzleEntry.getOptionArray(this.options, "data-text-solution", "|");
+    var edges = puzzleEntry.getOptionArray(this.options, "data-edges", "|");
+    var paths = puzzleEntry.getOptionArray(this.options, "data-paths", "|");
+    var spokes = puzzleEntry.getOptionArray(this.options, "data-spokes", "|");
+    var extracts = puzzleEntry.getOptionArray(this.options, "data-extracts", " ");
+    var topClues = puzzleEntry.getOptionArray(this.options, "data-top-clues", "|");
+    var bottomClues = puzzleEntry.getOptionArray(this.options, "data-bottom-clues", "|");
+    var leftClues = puzzleEntry.getOptionArray(this.options, "data-left-clues", "|");
+    var rightClues = puzzleEntry.getOptionArray(this.options, "data-right-clues", "|");
+
     var unselectableGivens = this.options["data-unselectable-givens"];
-    var topClues = this.getOptionArray("data-top-clues", "|");
-    var bottomClues = this.getOptionArray("data-bottom-clues", "|");
-    var leftClues = this.getOptionArray("data-left-clues", "|");
-    var rightClues = this.getOptionArray("data-right-clues", "|");
 
     this.topClueDepth = this.parseOuterClues(topClues);
     this.bottomClueDepth = this.parseOuterClues(bottomClues);
     this.leftClueDepth = this.parseOuterClues(leftClues);
     this.rightClueDepth = this.parseOuterClues(rightClues);
 
+    var acrossClues = puzzleEntry.container.querySelectorAll(".crossword-clues.across li");
+    var acrossClueIndex = 0;
+    var downClues = puzzleEntry.container.querySelectorAll(".crossword-clues.down li");
+    var downClueIndex = 0;
+
     if (!textLines) { textLines = solution; }
 
     var allowInput = !this.options["data-no-input"];
     var table = document.createElement("table");
-    table.classList.add("puzzle-grid");
+    table.classList.add("puzzle-grid-content");
+    table.puzzleGrid = this;
     var clueNum = 0;
     var extractNum = 0;
-
-    var content = document.createElement("div");
-    content.classList.add("puzzle-entry-content");
-    this.container.childNodes.forEach(n => { content.appendChild(n); })
-    this.container.appendChild(content);
-
-    var acrossClues = this.container.querySelectorAll(".crossword-clues.across li");
-    var acrossClueIndex = 0;
-    var downClues = this.container.querySelectorAll(".crossword-clues.down li");
-    var downClueIndex = 0;
-
-    this.canDrawOnEdges = this.options["data-drag-draw-edge"] && !this.options["data-no-input"];
-
-    this.canHaveCenterFocus = this.options["data-text-characters"] || (fills && this.options["data-fill-cycle"]) || this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"];
-    this.canHaveCornerFocus = this.canDrawOnEdges;
-    this.keyboardFocusModel = this.options["data-no-input"] ? "none" : (this.canHaveCornerFocus ? "corner" : "center");
-    this.cornerFocus = null;
-    this.firstCenterFocus = null;
 
     var regularRowBorder = 0;
     var regularColBorder = 0;
@@ -1283,7 +1583,7 @@ function PuzzleEntry(p, index) {
         this.numCols = Math.max(this.numCols, textLines[r].length);
         for (var c = 0; c < textLines[r].length; c++) {
             var cellSavedState = null;
-            if (savedState) { cellSavedState = savedState[stateIndex++]; console.log(cellSavedState); }
+            if (savedState) { cellSavedState = savedState[stateIndex++]; }
 
             var td = document.createElement("td");
             td.classList.add("cell");
@@ -1338,17 +1638,18 @@ function PuzzleEntry(p, index) {
 
             if (!td.classList.contains("unselectable")) {
                 if (allowInput) {
-                    td.tabIndex = this.firstCenterFocus ? -1 : 0;
-                    if (!this.firstCenterFocus) { this.firstCenterFocus = td; }
-                    td.addEventListener("keydown",  e => { this.keyDown(e); });
-                    td.addEventListener("beforeinput", e => { this.beforeInput(e); });
-                    td.addEventListener("pointerdown",  e => { this.pointerDown(e); });
-                    td.addEventListener("pointermove",  e => { this.pointerMove(e); });
-                    td.addEventListener("pointercancel",  e => { this.pointerCancel(e); });
+                    td.tabIndex = this.puzzleEntry.firstCenterFocus ? -1 : 0;
+                    if (!this.puzzleEntry.firstCenterFocus) { this.puzzleEntry.firstCenterFocus = td; }
+                    td.addEventListener("keydown",  e => { this.puzzleEntry.keyDown(e); });
+                    td.addEventListener("beforeinput", e => { this.puzzleEntry.beforeInput(e); });
+                    td.addEventListener("pointerdown",  e => { this.puzzleEntry.pointerDown(e); });
+                    td.addEventListener("pointermove",  e => { this.puzzleEntry.pointerMove(e); });
+                    td.addEventListener("pointercancel",  e => { this.puzzleEntry.pointerCancel(e); });
                     td.addEventListener("contextmenu",  e => { e.preventDefault(); });
+                    td.addEventListener("focus",  e => { this.puzzleEntry.activeGrid = this; });
                     if (this.options["data-clue-locations"] === "crossword") {
-                        td.addEventListener("focus",  e => { this.mark(e.target); });
-                        td.addEventListener("blur",  e => { this.unmark(e.target); });
+                        td.addEventListener("focus",  e => { this.puzzleEntry.mark(e.target); });
+                        td.addEventListener("blur",  e => { this.puzzleEntry.unmark(e.target); });
                     }
                 }
             }
@@ -1479,7 +1780,7 @@ function PuzzleEntry(p, index) {
                 }
             }
 
-            if (this.fillClasses) {
+            if (this.puzzleEntry.fillClasses) {
                 var fillIndex = 0;
                 if (fills && fills[r][c] != '.') {
                     fillIndex = parseInt(fills[r][c], 36);
@@ -1487,7 +1788,7 @@ function PuzzleEntry(p, index) {
                 } else {
                     fillIndex = cellSavedState ? parseInt(cellSavedState[0], 36) : 0;
                 }
-                td.classList.add(this.fillClasses[fillIndex]);
+                td.classList.add(this.puzzleEntry.fillClasses[fillIndex]);
             }
 
             this.updateSvg(td);
@@ -1508,47 +1809,21 @@ function PuzzleEntry(p, index) {
         table.appendChild(tr);
     }
 
-    this.table = table;
-
-    content.insertBefore(table, content.firstChild);
-
-    this.dx = 0;
-    this.dy = 0;
-    if (this.options["data-text-advance-on-type"]) {
-        if (this.numCols > 1) { this.dx = 1; }        
-        else if (this.numRows > 1) { this.dy = 1; }        
-    }
-
-    if (this.options["data-show-commands"]) {
-        this.commands = document.createElement("div");
-        this.commands.classList.add("puzzle-commands");
-        this.commands.classList.add("no-copy");
-        this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button>";
-        this.commands.querySelector(".puzzle-about-button").addEventListener("click", e => { this.aboutPopup(); });
-        this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
-        this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
-        // TODO shouldn't need a reload
-        this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { this.prepareToReset(); window.location.reload(); });
-
-        this.container.appendChild(this.commands);
-    }
-
-    if (this.keyboardFocusModel == "corner") {
-        this.setCornerFocusMode(true);        
-    }
+    this.container.insertBefore(table, this.container.firstChild);
+    this.grid = table;
 
     // Copyjack support: initialize a copyjack version of the table.
     // This table will be modified as the user takes actions.
 
     // Put the table inside this.container to ensure that styling works.
-    if (this.isUsingCopyjack) {
+    if (this.puzzleEntry.isUsingCopyjack) {
         // Set no-copy on this table.
         table.classList.add('no-copy');
         // Create a copy-only table and insert it.
         this.copyjackVersion = document.createElement('table');
         this.copyjackVersion.classList.add('copy-only');
         this.copyjackVersion.style.userSelect = 'auto'; // Needed for Firefox compatibility.
-        content.insertBefore(this.copyjackVersion, this.table);
+        this.container.insertBefore(this.copyjackVersion, table);
         // Populate the copy-only table.
         for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
             if (tr.classList.contains('no-copy')) continue;
@@ -1567,20 +1842,6 @@ function PuzzleEntry(p, index) {
     }
 
     if (allowInput) {
-        this.container.querySelectorAll(".crossword-clues li").forEach((clue) => {
-            clue.addEventListener("pointerenter", e => { this.cluePointerEnter(e); });
-            clue.addEventListener("pointerleave", e => { this.cluePointerLeave(e); });
-            clue.addEventListener("click", e => { this.clueClick(e); });
-            clue.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
-        });
-
-        window.addEventListener("pointerup", e => {this.pointerIsDown = false; });
-
-        document.addEventListener("keyup", function(e) { this.fShift = e.shiftKey; });
-        document.addEventListener("keydown", function(e) { this.fShift = e.shiftKey; });
-
         window.addEventListener("beforeunload", e => { this.saveState(); });
     }
-
-    this.container.classList.add("loaded");
 }

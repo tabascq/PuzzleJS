@@ -1,4 +1,4 @@
-/* (c) 2023 Kenny Young
+/* (c) 2024 Kenny Young
  * This code is licensed under the MIT License.
  * https://github.com/tabascq/PuzzleJS
  */
