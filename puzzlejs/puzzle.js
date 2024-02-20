@@ -325,8 +325,11 @@ function PuzzleEntry(p, index) {
             }
         }
 
+        var usedLink = false;
         while (true) {
             if (td.cellLinks && td.cellLinks[dirCode]) {
+                usedLink = true;
+                
                 td = td.cellLinks[dirCode];
                 puzzleGrid = this.puzzleGridFromCell(td);
             }
@@ -352,6 +355,8 @@ function PuzzleEntry(p, index) {
                 }
                 return true;
             }
+
+            if (usedLink) { return false; } // max 1 step after link
 
             col += dcol;
             row += drow;
