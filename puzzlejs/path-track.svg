@@ -3,7 +3,7 @@
 <!-- This code is licensed under the MIT License. -->
 <!-- https://github.com/tabascq/PuzzleJS -->
 <svg viewBox="-10 -10 20 20" xmlns="http://www.w3.org/2000/svg">
-    <path id="path-i" fill="none" stroke-width="2" d="M-4,10 V7 M 4,10 V7 M-7,10 H7"></path>
+    <path id="path-i" fill="none" stroke-width="2" d="M-4,10 V3 M 4,10 V3 M-7,10 H7"></path>
     <path id="path-l" fill="none" stroke-width="2" d="M-4,10 V-10 M 4,10 V-10 M-7,10 H7 M-7,3.333 H7 M-7,-3.333 H7 M-7,-10 H7"></path>
     <g id="path-r">
         <path fill="none" stroke-width="2" d="M-4,10 A 14 14 0 0 1 10,-4 M4,10 A 6 6 0 0 1 10,4 M-7,10 H7 M10,-7 V7"></path>
