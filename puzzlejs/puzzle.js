@@ -35,6 +35,8 @@ puzzleModes["default"] = {
     // spokes
     "data-spokes": null,
     "data-spoke-max-directions": null,
+    "data-spoke-cardinality": null,
+    "data-spoke-cycle": 1,
     "data-spoke-style": "solid",
 
     // clues
@@ -51,6 +53,7 @@ puzzleModes["default"] = {
     "data-drag-draw-edge": false,
     "data-drag-draw-spoke": false,
     "data-unselectable-givens": false,
+    "data-right-click-interesting": false,
     "data-extracts": null,
     "data-no-input": false,
     "data-show-commands": false,
@@ -98,17 +101,26 @@ puzzleModes["slitherlink"] = {
     "data-edge-style": "dots"
 }
 
-puzzleModes["solution"] = {
-    "data-no-input": true
-}
-
-puzzleModes["wordsearch"] = {
-    "data-drag-draw-spoke": true,
-    "data-spoke-only-straight": true
-}
-
 puzzleModes["spokes"] = {
     "data-drag-draw-spoke": true
+}
+
+puzzleModes["slant"] = {
+    "data-drag-draw-spoke": true,
+    "data-spoke-cardinality": "x",
+    "data-edge-style": "none"
+}
+
+puzzleModes["bridges"] = {
+    "data-drag-draw-spoke": true,
+    "data-drag-paint-fill": false,
+    "data-fill-cycle": false,
+    "data-spoke-cardinality": "+",
+    "data-spoke-cycle": 2
+}
+
+puzzleModes["solution"] = {
+    "data-no-input": true
 }
 
 // Parse string as raw JS objects. e.g. "false" -> false
@@ -522,7 +534,7 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
-                e.currentTarget.classList.toggle("interesting");
+                this.setInteresting(e.currentTarget);
             } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
@@ -578,6 +590,14 @@ function PuzzleEntry(p, index) {
 
     this.getText = function(target) {
         return target.querySelector(".text span").innerText;
+    }
+
+    this.setInteresting = function(target) {
+        var grid = this.locateGrid(target);
+        var wasInteresting = target.classList.contains("interesting");
+        this.undoManager.startAction(this);
+        this.undoManager.addUnit(grid, target, "class-interesting", wasInteresting ? "interesting" : null, wasInteresting ? null : "interesting");
+        this.undoManager.endAction();
     }
 
     this.precisionHitTestSubregion = function(cell, clientX, clientY, style) {
@@ -724,8 +744,8 @@ function PuzzleEntry(p, index) {
         this.lastCell = e.currentTarget;
         this.currentFill = null;
 
-        if (e.ctrlKey) {
-            e.currentTarget.classList.toggle("interesting");
+        if ((e.ctrlKey) || ((this.options["data-right-click-interesting"]) && (e.button === 2))) {
+            this.setInteresting(e.currentTarget);
             e.preventDefault();
             return;
         }
@@ -935,30 +955,50 @@ function PuzzleEntry(p, index) {
         var attributeName = "data-" + attributeNameBase + "-code";
         var codeFrom = cellFrom.getAttribute(attributeName);
         var codeTo = cellTo.getAttribute(attributeName);
-        if (!codeFrom) { codeFrom = 0; }
-        if (!codeTo) { codeTo = 0; }
+        var otherAttributeName;
+        var otherFrom;
+        var otherTo;
+        if ((attributeNameBase === "spoke") && (parseInt(this.options["data-spoke-cycle"]) === 2)) {
+            otherAttributeName = "data-double-" + attributeNameBase + "-code";
+            otherFrom = cellFrom.getAttribute(otherAttributeName);
+            otherTo = cellTo.getAttribute(otherAttributeName);
+        }
+        if (!codeFrom) { codeFrom = 0; } else { codeFrom = parseInt(codeFrom); }
+        if (!codeTo) { codeTo = 0; } else { codeTo = parseInt(codeTo); }
+        if (!otherFrom) { otherFrom = 0; } else { otherFrom = parseInt(otherFrom); }
+        if (!otherTo) { otherTo = 0; } else { otherTo = parseInt(otherTo); }
         var fromGrid = this.puzzleGridFromCell(cellFrom);
         var toGrid = this.puzzleGridFromCell(cellTo);
 
-        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
-            var otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
-            var otherFrom = cellFrom.getAttribute(otherAttributeName);
-            var otherTo = cellTo.getAttribute(otherAttributeName);
+        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && !(otherFrom & directionFrom) && !(otherTo & directionTo) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
+            otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
+            otherFrom = cellFrom.getAttribute(otherAttributeName);
+            otherTo = cellTo.getAttribute(otherAttributeName);
 
             this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom | directionFrom);
             this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo | directionTo);
 
-            if (otherFrom) { this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom & ~directionFrom); }
-            if (otherTo) { this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo & ~directionTo); }
+            if (otherFrom) { this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, parseInt(otherFrom), parseInt(otherFrom) & ~directionFrom); }
+            if (otherTo) { this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, parseInt(otherTo), parseInt(otherTo) & ~directionTo); }
             return true;
         }
-        else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
+        else if (((codeFrom & directionFrom) && (codeTo & directionTo)) || ((otherFrom & directionFrom) && (otherTo & directionTo))) {
             var givenAttributeName = "data-given-" + attributeNameBase + "-code";
             var givenCodeFrom = cellFrom.getAttribute(givenAttributeName);
             var givenCodeTo = cellTo.getAttribute(givenAttributeName);
+            if (!givenCodeFrom) { givenCodeFrom = 0; } else { givenCodeFrom = parseInt(givenCodeFrom); }
+            if (!givenCodeTo) { givenCodeTo = 0; } else { givenCodeTo = parseInt(givenCodeTo); }
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
-                this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom);
-                this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo & ~directionTo);
+                if (codeFrom) { this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom); }
+                if (codeTo) { this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo & ~directionTo); }
+                if (otherFrom) { this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom & ~directionFrom); }
+                if (otherTo) { this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo & ~directionTo); }
+
+                if ((attributeNameBase === "spoke") && (parseInt(this.options["data-spoke-cycle"]) === 2) && ((codeFrom) && (codeTo))) {
+                    this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom | directionFrom);
+                    this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo | directionTo);
+                }
+
                 if (this.options["data-drag-paint-fill"]) {
                     if ((codeFrom & ~directionFrom) == 0 && !attributeNameBase.startsWith("x-") && !cellFrom.classList.contains("given-fill")) {
                         this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses ? this.fillClasses[0] : null);
@@ -1029,6 +1069,8 @@ function PuzzleEntry(p, index) {
             var colTo = parseInt(partsTo[2]);
     
             if ((colFrom === colTo && rowFrom === rowTo) || Math.abs(colFrom - colTo) > 1 || Math.abs(rowFrom - rowTo) > 1) return false;
+            if (((this.options["data-spoke-cardinality"] === "x") || (this.options["data-spoke-cardinality"] === "X")) && ((colFrom === colTo) || (rowFrom === rowTo))) return false;
+            if ((this.options["data-spoke-cardinality"] === "+") && (colFrom !== colTo) && (rowFrom !== rowTo)) return false;
     
             var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
             fromDir = fromVals[index];
@@ -1325,10 +1367,13 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
             var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText.trim();
 
+            var interesting = td.classList.contains("interesting");
+
             var cellState = "";
-            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || text) {
+            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || text || interesting) {
                 hasState = true;
                 cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16) + (spokeCodeDelta >> 4).toString(16) + (spokeCodeDelta % 16).toString(16);
+                if (interesting) { cellState += "!"; }
                 if (text) { cellState += "," + text; }
             }
 
@@ -1366,6 +1411,10 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                     case "class-fill":
                         this.puzzleEntry.fillClasses.forEach(fc => elem.classList.remove(fc));
                         if (c.value) { elem.classList.add(c.value); }
+                        break;
+                    case "class-interesting":
+                        if (c.value) { elem.classList.add("interesting"); }
+                        else { elem.classList.remove("interesting"); }
                         break;
                     default:
                         if (c.propertyKey.endsWith("-code") && !svgChangedElems.includes(elem)) { svgChangedElems.push(elem); }
@@ -1454,6 +1503,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
         this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
         this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
+        this.addSpokesToSvg(svg, td.getAttribute("data-double-spoke-code"), "double-")
         if (this.options["data-drag-draw-spoke"] && td === this.puzzleEntry.currentCenterFocus) {
             this.addReticleLayer(svg, "reticle-back");
             this.addReticleLayer(svg, "reticle-front");
@@ -1630,16 +1680,25 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                 td.classList.add("unselectable");
             }
             else {
-                text.innerText = this.translate(ch, textReplacements);
+                var temp = this.translate(ch, textReplacements);
+                if (temp.startsWith('@')) {
+                    td.classList.add("black-cell");
+                    td.classList.add("unselectable");
+                    td.classList.add("white-text");
+                    temp = temp.substring(1);
+                }
+                text.innerText = temp;
                 td.classList.add("given-text");
                 if (unselectableGivens) { td.classList.add("unselectable"); }
             }
 
             if (cellSavedState && cellSavedState.indexOf(",") >= 0) {
+                if ((cellSavedState.indexOf("!") >= 0) && (cellSavedState.indexOf("!") < cellSavedState.indexOf(","))) { td.classList.add("interesting"); }
                 var savedText = cellSavedState.substring(cellSavedState.indexOf(",") + 1).trim();
                 text.innerText = savedText;
                 if (savedText && savedText.length > 1) { td.classList.add("small-text"); }
             }
+            else if (cellSavedState && cellSavedState.indexOf("!") >= 0) { td.classList.add("interesting"); }
 
             if (!td.classList.contains("unselectable")) {
                 if (allowInput) {

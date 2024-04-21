@@ -109,6 +109,12 @@
                 background-color: #eee;
                 padding: 5px;
             }
+            
+            .slant-background td {
+                background-image: url("data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20viewBox%3D%22-10%20-10%2020%2020%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%20%20%20%20%3Cpath%20fill%3D%22none%22%20stroke%3D%22%23bbbbbb%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20d%3D%22M-10%2C0%20H10%20M0%2C-10%20V10%22%3E%3C%2Fpath%3E%0A%3C%2Fsvg%3E");
+                background-repeat: no-repeat;
+                background-size: cover;
+            }
         </style>
     </head>
     <body>
@@ -195,6 +201,37 @@
             <p>The <code>slitherlink</code> mode allows dragging (or shift-arrowing) between dots to draw edges.</p>
             <div class="example">
                 <div class="puzzle-entry" data-mode="notext slitherlink" data-text="4x4"></div>
+            </div>
+        </div>
+        
+        <div class="mode" data-name="spokes">
+            <p>The <code>spokes</code> mode allows dragging (or shift-arrowing) between cells to draw intersecting lines. The primary difference between spokes and paths are that spokes can emanate from any (or all) 8 directions from within any cell, allowing them to appear to intersect or cross existing spokes.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true">
+    { "data-spokes": [
+    "......'",
+    ".*-*-*.",
+    "..`.X|.",
+    ".*.*.*.",
+    "..'.`|.",
+    ".*.*.*.",
+    "'......"
+    ] }
+</div>
+            </div>
+        </div>
+        
+        <div class="mode" data-name="slant">
+            <p>The <code>slant</code> mode is a specialized version of spokes that only allows drawing in diagonal directions.</p>
+            <div class="example">
+                <div class="puzzle-entry slant-background" data-mode="notext slant" data-text="  1 |   2| 0  |    "></div>
+            </div>
+        </div>
+        
+        <div class="mode" data-name="bridges">
+            <p>The <code>bridges</code> mode is another specialized version of spokes that cycles through single and then double spokes.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext bridges" data-text="  1 | 4 2| 8  |    "></div>
             </div>
         </div>
 
@@ -452,6 +489,27 @@
                 <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-max-directions="2"></div>
             </div>
         </div>
+        <div class="option" data-name="data-spoke-cardinality">
+            <p>Limits the directions spokes can be drawn from. If left blank, then all directions are allowed. If a value of <code>+</code> is used, only cardinal directions are allowed. If a value of <code>x</code> is used, only diagonal directions are allowed.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-cardinality="+"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-cardinality="x"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-spoke-cycle">
+            <p>The number of parallel spokes drawn in a cardinal direction, implemented as a cycle equal to the number of spokes. The default value of 1 draws a single spoke and then erases it when drawn again. The value of 2 will draw over a single spoke with a double spoke, then erases it when drawn over again.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-cardinality="+"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-cardinality="+" data-spoke-cycle="2"></div>
+            </div>
+        </div>
         <div class="option" data-name="data-spoke-style">
             <p>Specifies the way the spokes are drawn. Two drawing styles are provided: <code>solid</code> and <code>dash</code>.</p>
             <p>If the value ends in <code>.svg</code>, it is assumed to be a custom svg file for rendering spokes and the svg is located with a file path relative to the puzzle page. See more information in the <a href="reference-styling.html#custom-spokes">Styling Reference</a>.</p>
@@ -579,11 +637,16 @@
                 <div class="puzzle-entry" data-text="g.v.ns" data-unselectable-givens="true"></div>
             </div>
         </div>
+        <div class="option" data-name="data-right-click-interesting">
+            <p>Allows marking a cell as interesting with the right-click button in addition to the default ctrl+click. Depending on the other options used, this may conflict with some functionality. For example, when used with cycling fills, the ability to right-click to cycle backwards through them no longer works (although shift+clicking to cycle backwards isn't impacted).</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-right-click-interesting="true" data-fill-classes="white yellow red"></div>
+            </div>
+        </div>
         <div class="option" data-name="data-extracts">
             <p>Specifies a set of extract codes for all cells marked with a <code>#</code> in the <a href="#data-text"><code>data-text</code></a> field. Two cells with the same code anywhere on the page will share their values, permitting the extraction of letters from a puzzle into an answer phrase.</p>
             <p>The format for <code>data-extracts</code> is a set of codes, with spaces between them. Each code is applied to the next occurrence of <code>#</code>.</p>
             <div class="example">
-                <div>
     <div class="puzzle-entry" data-mode="linear" data-text=" #uzzle " data-extracts="2"></div>
     <br/>
     <div class="puzzle-entry" data-mode="linear" data-text="e#tracts" data-extracts="1"></div>
