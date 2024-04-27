@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- (c) 2024 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<svg viewBox="-10 -10 20 20" xmlns="http://www.w3.org/2000/svg">
+    <g id="edge-base">
+        <path fill="none" stroke="#bbbbbb" stroke-width="2" stroke-linecap="round" d="M-10,0 H10 M0,-10 V10"></path>
+    </g>
+</svg>

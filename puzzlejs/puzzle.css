@@ -78,11 +78,6 @@
     pointer-events: none;
 }
 
-.puzzle-entry .white-text {
-    color: white;
-    text-shadow: -2px -2px 0 #444444, 0 -2px 0 #444444, 2px -2px 0 #444444, 2px 0 0 #444444, 2px 2px 0 #444444, 0 2px 0 #444444, -2px 2px 0 #444444, -2px 0 0 #444444;
-}
-
 .puzzle-entry .cell:focus {
     outline: none;
 }

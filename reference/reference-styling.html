@@ -79,7 +79,7 @@
             .color-train-example .cell .path { stroke: sienna; }
             .color-train-example .cell .spoke { stroke: lightgreen; }
             .color-train-example .cell .x-spoke { stroke: forestgreen; }
-            .color-train-example .cell .double-spoke { stroke: lightgreen; }
+            .color-train-example .cell .spoke-2 { stroke: forestgreen; }
 
             .overlapping-example { display: grid; }
             .overlapping-example > * { grid-row: 1/1; grid-column: 1/1; }
@@ -137,9 +137,8 @@
 
         <h2>Fills</h2>
         <p>Fills can be more than just colors; they can be any bitmap or SVG file as well, via the standard CSS properties for such.</p>
-        <p>Squares can also be marked as "interesting" by ctrl+clicking, or by right-clicking if <code>data-right-click-interesting</code> is enabled, and it won't conflict with the fill pattern visually (the right-click option will override the ability to cycle backwards through the fills using right-click, however).</p>
         <div class="example">
-            <div class="puzzle-entry earth-example" data-mode="notext" data-text="3x3" data-fill-classes="none earth" data-right-click-interesting="true" data-fills="...|.1.|..."></div>
+            <div class="puzzle-entry earth-example" data-mode="notext" data-text="3x3" data-fill-classes="none earth" data-fills="...|.1.|..."></div>
         </div>
         <p>The fills that are specified in <code>data-fill-classes</code> can change more than just colors, and do not have to even change the background at all. In addition, <code>given-fill</code> can be used to give special marking to the cells with givens. Finally, the fill class can also be used to color paths or edges.</p>
         <div class="example">
@@ -163,7 +162,7 @@
         <h2>Paths, Edges, and Spokes</h2>
         <p>Since paths, edges, and spokes are made with SVG, they must be styled with the <code>stroke</code> property, not the <code>border</code> property.</p>
         <div class="example">
-            <div class="puzzle-entry color-train-example" data-mode="notext" data-text="4x4" data-edges="2x2" data-path-style="track" data-drag-draw-spoke="true" data-paths="c6..|.96.|..96|...1"></div>
+            <div class="puzzle-entry color-train-example" data-mode="notext" data-text="4x4" data-edges="2x2" data-path-style="track" data-drag-draw-spoke="true" data-spoke-allowed-directions="+" data-spoke-level="2" data-paths="c6..|.96.|..96|...1"></div>
         </div>
 
         <h3 id="custom-paths">Custom Paths</h3>
@@ -220,15 +219,15 @@
         <p>Remember that edges are shared between cells, and the right and bottom edge elements will only be used for the right and bottom edges of the grid.</p>
 
         <h3 id="custom-strokes">Custom Strokes</h3>
-        <p>Strokes describe lines that can go in 8 directions from any cell. They are similar to paths, except that due to the larger number of angles and intersections, the styling possibilities are more limited. There are two spoke style provided for the <code>data-spoke-style</code> option: <code>solid</code> and <code>dash</code>. Additionally, double spokes can be used in the 4 cardinal directions.</p>
-        <p>If something else is desired, you can provide your own SVG file; when the value of <code>data-spoke-style</code> ends with <code>.svg</code>, it will find that SVG file relative to your page. It should be structured like this:</p>
+        <p>Strokes describe lines that can go in up to 8 directions from any cell. They are similar to paths, except that due to the larger number of angles and intersections, the styling possibilities are more limited. There are two spoke style provided for the <code>data-spoke-style</code> option: <code>solid</code> and <code>dash</code>. Additionally, double spokes are provided in the 4 cardinal directions and correspond to a <code>spoke-level</code> = 2.</p>
+        <p>If something else is desired, you can provide your own SVG file; when the value of <code>data-spoke-style</code> ends with <code>.svg</code>, it will find that SVG file relative to your page. Spoke levels up to 16 are supported for both <code>spoke-n</code> and <code>spoke-ne</code>, with the levels cycling in order. It should be structured like this:</p>
         <div class="example non-interactive">
             <svg viewBox="-10 -10 20 20" xmlns="http://www.w3.org/2000/svg">
     <path id="spoke-n" fill="none" stroke-width="2" stroke-linecap="round" d="M0,0 V-10"></path>
     <path id="spoke-ne" fill="none" stroke-width="2" stroke-linecap="round" d="M0,0 L10,-10"></path>
     <path id="x-spoke-n" stroke-width="1" d="M-2,-12 L2,-8 M2,-12 L-2,-8"></path>
     <path id="x-spoke-ne" stroke-width="1" d="M5,-9 L9,-5 M9,-9 L5,-5"></path>
-    <path id="double-spoke-n" fill="none" stroke-width="2" stroke-linecap="round" d="M-3,0 V-10 M3,0 V-10"></path>
+    <path id="spoke-n-2" fill="none" stroke-width="2" stroke-linecap="round" d="M-3,0 V-10 M3,0 V-10"></path>
     <g id="reticle">
         <circle cx="0" cy="0" r="9" fill="none"></circle>
         <path d="M0,-9 V-6"></path>
@@ -239,15 +238,16 @@
     </g>
 </svg>
         </div>
-        <p>This SVG is composed of seven superimposed elements, and the appropriate components will be referenced with the SVG <code>use</code> element. Most of these elements are single <code>path</code> elements in the example above, but can be groups of elements so long as a parent <code>g</code> element has the appropriate <code>id</code> attribute.</p>
+        <p>This SVG is composed of at least six superimposed elements, and the appropriate components will be referenced with the SVG <code>use</code> element. Most of these elements are single <code>path</code> elements in the example above, but can be groups of elements so long as a parent <code>g</code> element has the appropriate <code>id</code> attribute.</p>
         <ul>
             <li><code>spoke-n</code>: a spoke pointing north (which will be rotated for east, south, and west).</li>
             <li><code>spoke-ne</code>: a spoke pointing northeast (which will be rotated for southeast, southwest, and northwest).</li>
             <li><code>x-spoke-n</code>: a "no" spoke pointing north (which will be rotated for east, south, and west).</li>
             <li><code>x-spoke-ne</code>: a "no" spoke pointing northeast (which will be rotated for southeast, southwest, and northwest).</li>
-            <li><code>double-spoke-n</code>: a parallel set of spokes pointing north (which will be rotated for east, south, and west).</li>
             <li><code>reticle</code>: an indicator for drawing spokes, that shows which direction corresponds to the up arrow.</li>
             <li><code>x-reticle</code>: an indicator for drawing "no" spokes, that shows which direction corresponds to the up arrow.</li>
+            <li><code>spoke-n-2</code>: by default, a parallel set of spokes pointing north (which will be rotated for east, south, and west).</li>
+            <li><code>spoke-ne-2</code> through <code>spoke-ne-16</code> and <code>spoke-n-3</code> through <code>spoke-n-16</code> require custom SVG files.</li>
         </ul>
         <p>Note that no <code>stroke</code> property is present in the SVG, so that the uses of the SVG can override that.</p>
 
@@ -307,7 +307,7 @@
             <tr><td><code>.cell .x-edge-right</code></td><td>The X to the right of the cell, if that X is present.</td></tr>
             <tr><td><code>.cell .spoke</code></td><td>Any of the 8 spokes emanating from a cell, if present.</td></tr>
             <tr><td><code>.cell .x-spoke</code></td><td>Any of the 8 "no" spokes emanating from a cell, if present.</td></tr>
-            <tr><td><code>.cell .double-spoke</code></td><td>Any of the 4 double spokes emanating from a cell, if present.</td></tr>
+            <tr><td><code>.cell .spoke-2</code></td><td>Any of the 4 double spokes emanating from a cell, if present.</td></tr>
             <tr><td><code>.cell .clue</code></td><td>The interior (e.g. crossword) clue of a cell.</td></tr>
             <tr><td><code>.cell.hovered</code></td><td>A crossword cell when the player is hovering over one of that cell&rsquo;s crossword clues.</td></tr>
             <tr><td><code>.cell.marked</code></td><td>A crossword cell when one of that cell&rsquo;s clues is selected.</td></tr>

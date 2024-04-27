@@ -35,7 +35,7 @@ puzzleModes["default"] = {
     // spokes
     "data-spokes": null,
     "data-spoke-max-directions": null,
-    "data-spoke-cardinality": null,
+    "data-spoke-allowed-directions": "*",
     "data-spoke-cycle": 1,
     "data-spoke-style": "solid",
 
@@ -53,7 +53,6 @@ puzzleModes["default"] = {
     "data-drag-draw-edge": false,
     "data-drag-draw-spoke": false,
     "data-unselectable-givens": false,
-    "data-right-click-interesting": false,
     "data-extracts": null,
     "data-no-input": false,
     "data-show-commands": false,
@@ -107,15 +106,15 @@ puzzleModes["spokes"] = {
 
 puzzleModes["slant"] = {
     "data-drag-draw-spoke": true,
-    "data-spoke-cardinality": "x",
-    "data-edge-style": "none"
+    "data-spoke-allowed-directions": "x",
+    "data-edge-style": "offset"
 }
 
 puzzleModes["bridges"] = {
     "data-drag-draw-spoke": true,
     "data-drag-paint-fill": false,
     "data-fill-cycle": false,
-    "data-spoke-cardinality": "+",
+    "data-spoke-allowed-directions": "+",
     "data-spoke-cycle": 2
 }
 
@@ -744,7 +743,7 @@ function PuzzleEntry(p, index) {
         this.lastCell = e.currentTarget;
         this.currentFill = null;
 
-        if ((e.ctrlKey) || ((this.options["data-right-click-interesting"]) && (e.button === 2))) {
+        if (e.ctrlKey) {
             this.setInteresting(e.currentTarget);
             e.preventDefault();
             return;
@@ -1069,8 +1068,8 @@ function PuzzleEntry(p, index) {
             var colTo = parseInt(partsTo[2]);
     
             if ((colFrom === colTo && rowFrom === rowTo) || Math.abs(colFrom - colTo) > 1 || Math.abs(rowFrom - rowTo) > 1) return false;
-            if (((this.options["data-spoke-cardinality"] === "x") || (this.options["data-spoke-cardinality"] === "X")) && ((colFrom === colTo) || (rowFrom === rowTo))) return false;
-            if ((this.options["data-spoke-cardinality"] === "+") && (colFrom !== colTo) && (rowFrom !== rowTo)) return false;
+            if (((this.options["data-spoke-allowed-directions"] === "x") || (this.options["data-spoke-allowed-directions"] === "X")) && ((colFrom === colTo) || (rowFrom === rowTo))) return false;
+            if ((this.options["data-spoke-allowed-directions"] === "+") && (colFrom !== colTo) && (rowFrom !== rowTo)) return false;
     
             var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
             fromDir = fromVals[index];
@@ -1365,14 +1364,29 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (!givenSpokeCode) givenSpokeCode = 0;
             var spokeCodeDelta = spokeCode ^ givenSpokeCode;
 
+            var doubleSpokeCodeDelta;
+            if (parseInt(this.options["data-spoke-cycle"]) > 1) {
+                var doubleSpokeCode = td.getAttribute("data-double-spoke-code");
+                var givenDoubleSpokeCode = td.getAttribute("data-given-double-spoke-code");
+                if (!doubleSpokeCode) doubleSpokeCode = 0;
+                if (!givenDoubleSpokeCode) givenDoubleSpokeCode = 0;
+                doubleSpokeCodeDelta = doubleSpokeCode ^ givenDoubleSpokeCode;
+            }
+
             var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText.trim();
 
             var interesting = td.classList.contains("interesting");
 
             var cellState = "";
-            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || text || interesting) {
+            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || doubleSpokeCodeDelta || text || interesting) {
                 hasState = true;
-                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16) + (spokeCodeDelta >> 4).toString(16) + (spokeCodeDelta % 16).toString(16);
+                cellState = fillIndex.toString(36) + 
+                    edgeCodeDelta.toString(16) + 
+                    pathCodeDelta.toString(16) + 
+                    (spokeCodeDelta >> 4).toString(16) + 
+                    (spokeCodeDelta % 16).toString(16) + 
+                    (doubleSpokeCodeDelta >> 4).toString(16) + 
+                    (doubleSpokeCodeDelta % 16).toString(16);
                 if (interesting) { cellState += "!"; }
                 if (text) { cellState += "," + text; }
             }
@@ -1563,6 +1577,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     var edges = puzzleEntry.getOptionArray(this.options, "data-edges", "|");
     var paths = puzzleEntry.getOptionArray(this.options, "data-paths", "|");
     var spokes = puzzleEntry.getOptionArray(this.options, "data-spokes", "|");
+    var doubleSpokes = puzzleEntry.getOptionArray(this.options, "data-double-spokes", "|");
     var extracts = puzzleEntry.getOptionArray(this.options, "data-extracts", " ");
     var topClues = puzzleEntry.getOptionArray(this.options, "data-top-clues", "|");
     var bottomClues = puzzleEntry.getOptionArray(this.options, "data-bottom-clues", "|");
@@ -1680,14 +1695,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                 td.classList.add("unselectable");
             }
             else {
-                var temp = this.translate(ch, textReplacements);
-                if (temp.startsWith('@')) {
-                    td.classList.add("black-cell");
-                    td.classList.add("unselectable");
-                    td.classList.add("white-text");
-                    temp = temp.substring(1);
-                }
-                text.innerText = temp;
+                text.innerText = this.translate(ch, textReplacements);
                 td.classList.add("given-text");
                 if (unselectableGivens) { td.classList.add("unselectable"); }
             }
@@ -1752,7 +1760,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     
                 if (edgeCode) { td.setAttribute("data-given-edge-code", edgeCode); }
             }
-            if (cellSavedState) { edgeCode ^= parseInt(cellSavedState[1], 16); }
+            if (cellSavedState && cellSavedState.indexOf(",") != 0) { edgeCode ^= parseInt(cellSavedState[1], 16); }
             if (edgeCode) { td.setAttribute("data-edge-code", edgeCode); }
 
             var pathCode = 0;
@@ -1776,7 +1784,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
                 if (pathCode) { td.setAttribute("data-path-code", pathCode); td.setAttribute("data-given-path-code", pathCode); }
             }
-            if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
+            if (cellSavedState && cellSavedState.indexOf(",") != 0) { pathCode ^= parseInt(cellSavedState[2], 16); }
             if (pathCode) { td.setAttribute("data-path-code", pathCode); }
 
             var spokeCode = 0;
@@ -1803,10 +1811,35 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
                 if (spokeCode) { td.setAttribute("data-spoke-code", spokeCode); td.setAttribute("data-given-spoke-code", spokeCode); }
             }
-            if (cellSavedState && cellSavedState.length > 4 && (cellSavedState.indexOf(",") > 4 || cellSavedState.indexOf(",") < 0)) {
-                spokeCode ^= (parseInt(cellSavedState[3], 16) * 16 + parseInt(cellSavedState[4], 16));
-            }
+            if (cellSavedState && cellSavedState.indexOf(",") != 0) { spokeCode ^= (parseInt(cellSavedState[3], 16) * 16 + parseInt(cellSavedState[4], 16)); }
             if (spokeCode) { td.setAttribute("data-spoke-code", spokeCode); }
+
+            var doubleSpokeCode = 0;
+            if (doubleSpokes) {
+                var topRow = doubleSpokes[r * 2];
+                var midRow = doubleSpokes[r * 2 + 1];
+                var botRow = doubleSpokes[r * 2 + 2];
+                var chN = topRow[c * 2 + 1];
+                var chNE = topRow[c * 2 + 2];
+                var chE = midRow[c * 2 + 2];
+                var chSE = botRow[c * 2 + 2];
+                var chS = botRow[c * 2 + 1];
+                var chSW = botRow[c * 2];
+                var chW = midRow[c * 2];
+                var chNW = topRow[c * 2];
+                if (chN != " " && chN != ".") { doubleSpokeCode |= 1; }
+                if (chNE == "/" || chNE == "'" || chNE == "X" || chNE == "x") { doubleSpokeCode |= 2; }
+                if (chE != " " && chE != ".") { doubleSpokeCode |= 4; }
+                if (chSE == "\\" || chSE == "`" || chSE == "X" || chSE == "x") { doubleSpokeCode |= 8; }
+                if (chS != " " && chS != ".") { doubleSpokeCode |= 16; }
+                if (chSW == "/" || chSW == "'" || chSW == "X" || chSW == "x") { doubleSpokeCode |= 32; }
+                if (chW != " " && chW != ".") { doubleSpokeCode |= 64; }
+                if (chNW == "\\" || chNW == "`" || chNW == "X" || chNW == "x") { doubleSpokeCode |= 128; }
+
+                if (doubleSpokeCode) { td.setAttribute("data-double-spoke-code", doubleSpokeCode); td.setAttribute("data-given-double-spoke-code", doubleSpokeCode); }
+            }
+            if (cellSavedState && cellSavedState.indexOf(",") != 0) { doubleSpokeCode ^= (parseInt(cellSavedState[5], 16) * 16 + parseInt(cellSavedState[6], 16)); }
+            if (doubleSpokeCode) { td.setAttribute("data-double-spoke-code", doubleSpokeCode); }
 
             if (this.options["data-clue-locations"] && textLines[r][c] != '@') {
                 var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
@@ -1850,7 +1883,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                     fillIndex = parseInt(fills[r][c], 36);
                     td.classList.add("given-fill");
                 } else {
-                    fillIndex = cellSavedState ? parseInt(cellSavedState[0], 36) : 0;
+                    fillIndex = (cellSavedState && cellSavedState.indexOf(",") != 0) ? parseInt(cellSavedState[0], 36) : 0;
                 }
                 td.classList.add(this.puzzleEntry.fillClasses[fillIndex]);
             }
