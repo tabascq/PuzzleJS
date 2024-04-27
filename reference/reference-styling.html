@@ -218,9 +218,9 @@
         <p>Note that no <code>stroke</code> property is present in the SVG, so that the uses of the SVG can override that.</p>
         <p>Remember that edges are shared between cells, and the right and bottom edge elements will only be used for the right and bottom edges of the grid.</p>
 
-        <h3 id="custom-strokes">Custom Strokes</h3>
-        <p>Strokes describe lines that can go in up to 8 directions from any cell. They are similar to paths, except that due to the larger number of angles and intersections, the styling possibilities are more limited. There are two spoke style provided for the <code>data-spoke-style</code> option: <code>solid</code> and <code>dash</code>. Additionally, double spokes are provided in the 4 cardinal directions and correspond to a <code>spoke-level</code> = 2.</p>
-        <p>If something else is desired, you can provide your own SVG file; when the value of <code>data-spoke-style</code> ends with <code>.svg</code>, it will find that SVG file relative to your page. Spoke levels up to 16 are supported for both <code>spoke-n</code> and <code>spoke-ne</code>, with the levels cycling in order. It should be structured like this:</p>
+        <h3 id="custom-spokes">Custom Spokes</h3>
+        <p>Spokes describe lines that can go in up to 8 directions from any cell. They are similar to paths, except that due to the larger number of angles and intersections, the styling possibilities are more limited. There are two spoke style provided for the <code>data-spoke-style</code> option: <code>solid</code> and <code>dash</code>. Additionally, double spokes are provided in the 4 cardinal directions and correspond to a <code>spoke-level</code> = 2.</p>
+        <p>If something else is desired, you can provide your own SVG file; when the value of <code>data-spoke-style</code> ends with <code>.svg</code>, it will find that SVG file relative to your page. Spoke levels up to 15 are supported for both <code>spoke-n</code> and <code>spoke-ne</code>, with the levels cycling in order. It should be structured like this:</p>
         <div class="example non-interactive">
             <svg viewBox="-10 -10 20 20" xmlns="http://www.w3.org/2000/svg">
     <path id="spoke-n" fill="none" stroke-width="2" stroke-linecap="round" d="M0,0 V-10"></path>
@@ -247,7 +247,7 @@
             <li><code>reticle</code>: an indicator for drawing spokes, that shows which direction corresponds to the up arrow.</li>
             <li><code>x-reticle</code>: an indicator for drawing "no" spokes, that shows which direction corresponds to the up arrow.</li>
             <li><code>spoke-n-2</code>: by default, a parallel set of spokes pointing north (which will be rotated for east, south, and west).</li>
-            <li><code>spoke-ne-2</code> through <code>spoke-ne-16</code> and <code>spoke-n-3</code> through <code>spoke-n-16</code> require custom SVG files.</li>
+            <li><code>spoke-ne-2</code> through <code>spoke-ne-15</code> and <code>spoke-n-3</code> through <code>spoke-n-15</code> require custom SVG files.</li>
         </ul>
         <p>Note that no <code>stroke</code> property is present in the SVG, so that the uses of the SVG can override that.</p>
 
