@@ -958,25 +958,39 @@ function PuzzleEntry(p, index) {
         var attributeName = "data-" + attributeNameBase + "-code";
         var codeFrom = cellFrom.getAttribute(attributeName);
         var codeTo = cellTo.getAttribute(attributeName);
-        var otherAttributeName;
-        var otherFrom;
-        var otherTo;
-        if ((attributeNameBase === "spoke") && (parseInt(this.options["data-spoke-levels"]) === 2)) {
-            otherAttributeName = "data-" + attributeNameBase + "-2-code";
-            otherFrom = cellFrom.getAttribute(otherAttributeName);
-            otherTo = cellTo.getAttribute(otherAttributeName);
-        }
         if (!codeFrom) { codeFrom = 0; } else { codeFrom = parseInt(codeFrom); }
         if (!codeTo) { codeTo = 0; } else { codeTo = parseInt(codeTo); }
-        if (!otherFrom) { otherFrom = 0; } else { otherFrom = parseInt(otherFrom); }
-        if (!otherTo) { otherTo = 0; } else { otherTo = parseInt(otherTo); }
+        var currentSpokeLevel = 0;
+        var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
+        if (attributeNameBase === "spoke") {
+            if ((codeFrom & directionFrom) && (codeTo & directionTo)) { currentSpokeLevel++; }
+            else {
+                for (var l = 2; l < maxSpokeLevels; l++) {
+                    var tempName = "data-spoke-" + l.toString() + "-code";
+                    var tempCodeFrom = cellFrom.getAttribute(tempName);
+                    var tempCodeTo = cellTo.getAttribute(tempName);
+                    if (!tempCodeFrom) { tempCodeFrom = 0; } else { tempCodeFrom = parseInt(tempCodeFrom); }
+                    if (!tempCodeTo) { tempCodeTo = 0; } else { tempCodeTo = parseInt(tempCodeTo); }
+                    if ((tempCodeFrom & directionFrom) && (tempCodeTo & directionTo)) { 
+                        currentSpokeLevel = l; 
+                        attributeNameBase = "spoke-" + l.toString();
+                        attributeName = "data-" + attributeNameBase + "-code";
+                        codeFrom = tempCodeFrom;
+                        codeTo = tempCodeTo;
+                        break; 
+                    }
+                }
+            }
+        }
         var fromGrid = this.puzzleGridFromCell(cellFrom);
         var toGrid = this.puzzleGridFromCell(cellTo);
 
-        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && !(otherFrom & directionFrom) && !(otherTo & directionTo) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
-            otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
-            otherFrom = cellFrom.getAttribute(otherAttributeName);
-            otherTo = cellTo.getAttribute(otherAttributeName);
+        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && (currentSpokeLevel === 0) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
+            var otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
+            var otherFrom = cellFrom.getAttribute(otherAttributeName);
+            var otherTo = cellTo.getAttribute(otherAttributeName);
+            if (!otherFrom) { otherFrom = 0; } else { otherFrom = parseInt(otherFrom); }
+            if (!otherTo) { otherTo = 0; } else { otherTo = parseInt(otherTo); }
 
             this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom | directionFrom);
             this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo | directionTo);
@@ -985,19 +999,22 @@ function PuzzleEntry(p, index) {
             if (otherTo) { this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, parseInt(otherTo), parseInt(otherTo) & ~directionTo); }
             return true;
         }
-        else if (((codeFrom & directionFrom) && (codeTo & directionTo)) || ((otherFrom & directionFrom) && (otherTo & directionTo))) {
+        else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
             var givenAttributeName = "data-given-" + attributeNameBase + "-code";
             var givenCodeFrom = cellFrom.getAttribute(givenAttributeName);
             var givenCodeTo = cellTo.getAttribute(givenAttributeName);
             if (!givenCodeFrom) { givenCodeFrom = 0; } else { givenCodeFrom = parseInt(givenCodeFrom); }
             if (!givenCodeTo) { givenCodeTo = 0; } else { givenCodeTo = parseInt(givenCodeTo); }
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
-                if (codeFrom) { this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom); }
-                if (codeTo) { this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo & ~directionTo); }
-                if (otherFrom) { this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom & ~directionFrom); }
-                if (otherTo) { this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo & ~directionTo); }
+                this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom);
+                this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo & ~directionTo);
 
-                if ((attributeNameBase === "spoke") && (parseInt(this.options["data-spoke-levels"]) === 2) && ((codeFrom) && (codeTo))) {
+                if ((currentSpokeLevel > 0) && ((currentSpokeLevel + 1) < maxSpokeLevels)) {
+                    var otherAttributeName = "data-spoke-" + (currentSpokeLevel + 1).toString() + "-code";
+                    var otherFrom = cellFrom.getAttribute(otherAttributeName);
+                    var otherTo = cellTo.getAttribute(otherAttributeName);
+                    if (!otherFrom) { otherFrom = 0; } else { otherFrom = parseInt(otherFrom); }
+                    if (!otherTo) { otherTo = 0; } else { otherTo = parseInt(otherTo); }
                     this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom | directionFrom);
                     this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo | directionTo);
                 }
