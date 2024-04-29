@@ -36,7 +36,7 @@ puzzleModes["default"] = {
     "data-spokes": null,
     "data-spoke-max-directions": null,
     "data-spoke-allowed-directions": "*",
-    "data-spoke-level": 1,
+    "data-spoke-levels": 1,
     "data-spoke-style": "solid",
 
     // clues
@@ -104,6 +104,10 @@ puzzleModes["spokes"] = {
     "data-drag-draw-spoke": true
 }
 
+puzzleModes["wordsearch"] = {
+    "data-drag-draw-spoke": true
+}
+
 puzzleModes["slant"] = {
     "data-drag-draw-spoke": true,
     "data-spoke-allowed-directions": "x",
@@ -115,7 +119,7 @@ puzzleModes["bridges"] = {
     "data-drag-paint-fill": false,
     "data-fill-cycle": false,
     "data-spoke-allowed-directions": "+",
-    "data-spoke-level": 2
+    "data-spoke-levels": 2
 }
 
 puzzleModes["solution"] = {
@@ -533,7 +537,7 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
-                this.setInteresting(e.currentTarget);
+                this.toggleInteresting(e.currentTarget);
             } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
@@ -591,7 +595,7 @@ function PuzzleEntry(p, index) {
         return target.querySelector(".text span").innerText;
     }
 
-    this.setInteresting = function(target) {
+    this.toggleInteresting = function(target) {
         var grid = this.locateGrid(target);
         var wasInteresting = target.classList.contains("interesting");
         this.undoManager.startAction(this);
@@ -744,7 +748,7 @@ function PuzzleEntry(p, index) {
         this.currentFill = null;
 
         if (e.ctrlKey) {
-            this.setInteresting(e.currentTarget);
+            this.toggleInteresting(e.currentTarget);
             e.preventDefault();
             return;
         }
@@ -957,7 +961,7 @@ function PuzzleEntry(p, index) {
         var otherAttributeName;
         var otherFrom;
         var otherTo;
-        if ((attributeNameBase === "spoke") && (parseInt(this.options["data-spoke-level"]) === 2)) {
+        if ((attributeNameBase === "spoke") && (parseInt(this.options["data-spoke-levels"]) === 2)) {
             otherAttributeName = "data-" + attributeNameBase + "-2-code";
             otherFrom = cellFrom.getAttribute(otherAttributeName);
             otherTo = cellTo.getAttribute(otherAttributeName);
@@ -993,7 +997,7 @@ function PuzzleEntry(p, index) {
                 if (otherFrom) { this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom & ~directionFrom); }
                 if (otherTo) { this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo & ~directionTo); }
 
-                if ((attributeNameBase === "spoke") && (parseInt(this.options["data-spoke-level"]) === 2) && ((codeFrom) && (codeTo))) {
+                if ((attributeNameBase === "spoke") && (parseInt(this.options["data-spoke-levels"]) === 2) && ((codeFrom) && (codeTo))) {
                     this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom | directionFrom);
                     this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo | directionTo);
                 }
@@ -1358,7 +1362,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (!givenPathCode) givenPathCode = 0;
             var pathCodeDelta = pathCode ^ givenPathCode;
 
-            var maxSpokeLevels = parseInt(this.options["data-spoke-level"]) + 1;
+            var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
             var spokeCodes = new Array(maxSpokeLevels);
             var spokeDelta = false;
             for (var l = 1; l < maxSpokeLevels; l++) {
@@ -1456,7 +1460,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             use.classList.add(spokePrefix + "spoke" + spokeSuffix);
             var spokePath = this.options["data-spoke-style"];
             if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
-            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : "" + spokeSuffix));
+            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : "") + spokeSuffix);
             if (i > 1) { use.setAttributeNS(null, "transform", "rotate(" + ((i >> 1) * 90) + ")"); }
             svg.appendChild(use);
         }
@@ -1514,7 +1518,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
         this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "", "");
         this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-", "");
-        var maxSpokeLevels = parseInt(this.options["data-spoke-level"]) + 1;
+        var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
         for (var l = 2; l < maxSpokeLevels; l++) {
             this.addSpokesToSvg(svg, td.getAttribute("data-spoke-" + l.toString() + "-code"), "", "-" + l.toString());
         }
@@ -1576,13 +1580,13 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     var solution = puzzleEntry.getOptionArray(this.options, "data-text-solution", "|");
     var edges = puzzleEntry.getOptionArray(this.options, "data-edges", "|");
     var paths = puzzleEntry.getOptionArray(this.options, "data-paths", "|");
-    var maxSpokeLevels = parseInt(this.options["data-spoke-level"]) + 1;
+    var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
     var spokes = new Array(maxSpokeLevels);
     for (var l = 1; l < maxSpokeLevels; l++) {
         var spoke;
         if (l > 1) { spoke = puzzleEntry.getOptionArray(this.options, "data-spokes-" + l.toString(), "|"); }
         else { spoke = puzzleEntry.getOptionArray(this.options, "data-spokes", "|"); }
-        if (!spoke) { spoke = 0; }
+        if (!spoke) { spoke = ""; }
         spokes[l] = spoke;
     }
     var extracts = puzzleEntry.getOptionArray(this.options, "data-extracts", " ");
@@ -1767,7 +1771,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     
                 if (edgeCode) { td.setAttribute("data-given-edge-code", edgeCode); }
             }
-            if (cellSavedState && cellSavedState.indexOf(",") != 0) { edgeCode ^= parseInt(cellSavedState[1], 16); }
+            if (cellSavedState) { edgeCode ^= parseInt(cellSavedState[1], 16); }
             if (edgeCode) { td.setAttribute("data-edge-code", edgeCode); }
 
             var pathCode = 0;
@@ -1791,7 +1795,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
                 if (pathCode) { td.setAttribute("data-path-code", pathCode); td.setAttribute("data-given-path-code", pathCode); }
             }
-            if (cellSavedState && cellSavedState.indexOf(",") != 0) { pathCode ^= parseInt(cellSavedState[2], 16); }
+            if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
             if (pathCode) { td.setAttribute("data-path-code", pathCode); }
 
             for (var l = 1; l < maxSpokeLevels; l++) {
@@ -1823,7 +1827,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                         else { td.setAttribute("data-spoke-code", spokeCode); td.setAttribute("data-given-spoke-code", spokeCode); }
                      }
                 }
-                if (cellSavedState && cellSavedState.indexOf(",") != 0) { spokeCode ^= (parseInt(cellSavedState[l * 2 + 1], 16) * 16 + parseInt(cellSavedState[l * 2 + 2], 16)); }
+                if (cellSavedState) { spokeCode ^= (parseInt(cellSavedState[l * 2 + 1], 16) * 16 + parseInt(cellSavedState[l * 2 + 2], 16)); }
                 if (spokeCode) { 
                     if (l > 1) { td.setAttribute("data-spoke-" + l.toString() + "-code", spokeCode); }
                     else { td.setAttribute("data-spoke-code", spokeCode); }
@@ -1872,7 +1876,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                     fillIndex = parseInt(fills[r][c], 36);
                     td.classList.add("given-fill");
                 } else {
-                    fillIndex = (cellSavedState && cellSavedState.indexOf(",") != 0) ? parseInt(cellSavedState[0], 36) : 0;
+                    fillIndex = (cellSavedState) ? parseInt(cellSavedState[0], 36) : 0;
                 }
                 td.classList.add(this.puzzleEntry.fillClasses[fillIndex]);
             }

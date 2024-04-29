@@ -162,7 +162,7 @@
         <h2>Paths, Edges, and Spokes</h2>
         <p>Since paths, edges, and spokes are made with SVG, they must be styled with the <code>stroke</code> property, not the <code>border</code> property.</p>
         <div class="example">
-            <div class="puzzle-entry color-train-example" data-mode="notext" data-text="4x4" data-edges="2x2" data-path-style="track" data-drag-draw-spoke="true" data-spoke-allowed-directions="+" data-spoke-level="2" data-paths="c6..|.96.|..96|...1"></div>
+            <div class="puzzle-entry color-train-example" data-mode="notext" data-text="4x4" data-edges="2x2" data-path-style="track" data-drag-draw-spoke="true" data-spoke-allowed-directions="+" data-spoke-levels="2" data-paths="c6..|.96.|..96|...1"></div>
         </div>
 
         <h3 id="custom-paths">Custom Paths</h3>
@@ -219,7 +219,7 @@
         <p>Remember that edges are shared between cells, and the right and bottom edge elements will only be used for the right and bottom edges of the grid.</p>
 
         <h3 id="custom-spokes">Custom Spokes</h3>
-        <p>Spokes describe lines that can go in up to 8 directions from any cell. They are similar to paths, except that due to the larger number of angles and intersections, the styling possibilities are more limited. There are two spoke style provided for the <code>data-spoke-style</code> option: <code>solid</code> and <code>dash</code>. Additionally, double spokes are provided in the 4 cardinal directions and correspond to a <code>spoke-level</code> = 2.</p>
+        <p>Spokes describe lines that can go in up to 8 directions from any cell. They are similar to paths, except that due to the larger number of angles and intersections, the styling possibilities are more limited. There are two spoke style provided for the <code>data-spoke-style</code> option: <code>solid</code> and <code>dash</code>. Additionally, double spokes are provided in the 4 cardinal directions and correspond to <code>spoke-levels</code> = 2.</p>
         <p>If something else is desired, you can provide your own SVG file; when the value of <code>data-spoke-style</code> ends with <code>.svg</code>, it will find that SVG file relative to your page. Spoke levels up to 15 are supported for both <code>spoke-n</code> and <code>spoke-ne</code>, with the levels cycling in order. It should be structured like this:</p>
         <div class="example non-interactive">
             <svg viewBox="-10 -10 20 20" xmlns="http://www.w3.org/2000/svg">
