@@ -962,8 +962,8 @@ function PuzzleEntry(p, index) {
         if (!codeTo) { codeTo = 0; } else { codeTo = parseInt(codeTo); }
         var currentSpokeLevel = 0;
         var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
-        if (attributeNameBase === "spoke") {
-            if ((codeFrom & directionFrom) && (codeTo & directionTo)) { currentSpokeLevel++; }
+        if (attributeNameBase.includes("spoke")) {
+            if ((codeFrom & directionFrom) && (codeTo & directionTo) && (attributeNameBase === "spoke")) { currentSpokeLevel++; }
             else {
                 for (var l = 2; l < maxSpokeLevels; l++) {
                     var tempName = "data-spoke-" + l.toString() + "-code";
@@ -973,10 +973,12 @@ function PuzzleEntry(p, index) {
                     if (!tempCodeTo) { tempCodeTo = 0; } else { tempCodeTo = parseInt(tempCodeTo); }
                     if ((tempCodeFrom & directionFrom) && (tempCodeTo & directionTo)) { 
                         currentSpokeLevel = l; 
-                        attributeNameBase = "spoke-" + l.toString();
-                        attributeName = "data-" + attributeNameBase + "-code";
-                        codeFrom = tempCodeFrom;
-                        codeTo = tempCodeTo;
+                        if (attributeNameBase === "spoke") {
+                            attributeNameBase = "spoke-" + l.toString();
+                            attributeName = "data-" + attributeNameBase + "-code";
+                            codeFrom = tempCodeFrom;
+                            codeTo = tempCodeTo;
+                        }
                         break; 
                     }
                 }
@@ -985,8 +987,11 @@ function PuzzleEntry(p, index) {
         var fromGrid = this.puzzleGridFromCell(cellFrom);
         var toGrid = this.puzzleGridFromCell(cellTo);
 
-        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && (currentSpokeLevel === 0) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
+        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
             var otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
+            if ((otherAttributeName === "data-spoke-code") && (currentSpokeLevel > 1)) {
+                otherAttributeName = otherAttributeName.replace("spoke", "spoke-" + currentSpokeLevel.toString());
+            }
             var otherFrom = cellFrom.getAttribute(otherAttributeName);
             var otherTo = cellTo.getAttribute(otherAttributeName);
             if (!otherFrom) { otherFrom = 0; } else { otherFrom = parseInt(otherFrom); }
