@@ -1898,7 +1898,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                     fillIndex = parseInt(fills[r][c], 36);
                     td.classList.add("given-fill");
                 } else {
-                    fillIndex = (cellSavedState) ? parseInt(cellSavedState[0], 36) : 0;
+                    fillIndex = cellSavedState ? parseInt(cellSavedState[0], 36) : 0;
                 }
                 td.classList.add(this.puzzleEntry.fillClasses[fillIndex]);
             }
