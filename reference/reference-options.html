@@ -197,6 +197,37 @@
                 <div class="puzzle-entry" data-mode="notext slitherlink" data-text="4x4"></div>
             </div>
         </div>
+        
+        <div class="mode" data-name="spokes">
+            <p>The <code>spokes</code> mode allows dragging (or shift-arrowing) between cells to draw intersecting lines. The primary difference between spokes and paths are that spokes can emanate from any (or all) 8 directions from within any cell, allowing them to appear to intersect or cross existing spokes.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true">
+    { "data-spokes": [
+    "......'",
+    ".*-*-*.",
+    "..`.X|.",
+    ".*.*.*.",
+    "..'.`|.",
+    ".*.*.*.",
+    "'......"
+    ] }
+</div>
+            </div>
+        </div>
+        
+        <div class="mode" data-name="slant">
+            <p>The <code>slant</code> mode is a specialized version of spokes that only allows drawing in diagonal directions.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext slant" data-text="  1 |   2| 0  |    "></div>
+            </div>
+        </div>
+        
+        <div class="mode" data-name="bridges">
+            <p>The <code>bridges</code> mode is another specialized version of spokes that cycles through single and then double spokes.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext bridges" data-text="  1 | 4 2| 8  |    "></div>
+            </div>
+        </div>
 
         <div class="mode" data-name="solution">
             <p>The <code>solution</code> mode turns off all input, so that a solution can be displayed.</p>
@@ -452,6 +483,27 @@
                 <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-max-directions="2"></div>
             </div>
         </div>
+        <div class="option" data-name="data-spoke-allowed-directions">
+            <p>Limits the directions spokes can be drawn from. The default value of <code>*</code> allows all directions. If a value of <code>+</code> is used, only cardinal directions are allowed. If a value of <code>x</code> is used, only diagonal directions are allowed.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-allowed-directions="*"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-allowed-directions="+"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-allowed-directions="x"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-spoke-levels">
+            <p>The amount of different types of spokes to cycle through each time a spoke is drawn, similar to the way data-fill-cycle operates. The default value of 1 draws a single spoke and then erases it when drawn again. The value of 2 will draw over a single spoke with a double spoke, which is provided in the default spoke svg files, then erases it when drawn over again. Up to 15 levels are supported, but anything beyond the cardinal directional double spokes require custom svg files.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-allowed-directions="+" data-spoke-levels="1"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-spoke-allowed-directions="+" data-spoke-levels="2"></div>
+            </div>
+        </div>
         <div class="option" data-name="data-spoke-style">
             <p>Specifies the way the spokes are drawn. Two drawing styles are provided: <code>solid</code> and <code>dash</code>.</p>
             <p>If the value ends in <code>.svg</code>, it is assumed to be a custom svg file for rendering spokes and the svg is located with a file path relative to the puzzle page. See more information in the <a href="reference-styling.html#custom-spokes">Styling Reference</a>.</p>
@@ -583,7 +635,6 @@
             <p>Specifies a set of extract codes for all cells marked with a <code>#</code> in the <a href="#data-text"><code>data-text</code></a> field. Two cells with the same code anywhere on the page will share their values, permitting the extraction of letters from a puzzle into an answer phrase.</p>
             <p>The format for <code>data-extracts</code> is a set of codes, with spaces between them. Each code is applied to the next occurrence of <code>#</code>.</p>
             <div class="example">
-                <div>
     <div class="puzzle-entry" data-mode="linear" data-text=" #uzzle " data-extracts="2"></div>
     <br/>
     <div class="puzzle-entry" data-mode="linear" data-text="e#tracts" data-extracts="1"></div>

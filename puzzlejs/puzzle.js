@@ -35,6 +35,8 @@ puzzleModes["default"] = {
     // spokes
     "data-spokes": null,
     "data-spoke-max-directions": null,
+    "data-spoke-allowed-directions": "*",
+    "data-spoke-levels": 1,
     "data-spoke-style": "solid",
 
     // clues
@@ -98,17 +100,30 @@ puzzleModes["slitherlink"] = {
     "data-edge-style": "dots"
 }
 
-puzzleModes["solution"] = {
-    "data-no-input": true
+puzzleModes["spokes"] = {
+    "data-drag-draw-spoke": true
 }
 
 puzzleModes["wordsearch"] = {
-    "data-drag-draw-spoke": true,
-    "data-spoke-only-straight": true
+    "data-drag-draw-spoke": true
 }
 
-puzzleModes["spokes"] = {
-    "data-drag-draw-spoke": true
+puzzleModes["slant"] = {
+    "data-drag-draw-spoke": true,
+    "data-spoke-allowed-directions": "x",
+    "data-edge-style": "offset"
+}
+
+puzzleModes["bridges"] = {
+    "data-drag-draw-spoke": true,
+    "data-drag-paint-fill": false,
+    "data-fill-cycle": false,
+    "data-spoke-allowed-directions": "+",
+    "data-spoke-levels": 2
+}
+
+puzzleModes["solution"] = {
+    "data-no-input": true
 }
 
 // Parse string as raw JS objects. e.g. "false" -> false
@@ -522,7 +537,7 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
-                e.currentTarget.classList.toggle("interesting");
+                this.toggleInteresting(e.currentTarget);
             } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
@@ -578,6 +593,14 @@ function PuzzleEntry(p, index) {
 
     this.getText = function(target) {
         return target.querySelector(".text span").innerText;
+    }
+
+    this.toggleInteresting = function(target) {
+        var grid = this.locateGrid(target);
+        var wasInteresting = target.classList.contains("interesting");
+        this.undoManager.startAction(this);
+        this.undoManager.addUnit(grid, target, "class-interesting", wasInteresting ? "interesting" : null, wasInteresting ? null : "interesting");
+        this.undoManager.endAction();
     }
 
     this.precisionHitTestSubregion = function(cell, clientX, clientY, style) {
@@ -725,7 +748,7 @@ function PuzzleEntry(p, index) {
         this.currentFill = null;
 
         if (e.ctrlKey) {
-            e.currentTarget.classList.toggle("interesting");
+            this.toggleInteresting(e.currentTarget);
             e.preventDefault();
             return;
         }
@@ -935,30 +958,72 @@ function PuzzleEntry(p, index) {
         var attributeName = "data-" + attributeNameBase + "-code";
         var codeFrom = cellFrom.getAttribute(attributeName);
         var codeTo = cellTo.getAttribute(attributeName);
-        if (!codeFrom) { codeFrom = 0; }
-        if (!codeTo) { codeTo = 0; }
+        if (!codeFrom) { codeFrom = 0; } else { codeFrom = parseInt(codeFrom); }
+        if (!codeTo) { codeTo = 0; } else { codeTo = parseInt(codeTo); }
+        var currentSpokeLevel = 0;
+        var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
+        if (attributeNameBase.includes("spoke")) {
+            if ((codeFrom & directionFrom) && (codeTo & directionTo) && (attributeNameBase === "spoke")) { currentSpokeLevel++; }
+            else {
+                for (var l = 2; l < maxSpokeLevels; l++) {
+                    var tempName = "data-spoke-" + l.toString() + "-code";
+                    var tempCodeFrom = cellFrom.getAttribute(tempName);
+                    var tempCodeTo = cellTo.getAttribute(tempName);
+                    if (!tempCodeFrom) { tempCodeFrom = 0; } else { tempCodeFrom = parseInt(tempCodeFrom); }
+                    if (!tempCodeTo) { tempCodeTo = 0; } else { tempCodeTo = parseInt(tempCodeTo); }
+                    if ((tempCodeFrom & directionFrom) && (tempCodeTo & directionTo)) { 
+                        currentSpokeLevel = l; 
+                        if (attributeNameBase === "spoke") {
+                            attributeNameBase = "spoke-" + l.toString();
+                            attributeName = "data-" + attributeNameBase + "-code";
+                            codeFrom = tempCodeFrom;
+                            codeTo = tempCodeTo;
+                        }
+                        break; 
+                    }
+                }
+            }
+        }
         var fromGrid = this.puzzleGridFromCell(cellFrom);
         var toGrid = this.puzzleGridFromCell(cellTo);
 
         if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
             var otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
+            if ((otherAttributeName === "data-spoke-code") && (currentSpokeLevel > 1)) {
+                otherAttributeName = otherAttributeName.replace("spoke", "spoke-" + currentSpokeLevel.toString());
+            }
             var otherFrom = cellFrom.getAttribute(otherAttributeName);
             var otherTo = cellTo.getAttribute(otherAttributeName);
+            if (!otherFrom) { otherFrom = 0; } else { otherFrom = parseInt(otherFrom); }
+            if (!otherTo) { otherTo = 0; } else { otherTo = parseInt(otherTo); }
 
             this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom | directionFrom);
             this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo | directionTo);
 
-            if (otherFrom) { this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom & ~directionFrom); }
-            if (otherTo) { this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo & ~directionTo); }
+            if (otherFrom) { this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, parseInt(otherFrom), parseInt(otherFrom) & ~directionFrom); }
+            if (otherTo) { this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, parseInt(otherTo), parseInt(otherTo) & ~directionTo); }
             return true;
         }
         else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
             var givenAttributeName = "data-given-" + attributeNameBase + "-code";
             var givenCodeFrom = cellFrom.getAttribute(givenAttributeName);
             var givenCodeTo = cellTo.getAttribute(givenAttributeName);
+            if (!givenCodeFrom) { givenCodeFrom = 0; } else { givenCodeFrom = parseInt(givenCodeFrom); }
+            if (!givenCodeTo) { givenCodeTo = 0; } else { givenCodeTo = parseInt(givenCodeTo); }
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
                 this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom);
                 this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo & ~directionTo);
+
+                if ((currentSpokeLevel > 0) && ((currentSpokeLevel + 1) < maxSpokeLevels) && attributeNameBase.includes("spoke")) {
+                    var otherAttributeName = "data-spoke-" + (currentSpokeLevel + 1).toString() + "-code";
+                    var otherFrom = cellFrom.getAttribute(otherAttributeName);
+                    var otherTo = cellTo.getAttribute(otherAttributeName);
+                    if (!otherFrom) { otherFrom = 0; } else { otherFrom = parseInt(otherFrom); }
+                    if (!otherTo) { otherTo = 0; } else { otherTo = parseInt(otherTo); }
+                    this.undoManager.addUnit(fromGrid, cellFrom, otherAttributeName, otherFrom, otherFrom | directionFrom);
+                    this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo | directionTo);
+                }
+
                 if (this.options["data-drag-paint-fill"]) {
                     if ((codeFrom & ~directionFrom) == 0 && !attributeNameBase.startsWith("x-") && !cellFrom.classList.contains("given-fill")) {
                         this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses ? this.fillClasses[0] : null);
@@ -1029,6 +1094,8 @@ function PuzzleEntry(p, index) {
             var colTo = parseInt(partsTo[2]);
     
             if ((colFrom === colTo && rowFrom === rowTo) || Math.abs(colFrom - colTo) > 1 || Math.abs(rowFrom - rowTo) > 1) return false;
+            if (((this.options["data-spoke-allowed-directions"] === "x") || (this.options["data-spoke-allowed-directions"] === "X")) && ((colFrom === colTo) || (rowFrom === rowTo))) return false;
+            if ((this.options["data-spoke-allowed-directions"] === "+") && (colFrom !== colTo) && (rowFrom !== rowTo)) return false;
     
             var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
             fromDir = fromVals[index];
@@ -1317,18 +1384,33 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (!givenPathCode) givenPathCode = 0;
             var pathCodeDelta = pathCode ^ givenPathCode;
 
-            var spokeCode = td.getAttribute("data-spoke-code");
-            var givenSpokeCode = td.getAttribute("data-given-spoke-code");
-            if (!spokeCode) spokeCode = 0;
-            if (!givenSpokeCode) givenSpokeCode = 0;
-            var spokeCodeDelta = spokeCode ^ givenSpokeCode;
+            var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
+            var spokeCodes = new Array(maxSpokeLevels);
+            var spokeDelta = false;
+            for (var l = 1; l < maxSpokeLevels; l++) {
+                var code;
+                var givenCode;
+                if (l > 1) { code = td.getAttribute("data-spoke-" + l.toString() + "-code"); givenCode = td.getAttribute("data-given-spoke-" + l.toString() + "-code"); }
+                else { code = td.getAttribute("data-spoke-code"); givenCode = td.getAttribute("data-given-spoke-code"); }
+                if (!code) { code = 0; }
+                if (!givenCode) { givenCode = 0; }
+                spokeCodes[l] = code ^ givenCode;
+                if (code ^ givenCode) { spokeDelta = true; }
+            }
 
             var text = td.classList.contains("given-text") ? "" : td.querySelector(".text").innerText.trim();
 
+            var interesting = td.classList.contains("interesting");
+
             var cellState = "";
-            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeCodeDelta || text) {
+            if (fillIndex || edgeCodeDelta || pathCodeDelta || spokeDelta || text || interesting) {
                 hasState = true;
-                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16) + (spokeCodeDelta >> 4).toString(16) + (spokeCodeDelta % 16).toString(16);
+                cellState = fillIndex.toString(36) + edgeCodeDelta.toString(16) + pathCodeDelta.toString(16);
+                for (var l = 1; l < maxSpokeLevels; l++) {
+                    cellState += (spokeCodes[l] >> 4).toString(16);
+                    cellState += (spokeCodes[l] % 16).toString(16);
+                }
+                if (interesting) { cellState += "!"; }
                 if (text) { cellState += "," + text; }
             }
 
@@ -1367,6 +1449,10 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                         this.puzzleEntry.fillClasses.forEach(fc => elem.classList.remove(fc));
                         if (c.value) { elem.classList.add(c.value); }
                         break;
+                    case "class-interesting":
+                        if (c.value) { elem.classList.add("interesting"); }
+                        else { elem.classList.remove("interesting"); }
+                        break;
                     default:
                         if (c.propertyKey.endsWith("-code") && !svgChangedElems.includes(elem)) { svgChangedElems.push(elem); }
                         elem.setAttribute(c.propertyKey, c.value);
@@ -1388,15 +1474,15 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         svg.appendChild(use);
     }
 
-    this.addSpokesToSvg = function(svg, spokeCode, spokePrefix) {
+    this.addSpokesToSvg = function(svg, spokeCode, spokePrefix, spokeSuffix) {
         for (var i = 0; i < 8; i++) {
             if (!(spokeCode & (1 << i))) continue;
 
             var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-            use.classList.add(spokePrefix + "spoke");
+            use.classList.add(spokePrefix + "spoke" + spokeSuffix);
             var spokePath = this.options["data-spoke-style"];
             if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
-            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : ""));
+            use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : "") + spokeSuffix);
             if (i > 1) { use.setAttributeNS(null, "transform", "rotate(" + ((i >> 1) * 90) + ")"); }
             svg.appendChild(use);
         }
@@ -1452,8 +1538,12 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         if (edgeCode & 4) { this.addEdgeToSvg(svg, "x-edge-left"); }
         if (edgeCode & 8) { this.addEdgeToSvg(svg, "x-edge-right"); }
 
-        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "");
-        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-");
+        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "", "");
+        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-", "");
+        var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
+        for (var l = 2; l < maxSpokeLevels; l++) {
+            this.addSpokesToSvg(svg, td.getAttribute("data-spoke-" + l.toString() + "-code"), "", "-" + l.toString());
+        }
         if (this.options["data-drag-draw-spoke"] && td === this.puzzleEntry.currentCenterFocus) {
             this.addReticleLayer(svg, "reticle-back");
             this.addReticleLayer(svg, "reticle-front");
@@ -1512,7 +1602,15 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     var solution = puzzleEntry.getOptionArray(this.options, "data-text-solution", "|");
     var edges = puzzleEntry.getOptionArray(this.options, "data-edges", "|");
     var paths = puzzleEntry.getOptionArray(this.options, "data-paths", "|");
-    var spokes = puzzleEntry.getOptionArray(this.options, "data-spokes", "|");
+    var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
+    var spokes = new Array(maxSpokeLevels);
+    for (var l = 1; l < maxSpokeLevels; l++) {
+        var spoke;
+        if (l > 1) { spoke = puzzleEntry.getOptionArray(this.options, "data-spokes-" + l.toString(), "|"); }
+        else { spoke = puzzleEntry.getOptionArray(this.options, "data-spokes", "|"); }
+        if (!spoke) { spoke = ""; }
+        spokes[l] = spoke;
+    }
     var extracts = puzzleEntry.getOptionArray(this.options, "data-extracts", " ");
     var topClues = puzzleEntry.getOptionArray(this.options, "data-top-clues", "|");
     var bottomClues = puzzleEntry.getOptionArray(this.options, "data-bottom-clues", "|");
@@ -1636,10 +1734,12 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             }
 
             if (cellSavedState && cellSavedState.indexOf(",") >= 0) {
+                if ((cellSavedState.indexOf("!") >= 0) && (cellSavedState.indexOf("!") < cellSavedState.indexOf(","))) { td.classList.add("interesting"); }
                 var savedText = cellSavedState.substring(cellSavedState.indexOf(",") + 1).trim();
                 text.innerText = savedText;
                 if (savedText && savedText.length > 1) { td.classList.add("small-text"); }
             }
+            else if (cellSavedState && cellSavedState.indexOf("!") >= 0) { td.classList.add("interesting"); }
 
             if (!td.classList.contains("unselectable")) {
                 if (allowInput) {
@@ -1720,34 +1820,41 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
             if (pathCode) { td.setAttribute("data-path-code", pathCode); }
 
-            var spokeCode = 0;
-            if (spokes) {
-                var topRow = spokes[r * 2];
-                var midRow = spokes[r * 2 + 1];
-                var botRow = spokes[r * 2 + 2];
-                var chN = topRow[c * 2 + 1];
-                var chNE = topRow[c * 2 + 2];
-                var chE = midRow[c * 2 + 2];
-                var chSE = botRow[c * 2 + 2];
-                var chS = botRow[c * 2 + 1];
-                var chSW = botRow[c * 2];
-                var chW = midRow[c * 2];
-                var chNW = topRow[c * 2];
-                if (chN != " " && chN != ".") { spokeCode |= 1; }
-                if (chNE == "/" || chNE == "'" || chNE == "X" || chNE == "x") { spokeCode |= 2; }
-                if (chE != " " && chE != ".") { spokeCode |= 4; }
-                if (chSE == "\\" || chSE == "`" || chSE == "X" || chSE == "x") { spokeCode |= 8; }
-                if (chS != " " && chS != ".") { spokeCode |= 16; }
-                if (chSW == "/" || chSW == "'" || chSW == "X" || chSW == "x") { spokeCode |= 32; }
-                if (chW != " " && chW != ".") { spokeCode |= 64; }
-                if (chNW == "\\" || chNW == "`" || chNW == "X" || chNW == "x") { spokeCode |= 128; }
+            for (var l = 1; l < maxSpokeLevels; l++) {
+                var spokeCode = 0;
+                if (spokes[l]) {
+                    var spoke = spokes[l];
+                    var topRow = spoke[r * 2];
+                    var midRow = spoke[r * 2 + 1];
+                    var botRow = spoke[r * 2 + 2];
+                    var chN = topRow[c * 2 + 1];
+                    var chNE = topRow[c * 2 + 2];
+                    var chE = midRow[c * 2 + 2];
+                    var chSE = botRow[c * 2 + 2];
+                    var chS = botRow[c * 2 + 1];
+                    var chSW = botRow[c * 2];
+                    var chW = midRow[c * 2];
+                    var chNW = topRow[c * 2];
+                    if (chN != " " && chN != ".") { spokeCode |= 1; }
+                    if (chNE == "/" || chNE == "'" || chNE == "X" || chNE == "x") { spokeCode |= 2; }
+                    if (chE != " " && chE != ".") { spokeCode |= 4; }
+                    if (chSE == "\\" || chSE == "`" || chSE == "X" || chSE == "x") { spokeCode |= 8; }
+                    if (chS != " " && chS != ".") { spokeCode |= 16; }
+                    if (chSW == "/" || chSW == "'" || chSW == "X" || chSW == "x") { spokeCode |= 32; }
+                    if (chW != " " && chW != ".") { spokeCode |= 64; }
+                    if (chNW == "\\" || chNW == "`" || chNW == "X" || chNW == "x") { spokeCode |= 128; }
 
-                if (spokeCode) { td.setAttribute("data-spoke-code", spokeCode); td.setAttribute("data-given-spoke-code", spokeCode); }
+                    if (spokeCode) { 
+                        if (l > 1) { td.setAttribute("data-spoke-" + l.toString() + "-code", spokeCode); td.setAttribute("data-given-spoke-" + l.toString() + "-code", spokeCode); }
+                        else { td.setAttribute("data-spoke-code", spokeCode); td.setAttribute("data-given-spoke-code", spokeCode); }
+                     }
+                }
+                if (cellSavedState) { spokeCode ^= (parseInt(cellSavedState[l * 2 + 1], 16) * 16 + parseInt(cellSavedState[l * 2 + 2], 16)); }
+                if (spokeCode) { 
+                    if (l > 1) { td.setAttribute("data-spoke-" + l.toString() + "-code", spokeCode); }
+                    else { td.setAttribute("data-spoke-code", spokeCode); }
+                }
             }
-            if (cellSavedState && cellSavedState.length > 4 && (cellSavedState.indexOf(",") > 4 || cellSavedState.indexOf(",") < 0)) {
-                spokeCode ^= (parseInt(cellSavedState[3], 16) * 16 + parseInt(cellSavedState[4], 16));
-            }
-            if (spokeCode) { td.setAttribute("data-spoke-code", spokeCode); }
 
             if (this.options["data-clue-locations"] && textLines[r][c] != '@') {
                 var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
