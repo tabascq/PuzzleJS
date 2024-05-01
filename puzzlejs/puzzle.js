@@ -1014,7 +1014,7 @@ function PuzzleEntry(p, index) {
                 this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom);
                 this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo & ~directionTo);
 
-                if ((currentSpokeLevel > 0) && ((currentSpokeLevel + 1) < maxSpokeLevels)) {
+                if ((currentSpokeLevel > 0) && ((currentSpokeLevel + 1) < maxSpokeLevels) && attributeNameBase.includes("spoke")) {
                     var otherAttributeName = "data-spoke-" + (currentSpokeLevel + 1).toString() + "-code";
                     var otherFrom = cellFrom.getAttribute(otherAttributeName);
                     var otherTo = cellTo.getAttribute(otherAttributeName);
