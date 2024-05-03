@@ -172,6 +172,7 @@
     color: black;
     font-weight: normal;
     font-family: sans-serif;
+    text-transform: none;
 }
 
 .puzzle-entry .small-text {

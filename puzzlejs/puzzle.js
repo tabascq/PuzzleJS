@@ -1429,7 +1429,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             var primary = this.lookup[c.locationKey];
 
             var extractId = primary.getAttribute("data-extract-id");
-            var elems = extractId ? document.querySelectorAll("table:not(.copy-only) ." + extractId) : [primary];
+            var elems = extractId ? document.querySelectorAll("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']") : [primary];
 
             elems.forEach(elem => {
                 if (!changedElems.includes(elem)) { changedElems.push(elem); }
