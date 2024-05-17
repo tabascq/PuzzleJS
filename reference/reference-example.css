@@ -11,6 +11,7 @@
     justify-content: space-between;
     align-items: start;
     gap: 1rem;
+    page-break-inside: avoid;
 }
 
 .example pre {
@@ -38,4 +39,8 @@
 
 .example .puzzle-entry[data-show-commands=true] {
     padding: 20px 30px;
+}
+
+@media print {
+    .example { flex-direction: column; }
 }

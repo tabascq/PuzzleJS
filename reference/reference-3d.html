@@ -1,0 +1,85 @@
+<!-- (c) 2024 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<html>
+    <head>
+        <title>Puzzle.js Reference: 3D</title>
+        <link rel="stylesheet" href="reference-example.css"/>
+        <script type="text/javascript" src="reference-example.js"></script>
+        <link rel="stylesheet" href="../puzzlejs/puzzle.css"/>
+        <link rel="stylesheet" href="../puzzlejs/puzzle-box.css"/>
+        <link rel="stylesheet" href="../puzzlejs/puzzle-basic-colors.css"/>
+        <script type="text/javascript" src="../puzzlejs/puzzle.js"></script>
+        <script type="text/javascript" src="../puzzlejs/puzzle-box.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".puzzle-grid").forEach((g) => { g.puzzleGrid.prepareToReset(); });
+            });
+        </script>
+        <style>
+            body {
+                padding: 1rem;
+            }
+
+            h1, h2, p, li {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            h3 {
+                font-family: monospace;
+            }
+
+            code {
+                background-color: #ddf;
+            }
+
+            .bigtrain-example { --puzzle-cell-size: 30px; }
+            .bigtrain-example .path { stroke: brown; }
+        </style>
+    </head>
+    <body>
+        <h1>Puzzle.js Reference: 3D</h1>
+        <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
+        <h2>3D</h2>
+        <p><i>Note: 3D support is in beta at this point, and the support for it is in two files that are auxiliary to puzzle.js. To use it, add <code>puzzle-box.js</code> and <code>puzzle-box.css</code> to your HTML. 3D support will likely move directly into puzzle.js and puzzle.css once it leaves beta.</i></p>
+        <p>3D support is built atop the <a href="reference-subgrids.html">Subgrids</a> feature.</p>
+        <p>To mark a puzzle for 3D, add a <code>puzzle-box</code> class on your <code>puzzle-entry</code>, and add six subgrids. Mark each subgrid with one of the following: <code>side-front</code>, <code>side-back</code>, <code>side-left</code>, <code>side-right</code>, <code>side-up</code>, and <code>side-down</code>. The subgrids can be provided in any order. Note that this example is leveraging the subgrid feature of applying any option defined on the parent (in this case <code>data-text</code>) to all subgrids. Subgrids can also override where desired.</p>
+        <div class="example">
+            <div class="puzzle-entry puzzle-box" data-text="3x3">
+    <div class="puzzle-grid side-front"></div>
+    <div class="puzzle-grid side-back"></div>
+    <div class="puzzle-grid side-left"></div>
+    <div class="puzzle-grid side-right"></div>
+    <div class="puzzle-grid side-up" data-text="I  |AM |3D!"></div>
+    <div class="puzzle-grid side-down"></div>
+</div>
+        </div>
+
+        <p>3D puzzles are currently limited to <i>boxes</i>, but they need not be <i>cubes</i>.</p>
+        <div class="example">
+            <div class="puzzle-entry puzzle-box">
+    <div class="puzzle-grid side-front" data-text="3x2"></div>
+    <div class="puzzle-grid side-back" data-text="3x2"></div>
+    <div class="puzzle-grid side-left" data-text="4x2"></div>
+    <div class="puzzle-grid side-right" data-text="4x2"></div>
+    <div class="puzzle-grid side-up" data-text="3x4"></div>
+    <div class="puzzle-grid side-down" data-text="3x4"></div>
+</div>
+        </div>
+
+        <p>The subgrid faces of a box support all the behavior and styling that a 2D <code>puzzle-entry</code> supports. Any functionality that links cells (like edges, paths, and spokes) will work between faces, such as this train-track example.</p>
+        <div class="example">
+            <div class="bigtrain-example" style="background-color: #EEE">
+    <div style="text-align: center; margin-top: 10px;">Drag between cells to make train tracks.</div>            
+    <div class="puzzle-entry puzzle-box" data-mode="trains notext" data-text="5x5" data-show-commands="true">
+        <div class="puzzle-grid side-front"></div>
+        <div class="puzzle-grid side-back"></div>
+        <div class="puzzle-grid side-left"></div>
+        <div class="puzzle-grid side-right"></div>
+        <div class="puzzle-grid side-up"></div>
+        <div class="puzzle-grid side-down"></div>
+    </div>
+</div>
+        </div>
+</body>
+</html>

@@ -1,0 +1,218 @@
+.side-up {
+    width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-LtoR));
+    height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+}
+
+.side-left {
+    width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+    height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-UtoD));
+}
+
+.side-front {
+    width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-LtoR));
+    height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-UtoD));
+}
+
+.side-right {
+    width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+    height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-UtoD));
+}
+
+.side-back {
+    width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-LtoR));
+    height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-UtoD));
+}
+
+.side-down {
+    width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-LtoR));
+    height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+}
+
+@media screen {
+    .puzzle-entry.puzzle-box {
+        background-color: #EEE;
+        width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size) * 2);
+        padding: 10px 5px;
+        gap: 5px;
+    }
+
+    .puzzle-box .puzzle-entry-content {
+        position: relative;
+        width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size) * 2);
+        height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size) * 1.8);
+    }
+
+    .puzzle-box .puzzle-box-perspective {
+        width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size));
+        height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size));
+        transform-style: preserve-3d;
+        transform: rotateX(-22deg) rotateY(-38deg) rotateZ(0deg);
+        margin: auto;
+        position: relative;
+    }
+
+    .puzzle-box .puzzle-box-animator {
+        width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size));
+        height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size));
+        transform-style: preserve-3d;
+    }
+
+    .puzzle-box .puzzle-box-rotator {
+        width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size));
+        height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size));
+        transform-style: preserve-3d;
+    }
+
+    .puzzle-box .puzzle-grid {
+        position: absolute;
+        background-color: #fff;
+        opacity: 0.9;
+    }
+
+    .puzzle-box .puzzle-box-rotate-direction {
+        font-size: 16px;
+        text-align: center;
+    }
+
+    .puzzle-box .puzzle-box-rotate-direction a {
+        color: blue;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .puzzle-rotation-pair {
+        position: absolute;
+        display: flex;
+        flex-direction: row;
+    }
+
+    .rotation-pair-ud {
+        top: 94%;
+        left: 55%;
+        transform: translate(-50%, -50%);
+    }
+
+    .rotation-pair-lr {
+        top: 23%;
+        left: 10%;
+        transform: translate(-50%, -50%) rotate(-55deg);
+    }
+
+    .rotation-pair-fb {
+        top: 19%;
+        left: 90%;
+        transform: translate(-50%, -50%) rotate(55deg);
+    }
+
+    .puzzle-rotation-button {
+        position: relative;
+        width: var(--puzzle-cell-size);
+        height: var(--puzzle-cell-size);
+        font-size: calc(var(--puzzle-cell-size) * 0.60);
+    }
+
+    .puzzle-rotation-button::after {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .puzzle-rotation-button.rotate-back::after {
+        content: "<";
+        cursor: pointer;
+    }
+
+    .puzzle-rotation-button.rotate-forward::after {
+        content: ">";
+        cursor: pointer;
+    }
+
+    .side-up {
+        transform: translateX(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-LtoR)) / 2)) translateY(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-FtoB)) / 2)) rotateX(90deg) translateZ(calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-UtoD) / 2));
+    }
+
+    .side-left {
+        transform: translateX(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-FtoB)) / 2)) translateY(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-UtoD)) / 2)) rotateY(-90deg) translateZ(calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-LtoR) / 2));
+    }
+
+    .side-front {
+        transform: translateX(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-LtoR)) / 2)) translateY(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-UtoD)) / 2)) translateZ(calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB) / 2));
+    }
+
+    .side-right {
+        transform: translateX(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-FtoB)) / 2)) translateY(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-UtoD)) / 2)) rotateY(90deg) translateZ(calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-LtoR) / 2));
+    }
+
+    .side-back {
+        transform: translateX(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-LtoR)) / 2)) translateY(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-UtoD)) / 2)) rotateY(180deg) rotateZ(180deg) translateZ(calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB) / 2));
+    }
+
+    .side-down {
+        transform: translateX(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-LtoR)) / 2)) translateY(calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size) - var(--puzzle-grid-size-FtoB)) / 2)) rotateX(-90deg) translateZ(calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-UtoD) / 2));
+    }
+
+    .puzzle-box-instructions {
+        text-align: center;
+        font-style: italic;
+        width: 100%;
+    }
+}
+
+@media print {
+    .puzzle-box {
+        margin: 20px auto;
+        padding: 20px 0px;
+        break-inside: avoid;
+    }
+
+    .puzzle-box .puzzle-entry-content {
+        width: calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size-FtoB) * 2 + var(--puzzle-grid-size-LtoR)));
+        height: calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size-FtoB) + var(--puzzle-grid-size-UtoD)) * 2);
+        position: relative;
+    }
+
+    .puzzle-box .puzzle-grid {
+        position: absolute;
+        border: 2px solid black;
+    }
+
+    .side-up {
+        top: 0px;
+        left: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+    }
+
+    .side-left {
+        top: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+        left: 0px;
+    }
+
+    .side-front {
+        top: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+        left: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+    }
+
+    .side-right {
+        top: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+        left: calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size-FtoB) + var(--puzzle-grid-size-LtoR)));
+    }
+
+    .side-back {
+        top: calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size-FtoB) * 2 + var(--puzzle-grid-size-UtoD)));
+        left: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+    }
+
+    .side-down {
+        top: calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size-FtoB) + var(--puzzle-grid-size-UtoD)));
+        left: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size-FtoB));
+    }
+
+    .puzzle-box-instructions {
+        display: none;
+    }
+
+    .puzzle-box-rotate-direction {
+        display: none;
+    }
+
+}
