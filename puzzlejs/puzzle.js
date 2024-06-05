@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function resetAllPuzzleStateOnPage() {
-    document.querySelectorAll(".puzzle-grid").forEach((g) => { g.puzzleGrid.prepareToReset(); });
+    document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
     window.location.reload();
 }
 
@@ -1231,6 +1231,8 @@ function PuzzleEntry(p, index) {
         this.container.querySelector(".puzzle-about-close").addEventListener("keyup", e => { if (e.keyCode == 27 || e.keyCode == 13) this.closeAbout(); });
     }
 
+    this.prepareToReset = function() { this.puzzleGrids.forEach(g => { g.prepareToReset(); }); }
+
     // --- Construct the interactive player. ---
     this.fillClasses = this.getOptionArray(this.options, "data-fill-classes", " ");
 
@@ -1281,7 +1283,7 @@ function PuzzleEntry(p, index) {
         this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
         this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
         // TODO shouldn't need a reload
-        this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { this.puzzleGrids.forEach(g => { g.prepareToReset(); }); window.location.reload(); });
+        this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { this.prepareToReset(); window.location.reload(); });
 
         this.container.appendChild(this.commands);
     }
