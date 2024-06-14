@@ -40,6 +40,7 @@
         position: relative;
         width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size) * 2);
         height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size) * 1.8);
+        gap: 0px;
     }
 
     .puzzle-box .puzzle-box-perspective {
