@@ -40,7 +40,6 @@
         position: relative;
         width: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size) * 2);
         height: calc(var(--puzzle-cell-size) * var(--puzzle-grid-size) * 1.8);
-        gap: 0px;
     }
 
     .puzzle-box .puzzle-box-perspective {
@@ -171,6 +170,7 @@
         width: calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size-FtoB) * 2 + var(--puzzle-grid-size-LtoR)));
         height: calc(var(--puzzle-cell-size) * (var(--puzzle-grid-size-FtoB) + var(--puzzle-grid-size-UtoD)) * 2);
         position: relative;
+        gap: 0px;
     }
 
     .puzzle-box .puzzle-grid {
