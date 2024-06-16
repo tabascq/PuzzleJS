@@ -262,7 +262,7 @@ function PuzzleEntry(p, index) {
     this.lastCell = null;
     this.currentFill = null;
     this.puzzleId = this.options["data-puzzle-id"];
-    if (!this.puzzleId) { this.puzzleId = window.location.pathname + "|" + index; }
+    if (!this.puzzleId) { this.puzzleId = (document.body.getAttribute("data-puzzle-page-id") ?? window.location.pathname) + "|" + index; }
     this.xKeyMode = false;
     this.tilt = 0;
     this.reticleXMode = false;
