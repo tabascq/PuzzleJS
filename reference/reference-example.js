@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (classes) classes += "\n";
         
         let code = document.createElement("pre");
-        code.innerText = classes + example.innerHTML.trim();
+        code.innerText = classes + example.innerHTML.replace(/&amp;/g,'&').trim();
         example.insertBefore(code, example.firstChild);
     });
 });

@@ -470,7 +470,7 @@ function PuzzleEntry(p, index) {
     }
 
     this.handleEventChar = function(e, ch) {
-        if (e.shiftKey || this.options["data-text-shift-lock"]) {
+        if (this.options["data-text-shift-key"] != "none" && (e.shiftKey || this.options["data-text-shift-lock"])) {
             var val = this.getText(e.target).replace("\xa0", " ");
             if (this.options["data-text-shift-key"] == "rebus" || !val.includes(ch)) { val = val + ch; }
             else { val = val.replace(ch, ""); }
@@ -554,6 +554,8 @@ function PuzzleEntry(p, index) {
             var code = e.keyCode;
             if (code >= 96 && code <= 105) { code -= 48; }
             var ch = String.fromCharCode(code);
+
+            if (this.options["data-text-shift-key"] == "none" && e.key.length == 1) { ch = e.key; }
 
             if (this.options["data-text-characters"].includes(ch)) {
                 this.handleEventChar(e, ch);
@@ -1185,7 +1187,7 @@ function PuzzleEntry(p, index) {
                 lines.push("<tr><td>Single-character text entry</td><td>Type to replace; Backspace/Del to clear</td><td>N/A</td></tr>");
                 if (this.options["data-text-shift-key"] == "rebus") {
                     lines.push("<tr><td>Rebus clue text entry</td><td>Shift-Type to append; Shift-Backspace to remove</td><td>N/A</td></tr>");
-                } else {
+                } else if (this.options["data-text-shift-key"] == "candidates") {
                     lines.push("<tr><td>Candidate-value text entry</td><td>Shift-Type to toggle a character</td><td>N/A</td></tr>");
                 }
             }
