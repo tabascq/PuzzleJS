@@ -555,7 +555,7 @@ function PuzzleEntry(p, index) {
             if (code >= 96 && code <= 105) { code -= 48; }
             var ch = String.fromCharCode(code);
 
-            if (this.options["data-text-shift-key"] == "none" && e.key.length == 1) { ch = e.key; }
+            if (this.options["data-text-shift-key"] == "none" && e.key.length == 1) { ch = e.key.toUpperCase(); }
 
             if (this.options["data-text-characters"].includes(ch)) {
                 this.handleEventChar(e, ch);
