@@ -735,8 +735,15 @@ function PuzzleEntry(p, index) {
         this.undoManager.endAction();
     }
 
+    this.endPointerIsDown = function() {
+        if (!this.pointerIsDown) return;
+
+        this.pointerIsDown = false;
+        this.puzzleGrids.forEach(p => { p.saveState(); });
+    }
+
     this.pointerDown = function(e) {
-        if (this.pointerIsDown) { this.pointerIsDown = false; return; }
+        if (this.pointerIsDown) { this.endPointerIsDown(); return; }
 
         this.pointerIsDown = true;
 
@@ -801,7 +808,7 @@ function PuzzleEntry(p, index) {
     }
 
     this.pointerCancel = function(e) {
-        this.pointerIsDown = false;
+        this.endPointerIsDown();
     }
 
     this.dragBetweenCells = function(to, rightMouse) {
@@ -1305,7 +1312,7 @@ function PuzzleEntry(p, index) {
             clue.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
         });
 
-        window.addEventListener("pointerup", e => {this.pointerIsDown = false; });
+        window.addEventListener("pointerup", e => { this.endPointerIsDown(); });
 
         document.addEventListener("keyup", function(e) { this.fShift = e.shiftKey; });
         document.addEventListener("keydown", function(e) { this.fShift = e.shiftKey; });
@@ -1321,6 +1328,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     this.container.puzzleGrid = this;
     this.puzzleId = puzzleId;
     this.tilt = 0;
+    this.stateDirty = false;
 
     this.inhibitSave = false;
 
@@ -1354,20 +1362,27 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     this.prepareToReset = function() {
         localStorage.removeItem(this.puzzleId);
+        this.inhibitSave = true;
 
-        this.container.querySelectorAll(".inner-cell.extract .text span").forEach(s => {
+        var changedGrids = [];
+
+        this.container.querySelectorAll(".inner-cell.extract").forEach(s => {
             var extractId = s.getAttribute("data-extract-id");
 
             if (extractId) {
-                document.querySelectorAll("." + extractId).forEach(elem => { elem.innerText = ""; });
+                document.querySelectorAll("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']").forEach(elem => {
+                    elem.querySelector(".text span").innerText = "";
+                    var grid = this.puzzleEntry.puzzleGridFromCell(elem);
+                    if (!changedGrids.includes(grid) && grid != this) { changedGrids.push(grid); }
+                });
             }
         });
 
-        this.inhibitSave = true;
+        changedGrids.forEach(g => { g.stateDirty = true; g.saveState(); });
     }
 
     this.saveState = function() {
-        if (this.inhibitSave) return;
+        if (this.inhibitSave || !this.stateDirty) return;
 
         var stateArray = [];
         var hasState = false;
@@ -1423,11 +1438,14 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
         if (hasState) { localStorage.setItem(this.puzzleId, stateArray.join("|")); }
         else { localStorage.removeItem(this.puzzleId); }
+
+        this.stateDirty = false;
     }
 
     this.changeWithoutUndo = function(changes) {
         var changedElems = [];
         var svgChangedElems = [];
+        var changedGrids = [];
 
         changes.forEach(c => {
             var primary = this.lookup[c.locationKey];
@@ -1437,6 +1455,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
             elems.forEach(elem => {
                 if (!changedElems.includes(elem)) { changedElems.push(elem); }
+                var grid = this.puzzleEntry.puzzleGridFromCell(elem);
+                if (!changedGrids.includes(grid)) { changedGrids.push(grid); }
 
                 if (c.playerId) { elem.setAttribute("data-coop-" + c.propertyKey.replace("data-", "") + "-playerId", c.playerId); }
 
@@ -1467,6 +1487,9 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
         svgChangedElems.forEach(el => { this.updateSvg(el); });
         changedElems.forEach(el => { this.processTdForCopyjack(el); });
+
+        changedGrids.forEach(g => { g.stateDirty = true; });
+        if (!this.puzzleEntry.pointerIsDown) { changedGrids.forEach(g => { g.saveState(); }) }
     }
 
     this.addEdgeToSvg = function(svg, edgeName) {
@@ -1955,9 +1978,5 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                 this.processTdForCopyjack(td);
             }
         }
-    }
-
-    if (allowInput) {
-        window.addEventListener("beforeunload", e => { this.saveState(); });
     }
 }
