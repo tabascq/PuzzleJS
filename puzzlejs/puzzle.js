@@ -2003,6 +2003,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     if (this.puzzleEntry.isUsingCopyjack) {
         // Set no-copy on this table.
         table.classList.add('no-copy');
+        table.setAttribute("aria-hidden", true);
         // Create a copy-only table and insert it.
         this.copyjackVersion = document.createElement('table');
         this.copyjackVersion.classList.add('copy-only');
