@@ -1338,24 +1338,29 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         return clueDepth;    
     }
 
-    this.addEmptyOuterCell = function(tr) {
+    this.addEmptyOuterCell = function(tr, colIndex) {
         var td = document.createElement("td");
+        td.ariaColIndex = colIndex;
+        td.ariaLabel = "An empty cell in the outer clue area";
         td.classList.add("cell");
         td.classList.add("outer-cell");
         td.classList.add("unselectable");
         tr.appendChild(td);
     }
 
-    this.addOuterClue = function(tr, clues, clueIndex, cls) {
+    this.addOuterClue = function(tr, clues, clueIndex, colIndex, zone) {
         var td = document.createElement("td");
+        td.ariaColIndex = colIndex;
+        td.ariaLabel = "An external clue in the " + zone + " area";
         td.classList.add("cell");
         td.classList.add("outer-cell");
         if (clueIndex >= 0 && clueIndex < clues.length && clues[clueIndex]) {
+            td.ariaLabel = clues[clueIndex] + ": A clue in the " + zone + " clue area";
             td.textContent = clues[clueIndex];
-            td.classList.add(cls);
+            td.classList.add(zone + "-clue");
             td.addEventListener("pointerdown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else if (e.shiftKey) { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
             td.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
-        } else { td.classList.add("unselectable"); }
+        } else { td.classList.add("unselectable"); td.ariaLabel = "An empty clue in the " + zone + " area" }
 
         tr.appendChild(td);
     }
@@ -1486,7 +1491,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         });
 
         svgChangedElems.forEach(el => { this.updateSvg(el); });
-        changedElems.forEach(el => { this.processTdForCopyjack(el); });
+        changedElems.forEach(el => { this.processTdForCopyjack(el); this.updateLabel(el); });
 
         changedGrids.forEach(g => { g.stateDirty = true; });
         if (!this.puzzleEntry.pointerIsDown) { changedGrids.forEach(g => { g.saveState(); }) }
@@ -1530,6 +1535,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         var svg = td.querySelector("svg");
         if (!svg) {
             svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("aria-hidden", true);
             svg.setAttribute("viewBox", "-15 -15 30 30");
             if (!this.canDrawOnEdges) { svg.classList.add("nopointer"); }
             td.appendChild(svg);
@@ -1575,6 +1581,33 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             this.addReticleLayer(svg, "reticle-back");
             this.addReticleLayer(svg, "reticle-front");
         }
+    }
+
+    this.updateLabel = function(td) {
+        var label = "";
+
+        // clue
+        const clue = td.querySelector(".clue");
+        if (clue) label += `crossword clue is ${clue.innerText}, `;
+
+        // content
+        var cellContent = "blank";
+        const text = td.querySelector('.text span');
+        if (text && text.innerText) { cellContent = text.innerText; }
+        label += `content is ${cellContent}`;
+
+        // extract
+        if (td.classList.contains("extract")) {
+            label += " highlighted for extraction";
+            var extractId = td.getAttribute("data-extract-id");
+            if (extractId) label += `, with code ${extractId}. `;
+        }
+
+        // fill
+        // border
+        // path
+        // stroke
+        td.ariaLabel = label;
     }
 
     this.translate = function(ch, replacements) {
@@ -1693,9 +1726,10 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     for (var i = 0; i < this.topClueDepth; i++) {
         var tr = document.createElement("tr");
-        for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr); }
-        for (var j = 0; j < topClues.length; j++) { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + topClues[j].length, "top-clue"); }
-        for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr); }
+        tr.ariaRowIndex = i + 1;
+        for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
+        for (var j = 0; j < topClues.length; j++) { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + topClues[j].length, this.leftClueDepth + j + 1, "top"); }
+        for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + topClues.length + j + 1); }
 
         table.appendChild(tr);
     }
@@ -1707,8 +1741,9 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     for (var r = 0; r < textLines.length; r++) {
         var tr = document.createElement("tr");
+        tr.ariaRowIndex = this.topClueDepth + r + 1;
 
-        for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + leftClues[r].length, "left-clue"); }
+        for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + leftClues[r].length, j + 1, "left"); }
 
         this.numCols = Math.max(this.numCols, textLines[r].length);
         for (var c = 0; c < textLines[r].length; c++) {
@@ -1716,6 +1751,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (savedState) { cellSavedState = savedState[stateIndex++]; }
 
             var td = document.createElement("td");
+            td.ariaColIndex = this.leftClueDepth + c + 1;
             td.classList.add("cell");
             td.classList.add("inner-cell");
             td.id = "cell-" + r + "-" + c;
@@ -1723,6 +1759,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             var ch = textLines[r][c];
             
             var textwrapper = document.createElement("div");
+            textwrapper.setAttribute("aria-hidden", true);
             textwrapper.classList.add("text");
 
             var text = document.createElement("span");
@@ -1744,6 +1781,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                     td.classList.add(id);
 
                     var extractCode = document.createElement("div");
+                    extractCode.setAttribute("aria-hidden", true);
                     extractCode.contentEditable = false;
                     extractCode.classList.add("extract-code");
                     extractCode.innerText = code;
@@ -1907,6 +1945,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                     }
 
                     var clue = document.createElement("div");
+                    clue.setAttribute("aria-hidden", true);
                     clue.contentEditable = false;
                     clue.classList.add("clue");
                     clue.innerText = clueIndicator;
@@ -1931,22 +1970,28 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             }
 
             this.updateSvg(td);
+            this.updateLabel(td);
             tr.appendChild(td);
         }
 
-        for (var j = 0; j < this.rightClueDepth; j++) { this.addOuterClue(tr, rightClues[r], j, "right-clue"); }
+        for (var j = 0; j < this.rightClueDepth; j++) { this.addOuterClue(tr, rightClues[r], j, this.leftClueDepth + textLines[r].length + j + 1, "right"); }
 
         table.appendChild(tr);
     }
 
     for (var i = 0; i < this.bottomClueDepth; i++) {
         var tr = document.createElement("tr");
-        for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr); }
-        for (var j = 0; j < bottomClues.length; j++) { this.addOuterClue(tr, bottomClues[j], i, "bottom-clue"); }
-        for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr); }
+        tr.ariaRowIndex = this.topClueDepth + lines.length + i + 1;
+        for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
+        for (var j = 0; j < bottomClues.length; j++) { this.addOuterClue(tr, bottomClues[j], i, this.leftClueDepth + j + 1, "bottom"); }
+        for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + bottomClues.length + j + 1); }
 
         table.appendChild(tr);
     }
+
+    table.role = "grid";
+    table.ariaRowCount = this.topClueDepth + this.bottomClueDepth + this.numRows;
+    table.ariaColCount = this.leftClueDepth + this.rightClueDepth + this.numCols;
 
     this.container.insertBefore(table, this.container.firstChild);
     this.grid = table;
