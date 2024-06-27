@@ -1340,6 +1340,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     this.addEmptyOuterCell = function(tr, colIndex) {
         var td = document.createElement("td");
+        td.role = "cell";
         td.ariaColIndex = colIndex;
         td.ariaLabel = "An empty cell in the outer clue area";
         td.classList.add("cell");
@@ -1350,6 +1351,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     this.addOuterClue = function(tr, clues, clueIndex, colIndex, zone) {
         var td = document.createElement("td");
+        td.role = "cell";
         td.ariaColIndex = colIndex;
         td.ariaLabel = "An external clue in the " + zone + " area";
         td.classList.add("cell");
@@ -1586,27 +1588,74 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     this.updateLabel = function(td) {
         var label = "";
 
-        // clue
-        const clue = td.querySelector(".clue");
-        if (clue) label += `crossword clue is ${clue.innerText}, `;
-
         // content
         var cellContent = "blank";
         const text = td.querySelector('.text span');
+        const editable = !td.classList.contains("given-text") && this.options["data-text-characters"] != "";
         if (text && text.innerText) { cellContent = text.innerText; }
-        label += `content is ${cellContent}`;
+        label += `Cell content is ${cellContent} and is ${editable ? "editable" : "not editable"}. `;
 
         // extract
         if (td.classList.contains("extract")) {
-            label += " highlighted for extraction";
-            var extractId = td.getAttribute("data-extract-id");
-            if (extractId) label += `, with code ${extractId}. `;
+            const extractId = td.getAttribute("data-extract-id");
+            label += `Cell is highlighted for answer extraction${extractId ? (", with index " + extractId) : ""}. `;
+        }
+
+        // clue
+        const clue = td.querySelector(".clue");
+        if (clue) label += `Cell clue indicator is ${clue.innerText}. `;
+        if (this.options["data-clue-locations"] == "crossword") {
+            const acrossNumber = td.getAttribute("data-across-cluenumber");
+            if (acrossNumber) { label += `Cell is part of ${acrossNumber} Across. `}
+            const downNumber = td.getAttribute("data-down-cluenumber");
+            if (downNumber) { label += `Cell is part of ${downNumber} Down. `}
         }
 
         // fill
-        // border
+        if (this.puzzleEntry.fillClasses) {
+            let fill = this.puzzleEntry.findClassInList(td, this.puzzleEntry.fillClasses);
+            const editable = this.options["data-fill-cycle"] && !td.classList.contains("given-fill");
+            label += `Cell fill is ${fill} and is ${editable ? "editable" : "not editable"}. `;
+        }
+
+        // edge: TODO needs work for south/east
+        const edgeCode = td.getAttribute("data-edge-code");
+        const givenEdgeCode = td.getAttribute("data-given-edge-code");
+        const xEdgeCode = td.getAttribute("data-x-edge-code");
+        const edgeEditable = this.options["data-drag-draw-edge"];
+        if ((edgeCode & 1) || (xEdgeCode & 1)) { label += `Cell has a North edge${(xEdgeCode & 1) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & 1) == 0) ? "editable" : "not editable"}. `}
+        if ((edgeCode & 2) || (xEdgeCode & 2)) { label += `Cell has a South edge${(xEdgeCode & 2) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & 2) == 0) ? "editable" : "not editable"}. `}
+        if ((edgeCode & 4) || (xEdgeCode & 4)) { label += `Cell has a West edge${(xEdgeCode & 4) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & 4) == 0) ? "editable" : "not editable"}. `}
+        if ((edgeCode & 8) || (xEdgeCode & 8)) { label += `Cell has a East edge${(xEdgeCode & 8) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & 8) == 0) ? "editable" : "not editable"}. `}
+
         // path
-        // stroke
+        const pathCode = td.getAttribute("data-path-code");
+        const givenPathCode = td.getAttribute("data-given-path-code");
+        const pathEditable = this.options["data-drag-draw-path"];
+        if (pathCode & 1) { label += `Cell has a North path, which is ${(pathEditable && ((givenPathCode & 1) == 0)) ? "editable" : "not editable"}. `}
+        if (pathCode & 2) { label += `Cell has a South path, which is ${(pathEditable && ((givenPathCode & 2) == 0)) ? "editable" : "not editable"}. `}
+        if (pathCode & 4) { label += `Cell has a West path, which is ${(pathEditable && ((givenPathCode & 4) == 0)) ? "editable" : "not editable"}. `}
+        if (pathCode & 8) { label += `Cell has a East path, which is ${(pathEditable && ((givenPathCode & 8) == 0)) ? "editable" : "not editable"}. `}
+
+        // spoke
+        const spokeEditable = this.options["data-drag-draw-spoke"];
+        var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]);
+        for (var spokeLevel = 1; spokeLevel <= maxSpokeLevels; spokeLevel++) {
+            const spokeCode = td.getAttribute(`data-spoke${spokeLevel == 1 ? "" : ("-" + spokeLevel)}-code`);
+            const givenSpokeCode = td.getAttribute(`data-given-spoke${spokeLevel == 1 ? "" : ("-" + spokeLevel)}-code`);
+            const xSpokeCode = td.getAttribute(`data-x-spoke${spokeLevel == 1 ? "" : ("-" + spokeLevel)}-code`);
+            const aLevel = maxSpokeLevels == 1 ? "a" : ("a level " + spokeLevel);
+            const anLevel = maxSpokeLevels == 1 ? "an" : ("a level " + spokeLevel);
+            if ((spokeCode & 1) || (xSpokeCode & 1)) { label += `Cell has ${aLevel} North spoke${(xSpokeCode & 1) ? " blocker" : ""}, which is ${(spokeEditable && (givenSpokeCode & 1) == 0) ? "editable" : "not editable"}. `}
+            if ((spokeCode & 2) || (xSpokeCode & 2)) { label += `Cell has ${aLevel} Northeast spoke${(xSpokeCode & 2) ? " blocker" : ""}, which is ${(spokeEditable && (givenSpokeCode & 2) == 0) ? "editable" : "not editable"}. `}
+            if ((spokeCode & 4) || (xSpokeCode & 4)) { label += `Cell has ${anLevel} East spoke${(xSpokeCode & 4) ? " blocker" : ""}, which is ${(spokeEditable && (givenSpokeCode & 4) == 0) ? "editable" : "not editable"}. `}
+            if ((spokeCode & 8) || (xSpokeCode & 8)) { label += `Cell has ${aLevel} Southeast spoke${(xSpokeCode & 8) ? " blocker" : ""}, which is ${(spokeEditable && (givenSpokeCode & 8) == 0) ? "editable" : "not editable"}. `}
+            if ((spokeCode & 16) || (xSpokeCode & 16)) { label += `Cell has ${aLevel} South spoke${(xSpokeCode & 16) ? " blocker" : ""}, which is ${(spokeEditable && (givenSpokeCode & 16) == 0) ? "editable" : "not editable"}. `}
+            if ((spokeCode & 32) || (xSpokeCode & 32)) { label += `Cell has ${aLevel} Southwest spoke${(xSpokeCode & 32) ? " blocker" : ""}, which is ${(spokeEditable && (givenSpokeCode & 32) == 0) ? "editable" : "not editable"}. `}
+            if ((spokeCode & 64) || (xSpokeCode & 64)) { label += `Cell has ${aLevel} West spoke${(xSpokeCode & 64) ? " blocker" : ""}, which is ${(spokeEditable && (givenSpokeCode & 64) == 0) ? "editable" : "not editable"}. `}
+            if ((spokeCode & 128) || (xSpokeCode & 128)) { label += `Cell has ${aLevel} Northwest spoke${(xSpokeCode & 128) ? " blocker" : ""}, which is ${(spokeEditable && (givenSpokeCode & 128) == 0) ? "editable" : "not editable"}. `}
+        }
+
         td.ariaLabel = label;
     }
 
@@ -1726,6 +1775,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     for (var i = 0; i < this.topClueDepth; i++) {
         var tr = document.createElement("tr");
+        tr.role = "row";
         tr.ariaRowIndex = i + 1;
         for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
         for (var j = 0; j < topClues.length; j++) { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + topClues[j].length, this.leftClueDepth + j + 1, "top"); }
@@ -1741,6 +1791,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     for (var r = 0; r < textLines.length; r++) {
         var tr = document.createElement("tr");
+        tr.role = "row";
         tr.ariaRowIndex = this.topClueDepth + r + 1;
 
         for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + leftClues[r].length, j + 1, "left"); }
@@ -1751,6 +1802,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (savedState) { cellSavedState = savedState[stateIndex++]; }
 
             var td = document.createElement("td");
+            td.role = "cell";
             td.ariaColIndex = this.leftClueDepth + c + 1;
             td.classList.add("cell");
             td.classList.add("inner-cell");
@@ -1981,6 +2033,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     for (var i = 0; i < this.bottomClueDepth; i++) {
         var tr = document.createElement("tr");
+        tr.role = "row";
         tr.ariaRowIndex = this.topClueDepth + lines.length + i + 1;
         for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
         for (var j = 0; j < bottomClues.length; j++) { this.addOuterClue(tr, bottomClues[j], i, this.leftClueDepth + j + 1, "bottom"); }
@@ -1993,6 +2046,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     table.ariaRowCount = this.topClueDepth + this.bottomClueDepth + this.numRows;
     table.ariaColCount = this.leftClueDepth + this.rightClueDepth + this.numCols;
 
+    this.container.role = "region";
+    this.container.ariaLabel = `A ${this.numRows} row by ${this.numCols} column puzzle grid${this.options["data-no-input"] ? "" : ", with interactive elements"}.`
     this.container.insertBefore(table, this.container.firstChild);
     this.grid = table;
 
