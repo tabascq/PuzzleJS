@@ -2047,7 +2047,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     for (var i = 0; i < this.bottomClueDepth; i++) {
         var tr = document.createElement("tr");
         tr.role = "row";
-        tr.ariaRowIndex = this.topClueDepth + lines.length + i + 1;
+        tr.ariaRowIndex = this.topClueDepth + textLines.length + i + 1;
         for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
         for (var j = 0; j < bottomClues.length; j++) { this.addOuterClue(tr, bottomClues[j], i, this.leftClueDepth + j + 1, "bottom"); }
         for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + bottomClues.length + j + 1); }
