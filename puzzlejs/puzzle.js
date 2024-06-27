@@ -1585,6 +1585,24 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         }
     }
 
+    this.getEdgeLabelData = function(cell, dirName, dirCode) {
+        if (dirCode == 2 || dirCode == 8) {
+            var parts = cell.id.split("-");
+            var row = parseInt(parts[1]);
+            var col = parseInt(parts[2]);
+
+            if (dirCode == 2 && row < this.numRows - 1) { cell = this.lookup[`cell-${row + 1}-${col}`]; dirCode = 1; }
+            if (dirCode == 8 && col < this.numCols - 1) { cell = this.lookup[`cell-${row}-${col + 1}`]; dirCode = 4; }
+        }
+
+        const edgeCode = cell.getAttribute("data-edge-code");
+        const givenEdgeCode = cell.getAttribute("data-given-edge-code");
+        const xEdgeCode = cell.getAttribute("data-x-edge-code");
+        const edgeEditable = this.options["data-drag-draw-edge"];
+        if ((edgeCode & dirCode) || (xEdgeCode & dirCode)) { return `Cell has a ${dirName} edge${(xEdgeCode & dirCode) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & dirCode) == 0) ? "editable" : "not editable"}. `; }
+        return "";
+    }
+
     this.updateLabel = function(td) {
         var label = "";
 
@@ -1618,15 +1636,11 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             label += `Cell fill is ${fill} and is ${editable ? "editable" : "not editable"}. `;
         }
 
-        // edge: TODO needs work for south/east
-        const edgeCode = td.getAttribute("data-edge-code");
-        const givenEdgeCode = td.getAttribute("data-given-edge-code");
-        const xEdgeCode = td.getAttribute("data-x-edge-code");
-        const edgeEditable = this.options["data-drag-draw-edge"];
-        if ((edgeCode & 1) || (xEdgeCode & 1)) { label += `Cell has a North edge${(xEdgeCode & 1) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & 1) == 0) ? "editable" : "not editable"}. `}
-        if ((edgeCode & 2) || (xEdgeCode & 2)) { label += `Cell has a South edge${(xEdgeCode & 2) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & 2) == 0) ? "editable" : "not editable"}. `}
-        if ((edgeCode & 4) || (xEdgeCode & 4)) { label += `Cell has a West edge${(xEdgeCode & 4) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & 4) == 0) ? "editable" : "not editable"}. `}
-        if ((edgeCode & 8) || (xEdgeCode & 8)) { label += `Cell has a East edge${(xEdgeCode & 8) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & 8) == 0) ? "editable" : "not editable"}. `}
+        // edge
+        label += this.getEdgeLabelData(td, "North", 1);
+        label += this.getEdgeLabelData(td, "East", 8);
+        label += this.getEdgeLabelData(td, "South", 2);
+        label += this.getEdgeLabelData(td, "West", 4);
 
         // path
         const pathCode = td.getAttribute("data-path-code");
@@ -2022,7 +2036,6 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             }
 
             this.updateSvg(td);
-            this.updateLabel(td);
             tr.appendChild(td);
         }
 
@@ -2041,6 +2054,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
         table.appendChild(tr);
     }
+
+    table.querySelectorAll(".cell.inner-cell").forEach(c => { this.updateLabel(c); });
 
     table.role = "grid";
     table.ariaRowCount = this.topClueDepth + this.bottomClueDepth + this.numRows;
