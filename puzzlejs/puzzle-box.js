@@ -146,6 +146,9 @@ function PuzzleBox(puzzleBox) {
         this.container.querySelector(".puzzle-box-rotate-direction a").innerText = this.flip ? "against" : "along";
     }
 
+    this.container.ariaLabel = "a 3D puzzle that unfortunately will not work with a screenreader."
+    this.puzzleContent.setAttribute("aria-hidden", true);
+
     this.perspective.insertAdjacentHTML("beforebegin", "<div class='puzzle-rotation-pair rotation-pair-ud'><div class='puzzle-rotation-button rotate-back'></div><div class='puzzle-rotation-button rotate-forward'></div></div>");
     this.perspective.insertAdjacentHTML("beforebegin", "<div class='puzzle-rotation-pair rotation-pair-lr'><div class='puzzle-rotation-button rotate-back'></div><div class='puzzle-rotation-button rotate-forward'></div></div>");
     this.perspective.insertAdjacentHTML("beforebegin", "<div class='puzzle-rotation-pair rotation-pair-fb'><div class='puzzle-rotation-button rotate-back'></div><div class='puzzle-rotation-button rotate-forward'></div></div>");

@@ -55,6 +55,7 @@ puzzleModes["default"] = {
     "data-unselectable-givens": false,
     "data-extracts": null,
     "data-no-input": false,
+    "data-no-screenreader": false,
     "data-show-commands": false,
     "data-puzzle-id": null,
     "data-team-id": null,
@@ -1194,7 +1195,7 @@ function PuzzleEntry(p, index) {
         if (NScode != 2 && col > 0) { label += this.getCornerCenterLabelData(row, col - backCol, "Southwest"); }
         if (NScode != 2 && EWcode != 8) { label += this.getCornerCenterLabelData(row, col, "Southeast"); }
 
-        this.cornerFocus.ariaLabel = label;
+        if (this.activeGrid.screenreaderSupported) { this.cornerFocus.ariaLabel = label; }
     }
 
     this.updateCornerFocus = function() {
@@ -1376,7 +1377,6 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     this.puzzleId = puzzleId;
     this.tilt = 0;
     this.stateDirty = false;
-
     this.inhibitSave = false;
 
     this.parseOuterClues = function(clues) {
@@ -1387,9 +1387,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     this.addEmptyOuterCell = function(tr, colIndex) {
         var td = document.createElement("td");
-        td.role = "cell";
-        td.ariaColIndex = colIndex;
-        td.ariaLabel = "An empty cell in the outer clue area";
+        if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = colIndex; td.ariaLabel = "An empty cell in the outer clue area"; }
         td.classList.add("cell");
         td.classList.add("outer-cell");
         td.classList.add("unselectable");
@@ -1398,18 +1396,16 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     this.addOuterClue = function(tr, clues, clueIndex, colIndex, zone) {
         var td = document.createElement("td");
-        td.role = "cell";
-        td.ariaColIndex = colIndex;
-        td.ariaLabel = "An external clue in the " + zone + " area";
+        if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = colIndex; }
         td.classList.add("cell");
         td.classList.add("outer-cell");
         if (clueIndex >= 0 && clueIndex < clues.length && clues[clueIndex]) {
-            td.ariaLabel = clues[clueIndex] + ": A clue in the " + zone + " clue area";
+            if (this.screenreaderSupported) { td.ariaLabel = clues[clueIndex] + ": A clue in the " + zone + " clue area"; }
             td.textContent = clues[clueIndex];
             td.classList.add(zone + "-clue");
             td.addEventListener("pointerdown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else if (e.shiftKey) { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
             td.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
-        } else { td.classList.add("unselectable"); td.ariaLabel = "An empty clue in the " + zone + " area" }
+        } else { td.classList.add("unselectable"); if (this.screenreaderSupported) { td.ariaLabel = "An empty clue in the " + zone + " area"; } }
 
         tr.appendChild(td);
     }
@@ -1719,7 +1715,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if ((spokeCode & 128) || (xSpokeCode & 128)) { label += `Cell has ${aLevel} Northwest spoke${(xSpokeCode & 128) ? " blocker" : ""}, which is ${(spokeEditable && (givenSpokeCode & 128) == 0) ? "editable" : "not editable"}. `}
         }
 
-        td.ariaLabel = label;
+        if (this.screenreaderSupported) { td.ariaLabel = label; }
     }
 
     this.translate = function(ch, replacements) {
@@ -1803,6 +1799,9 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     if (!textLines) { textLines = solution; }
 
+    this.screenreaderSupported = !this.options["data-no-screenreader"];
+    if (this.topClueDepth > 0 || this.bottomClueDepth > 0 || this.leftClueDepth > 0 || this.rightClueDepth > 0) { this.screenreaderSupported = false; }
+
     var allowInput = !this.options["data-no-input"];
     var table = document.createElement("table");
     table.classList.add("puzzle-grid-content");
@@ -1838,8 +1837,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     for (var i = 0; i < this.topClueDepth; i++) {
         var tr = document.createElement("tr");
-        tr.role = "row";
-        tr.ariaRowIndex = i + 1;
+        if (this.screenreaderSupported) { tr.role="row"; tr.ariaRowIndex = i + 1; }
         for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
         for (var j = 0; j < topClues.length; j++) { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + topClues[j].length, this.leftClueDepth + j + 1, "top"); }
         for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + topClues.length + j + 1); }
@@ -1854,8 +1852,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     for (var r = 0; r < textLines.length; r++) {
         var tr = document.createElement("tr");
-        tr.role = "row";
-        tr.ariaRowIndex = this.topClueDepth + r + 1;
+        if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = this.topClueDepth + r + 1; }
 
         for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + leftClues[r].length, j + 1, "left"); }
 
@@ -1865,8 +1862,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (savedState) { cellSavedState = savedState[stateIndex++]; }
 
             var td = document.createElement("td");
-            td.role = "cell";
-            td.ariaColIndex = this.leftClueDepth + c + 1;
+            if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = this.leftClueDepth + c + 1; }
             td.classList.add("cell");
             td.classList.add("inner-cell");
             td.id = "cell-" + r + "-" + c;
@@ -2095,8 +2091,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     for (var i = 0; i < this.bottomClueDepth; i++) {
         var tr = document.createElement("tr");
-        tr.role = "row";
-        tr.ariaRowIndex = this.topClueDepth + textLines.length + i + 1;
+        if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = this.topClueDepth + textLines.length + i + 1; }
         for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
         for (var j = 0; j < bottomClues.length; j++) { this.addOuterClue(tr, bottomClues[j], i, this.leftClueDepth + j + 1, "bottom"); }
         for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + bottomClues.length + j + 1); }
@@ -2106,12 +2101,17 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     table.querySelectorAll(".cell.inner-cell").forEach(c => { this.updateLabel(c); });
 
-    table.role = "grid";
-    table.ariaRowCount = this.topClueDepth + this.bottomClueDepth + this.numRows;
-    table.ariaColCount = this.leftClueDepth + this.rightClueDepth + this.numCols;
+    var label = `A ${this.numRows} row by ${this.numCols} column puzzle grid`;
+    if (this.screenreaderSupported) {
+        table.role = "grid";
+        table.ariaRowCount = this.topClueDepth + this.bottomClueDepth + this.numRows;
+        table.ariaColCount = this.leftClueDepth + this.rightClueDepth + this.numCols;
 
-    this.container.role = "region";
-    this.container.ariaLabel = `A ${this.numRows} row by ${this.numCols} column puzzle grid${this.options["data-no-input"] ? "" : ", with interactive elements"}.`
+        label += `${this.options["data-no-input"] ? "" : ", with interactive elements. For a better interactive experience using a screenreader, turn off scan mode"}.`
+    }
+    else { label += ". Unfortunately, this specific puzzle is not compatible with a screen reader."}
+    table.ariaLabel = label;
+
     this.container.insertBefore(table, this.container.firstChild);
     this.grid = table;
 

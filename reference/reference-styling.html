@@ -253,10 +253,11 @@
 
         <h2>Layers</h2>
         <p>If the effect you want is difficult to create with just one grid, consider using two or more overlapping grids and set <code>data-no-input</code> on all but one to remove them from tab order etc. The overlapping puzzles will not share any information with each other. You could of course also use a background image or SVG.</p>
+        <p>Do note that a screenreader will most likely not communicate information properly when multiple puzzles are overlapped, and in this case you should set <code><a href="reference-options.html#data-no-screenreader">data-no-screenreader</a></code> on both puzzles when you do this.</p>
         <div class="example">
             <div class="overlapping-example">
-    <div class="puzzle-entry" data-mode="notext" data-text="2x2" data-fill-classes="red green blue yellow" data-no-input="true" data-fills="01|23"></div>
-    <div class="puzzle-entry" data-mode="notext" data-text="2x2" data-fill-classes="none black-dot white-dot" data-fills="1.|.2"></div>
+    <div class="puzzle-entry" data-mode="notext" data-text="2x2" data-fill-classes="red green blue yellow" data-no-input="true" data-no-screenreader="true" data-fills="01|23"></div>
+    <div class="puzzle-entry" data-mode="notext" data-text="2x2" data-fill-classes="none black-dot white-dot" data-no-screenreader="true" data-fills="1.|.2"></div>
 </div>
         </div>
 

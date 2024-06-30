@@ -320,6 +320,7 @@
         </div>
         <div class="option" data-name="data-fill-classes">
             <p>Specifies a set of classes that can be used to provide background fills for cells. By default, clicking a cell will cycle through these classes.</p>
+            <p>Note that the names of these classes will be directly spoken by a screenreader.</p>
             <div class="example">
                 <div class="puzzle-entry" data-text="3x3" data-fill-classes="white yellow red"></div>
             </div>
@@ -650,6 +651,12 @@
             <p>Turns off all mouse and keyboard input for the puzzle. Useful for solutions, samples, and scenarios with multiple puzzle layers on top of each other.</p>
             <div class="example">
                 <div class="puzzle-entry" data-mode="slitherlink" data-text="4x4" data-edges="....|.73.|.3b.|...." data-no-input="true"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-no-screenreader">
+            <p>Turns off all screenreader support and leaves a screenreader message saying that this specific puzzle is not suppoerted in a screenreader. Use this option when you are doing something so special that the screenreader will not properly communicate the puzzle. Note that any puzzle options that do not yet have full screenreader support will also cause the puzzle to generate this message.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="4x4" data-no-screenreader="true"></div>
             </div>
         </div>
         <div class="option" data-name="data-show-commands">
