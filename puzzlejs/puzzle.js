@@ -578,7 +578,7 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 39) { this.moveCorner(0, 1); } // right
         else if (e.keyCode == 40) { this.moveCorner(1, 0); } // down
         else if (e.keyCode == 190 && this.canHaveCenterFocus) { this.setCenterFocusMode(); } // period
-        else if (e.keyCode == 88) { this.xKeyMode = !this.xKeyMode; this.cornerFocus.classList.toggle("x-mode"); } // toggle "x" mode
+        else if (e.keyCode == 88) { this.xKeyMode = !this.xKeyMode; this.cornerFocus.classList.toggle("x-mode"); this.updateCornerLabel(); } // toggle "x" mode
     }
 
     this.setText = function(target, text, smalltext) {
@@ -1151,11 +1151,58 @@ function PuzzleEntry(p, index) {
         if (!notyet && this.currentCenterFocus) { this.currentCenterFocus.focus(); }
     }
 
+    this.getCornerEdgeLabelData = function(row, col, dirName, dirCode) {
+        const cell = this.activeGrid.lookup[`cell-${row}-${col}`];
+        if (!cell) return "";
+
+        const edgeCode = cell.getAttribute("data-edge-code");
+        const givenEdgeCode = cell.getAttribute("data-given-edge-code");
+        const xEdgeCode = cell.getAttribute("data-x-edge-code");
+        const edgeEditable = this.options["data-drag-draw-edge"];
+        if ((edgeCode & dirCode) || (xEdgeCode & dirCode)) { return `Corner has ${dirName} edge${(xEdgeCode & dirCode) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & dirCode) == 0) ? "editable" : "not editable"}. `; }
+        return "";
+    }
+
+    this.getCornerCenterLabelData = function(row, col, dirName) {
+        const cell = this.activeGrid.lookup[`cell-${row}-${col}`];
+        if (!cell) return "";
+
+        const text = cell.querySelector(".text").innerText;
+        if (text) { return `Corner has a clue to the ${dirName}, which says ${text}. `; }
+        return "";
+    }
+
+    this.updateCornerLabel = function() {
+        var NSdir = "North";
+        var EWdir = "west";
+        var NScode = 1;
+        var EWcode = 4;
+        var backRow = 1;
+        var backCol = 1;
+        var row = this.cornerFocusY;
+        var col = this.cornerFocusX;
+        if (row == this.activeGrid.numRows) { row--; NSdir = "South"; NScode = 2; backRow = 0; }
+        if (col == this.activeGrid.numCols) { col--; EWdir = "east"; EWcode = 8; backCol = 0; }
+
+        var label = `Corner mode, drawing ${this.xKeyMode ? "edge blockers" : "edges"}. Cursor is at the ${NSdir}${EWdir} corner of the cell in row ${row} and column ${col}. `;
+        if (row > 0) { label += this.getCornerEdgeLabelData(row - backRow, col, "a North", EWcode); }
+        if (EWcode != 8) { label += this.getCornerEdgeLabelData(row, col, "an East", NScode); }
+        if (NScode != 2) { label += this.getCornerEdgeLabelData(row, col, "a South", EWcode); }
+        if (col > 0) { label += this.getCornerEdgeLabelData(row, col - backCol, "a West", NScode); }
+        if (row > 0 && col > 0) { label += this.getCornerCenterLabelData(row - backRow, col - backCol, "Northwest"); }
+        if (row > 0 && EWcode != 8) { label += this.getCornerCenterLabelData(row - backRow, col, "Northeast"); }
+        if (NScode != 2 && col > 0) { label += this.getCornerCenterLabelData(row, col - backCol, "Southwest"); }
+        if (NScode != 2 && EWcode != 8) { label += this.getCornerCenterLabelData(row, col, "Southeast"); }
+
+        this.cornerFocus.ariaLabel = label;
+    }
+
     this.updateCornerFocus = function() {
         var topLeftTD = this.activeGrid.lookup["cell-0-0"];
-        if (this.cornerFocus.parentElement != this.activeGrid.grid) { this.cornerFocus.parentElement.removeChild(this.cornerFocus); this.activeGrid.grid.appendChild(this.cornerFocus); this.cornerFocus.focus(); }
+        if (this.cornerFocus.parentElement != this.activeGrid.grid) { this.cornerFocus.ariaLabel = ""; this.cornerFocus.parentElement.removeChild(this.cornerFocus); this.activeGrid.grid.appendChild(this.cornerFocus); this.cornerFocus.focus(); }
         this.cornerFocus.style.left = (topLeftTD.offsetLeft + this.cornerFocusX * topLeftTD.offsetWidth) + "px";
         this.cornerFocus.style.top = (topLeftTD.offsetTop + this.cornerFocusY * topLeftTD.offsetHeight) + "px";
+        this.updateCornerLabel();
     }
 
     this.updateCenterFocus = function(center) {
@@ -1594,6 +1641,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (dirCode == 2 && row < this.numRows - 1) { cell = this.lookup[`cell-${row + 1}-${col}`]; dirCode = 1; }
             if (dirCode == 8 && col < this.numCols - 1) { cell = this.lookup[`cell-${row}-${col + 1}`]; dirCode = 4; }
         }
+
+        if (!cell) return "";
 
         const edgeCode = cell.getAttribute("data-edge-code");
         const givenEdgeCode = cell.getAttribute("data-given-edge-code");
