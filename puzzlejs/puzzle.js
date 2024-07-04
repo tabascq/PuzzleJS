@@ -1655,8 +1655,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         var cellContent = "blank";
         const text = td.querySelector('.text span');
         const editable = !td.classList.contains("given-text") && this.options["data-text-characters"] != "";
-        if (text && text.innerText) { cellContent = text.innerText; }
-        label += `Cell content is ${cellContent} and is ${editable ? "editable" : "not editable"}. `;
+        if (text && text.innerText && text.innerText != " ") { cellContent = text.innerText; }
+        label += `Cell text is ${cellContent} and is ${editable ? "editable" : "not editable"}. `;
 
         // extract
         if (td.classList.contains("extract")) {
@@ -1801,6 +1801,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     this.screenreaderSupported = !this.options["data-no-screenreader"];
     if (this.topClueDepth > 0 || this.bottomClueDepth > 0 || this.leftClueDepth > 0 || this.rightClueDepth > 0) { this.screenreaderSupported = false; }
+    if (this.puzzleEntry.container.classList.contains("puzzle-box")) { this.screenreaderSupported = false; }
 
     var allowInput = !this.options["data-no-input"];
     var table = document.createElement("table");
@@ -2101,16 +2102,18 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     table.querySelectorAll(".cell.inner-cell").forEach(c => { this.updateLabel(c); });
 
-    var label = `A ${this.numRows} row by ${this.numCols} column puzzle grid`;
-    if (this.screenreaderSupported) {
-        table.role = "grid";
-        table.ariaRowCount = this.topClueDepth + this.bottomClueDepth + this.numRows;
-        table.ariaColCount = this.leftClueDepth + this.rightClueDepth + this.numCols;
-
-        label += `${this.options["data-no-input"] ? "" : ", with interactive elements. For a better interactive experience using a screenreader, turn off scan mode"}.`
+    if (!this.puzzleEntry.container.classList.contains("puzzle-box")) {
+        var label = `A ${this.numRows} row by ${this.numCols} column puzzle grid`;
+        if (this.screenreaderSupported) {
+            table.role = "grid";
+            table.ariaRowCount = this.topClueDepth + this.bottomClueDepth + this.numRows;
+            table.ariaColCount = this.leftClueDepth + this.rightClueDepth + this.numCols;
+    
+            label += `${this.options["data-no-input"] ? "" : ", with interactive elements. For a better interactive experience using a screenreader, turn off scan mode"}.`
+        }
+        else { label += ". Unfortunately, this specific puzzle is not compatible with a screen reader."}
+        table.ariaLabel = label;
     }
-    else { label += ". Unfortunately, this specific puzzle is not compatible with a screen reader."}
-    table.ariaLabel = label;
 
     this.container.insertBefore(table, this.container.firstChild);
     this.grid = table;
