@@ -163,6 +163,31 @@
             </div>
         </div>
 
+        <div class="mode" data-name="crostic">
+            <p>The <code>crostic</code> mode is for a grid and associated clues.
+            In the main grid, cells are numbered and show a letter for the corresponding clue
+            (specified via clue indicators with the format <code>#_X</code>).
+            Clue answers are numbered, and content is automatically shared between grid and clue.
+            In a crostic grid, typing and arrowing will wrap from one row to the next.</p>
+            <div class="example">
+<div class="puzzle-entry" data-mode="crostic">
+    <div style="min-width: 400px; background-color: white; padding: 10px;">
+        <div class="puzzle-grid" data-text=".....@.|......."
+            data-clue-indicators="1_C 2_A 3_C 4_C 5_C 6_B 7_C 8_B 9_B 10_B 11_A 12_C 13_A"></div>
+        <br>
+        <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
+            <div>A. Not new</div>
+            <div class="puzzle-grid" data-text="..." data-clue-indicators="11 2 13"></div>
+            <div>B. Left, on a map</div>
+            <div class="puzzle-grid" data-text="...." data-clue-indicators="10 6 8 9"></div>
+            <div>C. Lights, Camera, ____!</div>
+            <div class="puzzle-grid" data-text="......" data-clue-indicators="7 1 5 3 12 4"></div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+
         <div class="mode" data-name="notext">
             <p>The <code>notext</code> mode prevents text input in the cells.</p>
             <div class="example">
@@ -316,6 +341,15 @@
             </div>
             <div class="example">
                 <div class="puzzle-entry" data-text="4x4" data-text-advance-on-type="false"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-wrap">
+            <p>Specifies whether the cell position will wrap from one side of the grid to the other when typing, backspacing, or arrowing left or right.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="....|...@|....|@..." data-text-wrap="true"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="....|...@|....|@..." data-text-wrap="false"></div>
             </div>
         </div>
         <div class="option" data-name="data-fill-classes">
