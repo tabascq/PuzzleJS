@@ -78,6 +78,11 @@
     pointer-events: none;
 }
 
+.puzzle-entry .crostic .text {
+    padding-top: 20%;
+    height: 80%;
+}
+
 .puzzle-entry .cell:focus {
     outline: none;
 }
@@ -154,6 +159,19 @@
     left: 2px;
     z-index: 3;
     text-align: left;
+    font-size: calc(var(--puzzle-cell-size) * 0.3);
+    text-shadow: none;
+    color: black;
+    font-weight: normal;
+    font-family: sans-serif;
+}
+
+.puzzle-entry .clueR {
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    z-index: 4;
+    text-align: right;
     font-size: calc(var(--puzzle-cell-size) * 0.3);
     text-shadow: none;
     color: black;

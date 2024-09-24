@@ -2,7 +2,8 @@
  * This code is licensed under the MIT License.
  * https://github.com/tabascq/PuzzleJS
  */
-var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
+//var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
+var puzzleJsFolderPath = document.currentScript.src.split("puzzle.js")[0];
 
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
@@ -17,6 +18,7 @@ puzzleModes["default"] = {
     "data-text-shift-lock": false,
     "data-text-solution": null,
     "data-text-advance-on-type": false,
+    "data-text-wrap": null,
 
     // fills
     "data-fill-classes": null,
@@ -71,6 +73,12 @@ puzzleModes["crossword"] = {
     "data-text-advance-on-type": true,
     "data-clue-locations": "crossword"
 };
+
+puzzleModes["crostic"] = {
+    "data-text-advance-on-type": true,
+    "data-text-wrap": true,
+    "data-clue-locations": "crostic",
+}
 
 puzzleModes["notext"] = {
     "data-text-characters": ""
@@ -354,7 +362,20 @@ function PuzzleEntry(p, index) {
             }
 
             if (!td) {
-                return false;
+                if (!this.options["data-text-wrap"])
+                    return false;
+                if (dcol == 1 && col == puzzleGrid.numCols && row+1 < puzzleGrid.numRows) {
+                    row += 1;
+                    col = 0;
+                    td = puzzleGrid.lookup["cell-" + row + "-0"];
+                }
+                else if (dcol == -1 && col == -1 && row > 0) {
+                    row -= 1;
+                    col = puzzleGrid.numCols - 1;
+                    td = puzzleGrid.lookup["cell-" + row + "-" + col];
+                }
+                if (!td)
+                    return false;
             }
 
             var text = td.querySelector(".text span");
@@ -1501,7 +1522,11 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             var primary = this.lookup[c.locationKey];
 
             var extractId = primary.getAttribute("data-extract-id");
-            var elems = extractId ? document.querySelectorAll("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']") : [primary];
+            var linkId = primary.getAttribute("data-link-id");
+            var asel = []
+            if (extractId) asel.push("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']");
+            if (linkId) asel.push("table:not(.copy-only) .cell[data-link-id='" + linkId + "']");
+            var elems = asel.length > 0 ? document.querySelectorAll(asel.join(", ")) : [primary];
 
             elems.forEach(elem => {
                 if (!changedElems.includes(elem)) { changedElems.push(elem); }
@@ -1672,6 +1697,10 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (acrossNumber) { label += `Cell is part of ${acrossNumber} Across. `}
             const downNumber = td.getAttribute("data-down-cluenumber");
             if (downNumber) { label += `Cell is part of ${downNumber} Down. `}
+        }
+        else if (this.options["data-clue-locations"] == "crostic") {
+            const linkId = td.getAttribute("data-link-id");
+            if (linkId) { label += `Cell is linked with id ${linkId}. `}
         }
 
         // fill
@@ -1866,6 +1895,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = this.leftClueDepth + c + 1; }
             td.classList.add("cell");
             td.classList.add("inner-cell");
+            if (this.options["data-clue-locations"] == "crostic")
+                td.classList.add("crostic");
             td.id = "cell-" + r + "-" + c;
             this.lookup[td.id] = td;
             var ch = textLines[r][c];
@@ -2037,22 +2068,43 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                 var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
                 var downClue = (r == 0 || textLines[r-1][c] == '@' || (edgeCode & 1)) && r < textLines.length - 1 && textLines[r+1][c] != '@' && !(edgeCode & 2); // block/edge above, letter below
                 
-                if (acrossClue || downClue || this.options["data-clue-locations"] == "all") {
+                if (acrossClue || downClue || this.options["data-clue-locations"] == "all" || this.options["data-clue-locations"] == "crostic") {
                     var clueIndicator = (!clueIndicators) ? ++clueNum : clueIndicators[clueNum++];
                     const isClueEmpty = String(clueIndicator).trim() === "";
 
-                    if (!isClueEmpty && this.options["data-clue-locations"] == "crossword") {
-                        if (acrossClue) { td.setAttribute("data-across-cluenumber", clueIndicator); }
-                        if (downClue) { td.setAttribute("data-down-cluenumber", clueIndicator); }
-                        if (acrossClue && acrossClues[acrossClueIndex]) {
-                          acrossClues[acrossClueIndex].setAttribute("data-across-cluenumber", clueIndicator);
-                          acrossClues[acrossClueIndex].setAttribute("value", clueIndicator);
-                          acrossClueIndex++;
+                    if (!isClueEmpty) {
+                        if (this.options["data-clue-locations"] == "crossword") {
+                            if (acrossClue) { td.setAttribute("data-across-cluenumber", clueIndicator); }
+                            if (downClue) { td.setAttribute("data-down-cluenumber", clueIndicator); }
+                            if (acrossClue && acrossClues[acrossClueIndex]) {
+                              acrossClues[acrossClueIndex].setAttribute("data-across-cluenumber", clueIndicator);
+                              acrossClues[acrossClueIndex].setAttribute("value", clueIndicator);
+                              acrossClueIndex++;
+                            }
+                            if (downClue && downClues[downClueIndex]) {
+                              downClues[downClueIndex].setAttribute("data-down-cluenumber", clueIndicator);
+                              downClues[downClueIndex].setAttribute("value", clueIndicator);
+                              downClueIndex++;
+                            }
                         }
-                        if (downClue && downClues[downClueIndex]) {
-                          downClues[downClueIndex].setAttribute("data-down-cluenumber", clueIndicator);
-                          downClues[downClueIndex].setAttribute("value", clueIndicator);
-                          downClueIndex++;
+                        if (this.options["data-clue-locations"] == "crostic") {
+                            var aT = String(clueIndicator).split("_");
+                            if (aT.length > 1) {
+                                /* clue indicator is #_X
+                                   - use # as the clue indicator and link-id
+                                   - add X as clueR
+                                   (e.g. for crostic, # in upper left corner and X in upper right corner) */
+                                var clue = document.createElement("div");
+                                clue.setAttribute("aria-hidden", true);
+                                clue.contentEditable = false;
+                                clue.classList.add("clueR");
+                                clue.innerText = aT[1];
+                                td.appendChild(clue);
+                                clueIndicator = aT[0];
+                            }
+                            var id = "link-id-" + clueIndicator;
+                            td.setAttribute("data-link-id", id);
+                            td.classList.add(id);
                         }
                     }
 
