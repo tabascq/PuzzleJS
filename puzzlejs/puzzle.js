@@ -1399,6 +1399,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     this.tilt = 0;
     this.stateDirty = false;
     this.inhibitSave = false;
+    this.tabstopGrid = null;
 
     this.parseOuterClues = function(clues) {
         var clueDepth = 0;
@@ -1951,8 +1952,9 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
             if (!td.classList.contains("unselectable")) {
                 if (allowInput) {
-                    td.tabIndex = this.puzzleEntry.firstCenterFocus ? -1 : 0;
+                    td.tabIndex = (this.puzzleEntry.firstCenterFocus && this.tabstopGrid) ? -1 : 0;
                     if (!this.puzzleEntry.firstCenterFocus) { this.puzzleEntry.firstCenterFocus = td; }
+                    if (!this.tabstopGrid) { this.tabstopGrid = td; }
                     td.addEventListener("keydown",  e => { this.puzzleEntry.keyDown(e); });
                     td.addEventListener("beforeinput", e => { this.puzzleEntry.beforeInput(e); });
                     td.addEventListener("pointerdown",  e => { this.puzzleEntry.pointerDown(e); });
