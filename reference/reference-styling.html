@@ -87,6 +87,10 @@
             .overlapping-example .cell.black-dot::before { content:""; width: 30px; height: 30px; border-radius: 15px; background: black; }
             .overlapping-example .cell.white-dot::before { content:""; width: 30px; height: 30px; border-radius: 15px; background: white; border: 1px solid black; }
 
+            .extra-styles-example .cell::before { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .extra-styles-example .cell.black-dot::before { content:""; width: 30px; height: 30px; border-radius: 15px; background: black; }
+            .extra-styles-example .cell.white-dot::before { content:""; width: 30px; height: 30px; border-radius: 15px; background: white; border: 1px solid black; }
+
             .commands-example.puzzle-entry { grid-template-columns: auto auto; }
             .commands-example .puzzle-commands { flex-direction: column; justify-content: start; }
         </style>
@@ -259,6 +263,12 @@
     <div class="puzzle-entry" data-mode="notext" data-text="2x2" data-fill-classes="red green blue yellow" data-no-input="true" data-no-screenreader="true" data-fills="01|23"></div>
     <div class="puzzle-entry" data-mode="notext" data-text="2x2" data-fill-classes="none black-dot white-dot" data-no-screenreader="true" data-fills="1.|.2"></div>
 </div>
+        </div>
+
+        <h2>Extra Styles</h2>
+        <p>You can also use <code><a href="reference-options.html#data-extra-style-classes">data-extra-style-classes</a></code> and <code><a href="reference-options.html#data-extra-styles">data-extra-styles</a></code> to apply a second level of CSS classes to your cells. The extra classes are read out by a screenreader, so this option is much better if you can make use of it.</p>
+        <div class="example">
+            <div class="extra-styles-example puzzle-entry" data-mode="notext" data-text="2x2" data-fill-classes="red green blue yellow" data-extra-style-classes="none black-dot white-dot" data-no-input="true" data-no-screenreader="true" data-fills="01|23" data-extra-styles="1.|.2"></div>
         </div>
 
         <h2>Commands</h2>

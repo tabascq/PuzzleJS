@@ -53,6 +53,8 @@ puzzleModes["default"] = {
     "data-drag-draw-edge": false,
     "data-drag-draw-spoke": false,
     "data-unselectable-givens": false,
+    "data-extra-style-classes": null,
+    "data-extra-styles": null,
     "data-extracts": null,
     "data-no-input": false,
     "data-no-screenreader": false,
@@ -1292,6 +1294,7 @@ function PuzzleEntry(p, index) {
 
     // --- Construct the interactive player. ---
     this.fillClasses = this.getOptionArray(this.options, "data-fill-classes", " ");
+    this.extraStyleClasses = this.getOptionArray(this.options, "data-extra-style-classes", " ");
 
     this.content = document.createElement("div");
     this.content.classList.add("puzzle-entry-content");
@@ -1681,6 +1684,12 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             label += `Cell fill is ${fill} and is ${editable ? "editable" : "not editable"}. `;
         }
 
+        // extra styles
+        if (this.puzzleEntry.extraStyleClasses) {
+            let extraStyle = this.puzzleEntry.findClassInList(td, this.puzzleEntry.extraStyleClasses);
+            if (extraStyle) label += `Cell also has ${extraStyle}. `;
+        }
+
         // edge
         label += this.getEdgeLabelData(td, "North", 1);
         label += this.getEdgeLabelData(td, "East", 8);
@@ -1767,6 +1776,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     var textLines = puzzleEntry.getOptionArray(this.options, "data-text", "|");
     var textReplacements = puzzleEntry.getOptionDict(this.options, "data-text-replacements");
     var fills = puzzleEntry.getOptionArray(this.options, "data-fills", "|");
+    var extraStyles = puzzleEntry.getOptionArray(this.options, "data-extra-styles", "|");
     var solution = puzzleEntry.getOptionArray(this.options, "data-text-solution", "|");
     var edges = puzzleEntry.getOptionArray(this.options, "data-edges", "|");
     var paths = puzzleEntry.getOptionArray(this.options, "data-paths", "|");
@@ -1897,7 +1907,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                     extractCode.contentEditable = false;
                     extractCode.classList.add("extract-code");
                     extractCode.innerText = code;
-                    td.appendChild(extractCode);    
+                    td.appendChild(extractCode);
                 }
             }
             else if (ch == '@') {
@@ -2079,6 +2089,10 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                     fillIndex = cellSavedState ? parseInt(cellSavedState[0], 36) : 0;
                 }
                 td.classList.add(this.puzzleEntry.fillClasses[fillIndex]);
+            }
+
+            if (this.puzzleEntry.extraStyleClasses && extraStyles && extraStyles[r][c] != '.') {
+                td.classList.add(this.puzzleEntry.extraStyleClasses[parseInt(extraStyles[r][c], 36)]);
             }
 
             this.updateSvg(td);
