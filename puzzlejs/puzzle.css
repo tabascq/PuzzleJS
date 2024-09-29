@@ -171,7 +171,7 @@
     font-family: sans-serif;
 }
 
-.puzzle-entry .pos-top-left, .puzzle-entry .pos-top-right, .puzzle-entry .pos-bottom-left, .puzzle-entry .pos-bottom-right, .puzzle-entry .pos-top, .puzzle-entry .pos-bottom {
+.puzzle-entry .link-label {
     position: absolute;
     font-size: calc(var(--puzzle-cell-size) * 0.3);
     text-shadow: none;
