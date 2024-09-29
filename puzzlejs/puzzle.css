@@ -78,6 +78,16 @@
     pointer-events: none;
 }
 
+.puzzle-entry .pos-avoid-top .text {
+    padding-top: 20%;
+    height: 80%;
+}
+
+.puzzle-entry .pos-avoid-bottom .text {
+    padding-bottom: 25%;
+    height: 75%;
+}
+
 .puzzle-entry .cell:focus {
     outline: none;
 }
@@ -159,6 +169,59 @@
     color: black;
     font-weight: normal;
     font-family: sans-serif;
+}
+
+.puzzle-entry .pos-top-left, .puzzle-entry .pos-top-right, .puzzle-entry .pos-bottom-left, .puzzle-entry .pos-bottom-right, .puzzle-entry .pos-top, .puzzle-entry .pos-bottom {
+    position: absolute;
+    font-size: calc(var(--puzzle-cell-size) * 0.3);
+    text-shadow: none;
+    color: black;
+    font-weight: normal;
+    font-family: sans-serif;
+}
+
+.puzzle-entry .pos-top-left {
+    top: 1px;
+    left: 2px;
+    z-index: 3;
+    text-align: left;
+}
+
+.puzzle-entry .pos-top-right {
+    top: 1px;
+    right: 2px;
+    z-index: 4;
+    text-align: right;
+}
+
+.puzzle-entry .pos-bottom-left {
+    bottom: 0;
+    left: 2px;
+    z-index: 5;
+    text-align: left;
+}
+
+.puzzle-entry .pos-bottom-right {
+    bottom: 0;
+    right: 2px;
+    z-index: 6;
+    text-align: right;
+}
+
+.puzzle-entry .pos-top {
+    top: 1px;
+    left: 0;
+    z-index: 7;
+    width: 100%;
+    text-align: center;
+}
+
+.puzzle-entry .pos-bottom {
+    bottom: 0;
+    left: 0;
+    z-index: 8;
+    width: 100%;
+    text-align: center;
 }
 
 .puzzle-entry .extract-code {
