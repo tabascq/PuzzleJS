@@ -163,6 +163,35 @@
             </div>
         </div>
 
+        <div class="mode" data-name="crostic-grid">
+            <p>The <code>crostic-grid</code> mode is used with the <a href="#crostic-clue"><code>crostic-clue</code></a> mode for
+            a crostic grid and associated clues. In the main grid, cells are numbered and show a letter
+            for the corresponding clue (specified via <a href="#data-links"><code>data-links</code></a> with the format <code>#|X</code>).
+            Clue answers are numbered, and content is automatically shared between grid and clue.
+            In a crostic grid, typing and arrowing will wrap from one row to the next.</p>
+            <div class="example">
+<div class="puzzle-entry">
+    <div style="min-width: 400px; background-color: white; padding: 10px;">
+        <div class="puzzle-grid"  data-mode="crostic-grid" data-text=".....@.|......."
+            data-links="1|C 2|A 3|C 4|C 5|C 6|B 7|C 8|B 9|B 10|B 11|A 12|C 13|A"></div>
+        <br>
+        <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
+            <div>A. Not new</div>
+            <div class="puzzle-grid" data-mode="crostic-clue" data-text="..." data-links="11 2 13"></div>
+            <div>B. Left, on a map</div>
+            <div class="puzzle-grid" data-mode="crostic-clue" data-text="...." data-links="10 6 8 9"></div>
+            <div>C. Lights, Camera, ____!</div>
+            <div class="puzzle-grid" data-mode="crostic-clue" data-text="......" data-links="7 1 5 3 12 4"></div>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="crostic-clue">
+            <p>See the <a href="#crostic-grid"><code>crostic-grid</code></a> section for information.</p>
+        </div>
+
         <div class="mode" data-name="notext">
             <p>The <code>notext</code> mode prevents text input in the cells.</p>
             <div class="example">
@@ -316,6 +345,31 @@
             </div>
             <div class="example">
                 <div class="puzzle-entry" data-text="4x4" data-text-advance-on-type="false"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-advance-style">
+            <p>Specifies how the cell position is advanced when typing or arrowing. With <code>crossword</code> style (the default), the character navigation direction
+            changes from horizontal to vertical as described in <code>data-text-advance-on-type</code>. With <code>wrap</code> style, typing will always
+            continue in the horizontal direction, and will also will wrap from one side of the grid to the other when typing, backspacing, or arrowing left or right.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="....|...@|....|@..." data-text-advance-on-type="true" data-text-advance-style="crossword"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="....|...@|....|@..." data-text-advance-on-type="true" data-text-advance-style="wrap"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-avoid-position">
+            <p>Specifies an area to avoid when drawing text in a cell. Options:</p>
+            <ul>
+                <li><code>"top"</code></li>
+                <li><code>"bottom"</code></li>
+                <li><code>""</code></li>
+            </ul>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="AB..." data-clue-locations="all" data-text-avoid-position="top"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="linear" data-text="AB..." data-clue-locations="all"></div>
             </div>
         </div>
         <div class="option" data-name="data-fill-classes">
@@ -525,6 +579,7 @@
     ] }
 </div>
     </div>
+        </div>
         <div class="option" data-name="data-clue-locations">
             <p>Clue numbers are the numbers that go in the upper left corner of crossword cells, KenKen cells, etc.</p>
             <p>This property has three formats:</p>
@@ -594,6 +649,44 @@
             <p>Specifies clues along the right of the puzzle. Clues for each row are separated by <code>|</code> characters, and multiple clues per column are separated by spaces.</p>
             <div class="example">
                 <div class="puzzle-entry" data-text="3x3" data-right-clues="1 2||3"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-links">
+            <p>Specifies a set of link IDs for all cells not marked with <code>@</code> in the <a href="#data-text"><code>data-text</code></a> field.
+            Two cells with the same link ID anywhere on the page will share their values.
+            The format for <code>data-links</code> is a set of IDs with spaces between them. IDs are applied in order to the cells,
+            skipping cells marked with <code>@</code>.</p>
+            <p>Link IDs are shown in cells according to the <a href="#data-link-position"><code>data-link-position</code></a> field.
+            Multiple values can be shown in each cell; separate the individual values for each cell with the <code>|</code> character,
+            and specify multiple positions in the <a href="#data-link-position"><code>data-link-position</code></a> field (see that section for an example).</p>
+            <div class="example">
+<div class="puzzle-entry" data-mode="linear" data-text="......" data-links="1 2 3 4 5 6"></div>
+<br>
+<div class="puzzle-entry" data-mode="linear" data-text="......" data-links="6 5 4 3 2 1"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-link-position">
+            <p>Specifies the position of the link ID labels in the <a href="#data-links"><code>data-links</code></a> field.</p>
+            <p>Valid values:</p>
+            <ul>
+                <li><code>"top-left"</code></li>
+                <li><code>"top-right"</code></li>
+                <li><code>"bottom-left"</code></li>
+                <li><code>"bottom-right"</code></li>
+                <li><code>"top"</code></li>
+                <li><code>"bottom"</code></li>
+                <li><code>""</code> to suppress showing the link ID label</li>
+            </ul>
+            <p>To specify the positions for multiple link ID labels in a cell, use <code>|</code> characters between the positions.</p>
+            <div class="example">
+<div style="display: grid; grid-template-columns: auto auto; row-gap: 20px; column-gap: 20px; align-items: center; min-width: 250px; background-color: white; padding: 10px">
+    <div>simple ID</div>
+    <div class="puzzle-entry" data-mode="linear" data-text="..." data-links="1 2 3"></div>
+    <div>multiple labels</div>
+    <div class="puzzle-entry" data-mode="linear" data-text="..." data-links="2|X 3|Y 1|Z" data-link-position="top-left|top-right" data-text-avoid-position="top"></div>
+    <div>stealth</div>
+    <div class="puzzle-entry" data-mode="linear" data-text="..." data-links="3 2 1" data-link-position=""></div>
+</div>
             </div>
         </div>
         <div class="option" data-name="data-drag-paint-fill">
