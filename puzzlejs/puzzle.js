@@ -902,17 +902,7 @@ function PuzzleEntry(p, index) {
         var apos = this.getOptionArray(options, option, splitchar);
         if (!apos)
             return [];
-        return apos.map((pos) => {
-            switch (pos) {
-                case "top-left":     return "pos-top-left";
-                case "top-right":    return "pos-top-right";
-                case "bottom-left":  return "pos-bottom-left";
-                case "bottom-right": return "pos-bottom-right";
-                case "top":          return "pos-top";
-                case "bottom":       return "pos-bottom";
-                default:             return "";
-            }
-        })
+        return apos.map((pos) => { return pos ? "pos-" + pos : ""; });
     }
 
     this.cluePointerEnter = function(e) {
@@ -1935,10 +1925,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = this.leftClueDepth + c + 1; }
             td.classList.add("cell");
             td.classList.add("inner-cell");
-            if (this.options["data-text-avoid-position"] == "top")
-                td.classList.add("pos-avoid-top");
-            else if (this.options["data-text-avoid-position"] == "bottom")
-                td.classList.add("pos-avoid-bottom");
+            let avoid = this.options["data-text-avoid-position"];
+            if (avoid) { td.classList.add("pos-avoid-" + avoid); }
             td.id = "cell-" + r + "-" + c;
             this.lookup[td.id] = td;
             var ch = textLines[r][c];
@@ -2159,6 +2147,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                             var divT = document.createElement("div");
                             divT.setAttribute("aria-hidden", true);
                             divT.contentEditable = false;
+                            divT.classList.add("link-label");
                             divT.classList.add(linkpos[i]);
                             divT.innerText = val;
                             td.appendChild(divT);
