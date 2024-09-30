@@ -2,7 +2,7 @@
  * This code is licensed under the MIT License.
  * https://github.com/tabascq/PuzzleJS
  */
-var puzzleJsFolderPath = document.currentScript.src.replace("puzzle.js", "");
+var puzzleJsFolderPath = document.currentScript.src.split("puzzle.js")[0];
 
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
@@ -17,6 +17,8 @@ puzzleModes["default"] = {
     "data-text-shift-lock": false,
     "data-text-solution": null,
     "data-text-advance-on-type": false,
+    "data-text-advance-style": "crossword",
+    "data-text-avoid-position": null,
 
     // fills
     "data-fill-classes": null,
@@ -47,6 +49,10 @@ puzzleModes["default"] = {
     "data-left-clues": null,
     "data-right-clues": null,
 
+    // linked content
+    "data-links": null,
+    "data-link-position": "top-left",
+
     // misc
     "data-drag-paint-fill": true,
     "data-drag-draw-path": false,
@@ -73,6 +79,20 @@ puzzleModes["crossword"] = {
     "data-text-advance-on-type": true,
     "data-clue-locations": "crossword"
 };
+
+puzzleModes["crostic-grid"] = {
+    "data-text-advance-on-type": true,
+    "data-text-advance-style": "wrap",
+    "data-text-avoid-position": "top",
+    "data-link-position": "top-left|top-right"
+}
+
+puzzleModes["crostic-clue"] = {
+    "data-text-advance-on-type": true,
+    "data-text-advance-style": "wrap",
+    "data-text-avoid-position": "top",
+    "data-link-position": "top-left"
+}
 
 puzzleModes["notext"] = {
     "data-text-characters": ""
@@ -236,13 +256,17 @@ function PuzzleEntry(p, index) {
     p.puzzleEntry = this;
 
     // Assign all options by applying all properties from all modes. Modes specified earliest in data-mode get precedence.
-    var modes = p.getAttribute("data-mode");
-    modes = modes ? modes.split(" ") : [];
-    modes.push("default"); 
-    modes.reverse();
+    this.setDataModeOptions = function(element, options, fDefault) {
+        var modes = element.getAttribute("data-mode");
+        modes = modes ? modes.split(" ") : [];
+        if (fDefault)
+            modes.push("default"); 
+        modes.reverse();
+        modes.forEach(m => { for (const [key, value] of Object.entries(puzzleModes[m])) { options[key] = value; } });
+    }
 
     this.options = {};
-    modes.forEach(m => { for (const [key, value] of Object.entries(puzzleModes[m])) { this.options[key] = value; } });
+    this.setDataModeOptions(this.container, this.options, true);
 
     // Finally, any explicitly-specified attributes win.
     this.readLocalOptions = function(element, options) {
@@ -356,13 +380,26 @@ function PuzzleEntry(p, index) {
             }
 
             if (!td) {
-                return false;
+                if (this.activeGrid.options["data-text-advance-style"] != "wrap")
+                    return false;
+                if (dcol == 1 && col == puzzleGrid.numCols && row+1 < puzzleGrid.numRows) {
+                    row += 1;
+                    col = 0;
+                    td = puzzleGrid.lookup["cell-" + row + "-0"];
+                }
+                else if (dcol == -1 && col == -1 && row > 0) {
+                    row -= 1;
+                    col = puzzleGrid.numCols - 1;
+                    td = puzzleGrid.lookup["cell-" + row + "-" + col];
+                }
+                if (!td)
+                    return false;
             }
 
             var text = td.querySelector(".text span");
 
             if (text && !td.classList.contains("unselectable")) {
-                if (this.options["data-text-advance-on-type"]) {
+                if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap") {
                     this.dx = Math.abs(dcol);
                     this.dy = Math.abs(drow);
                 }
@@ -481,7 +518,7 @@ function PuzzleEntry(p, index) {
             this.setText(e.target, val, true);
         } else {
             this.setText(e.target, ch, false);
-            if (this.options["data-text-advance-on-type"]) { this.move(e.target, this.dy, this.dx); }
+            if (this.activeGrid.options["data-text-advance-on-type"]) { this.move(e.target, this.dy, this.dx); }
         }
     }
 
@@ -500,7 +537,7 @@ function PuzzleEntry(p, index) {
             this.setText(e.target, newVal, e.target.classList.contains("small-text"));
         } else {
             this.setText(e.target, "", false);
-            if (this.options["data-text-advance-on-type"]) { this.move(e.target, -this.dy, -this.dx); }
+            if (this.activeGrid.options["data-text-advance-on-type"]) { this.move(e.target, -this.dy, -this.dx); }
         }
     }
 
@@ -544,7 +581,7 @@ function PuzzleEntry(p, index) {
             } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
-                if (this.options["data-text-advance-on-type"] && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.dx = 1 - this.dx; this.dy = 1 - this.dy; }
+                if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.dx = 1 - this.dx; this.dy = 1 - this.dy; }
                 if (this.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
                 if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.fillClasses, e.shiftKey); }
@@ -752,7 +789,7 @@ function PuzzleEntry(p, index) {
 
         if (e.target.hasPointerCapture(e.pointerId)) { e.target.releasePointerCapture(e.pointerId); }
 
-        if ((document.activeElement == e.currentTarget) && this.options["data-text-advance-on-type"] && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) {
+        if ((document.activeElement == e.currentTarget) && this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) {
             this.dx = 1 - this.dx; this.dy = 1 - this.dy;
             e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
         }
@@ -861,6 +898,13 @@ function PuzzleEntry(p, index) {
         var val = options[option];
         // TODO attribute version
         return val;
+    }
+
+    this.getOptionPosArray = function(options, option, splitchar) {
+        var apos = this.getOptionArray(options, option, splitchar);
+        if (!apos)
+            return [];
+        return apos.map((pos) => { return pos ? "pos-" + pos : ""; });
     }
 
     this.cluePointerEnter = function(e) {
@@ -1317,6 +1361,7 @@ function PuzzleEntry(p, index) {
         // start with a copy of the global options and then add local modifications
         var gridOptions = {};
         for (const [key, value] of Object.entries(this.options)) { gridOptions[key] = value; }
+        this.setDataModeOptions(g, gridOptions, false);
         this.readLocalOptions(g, gridOptions);
         var gridPuzzleId = gridOptions["data-puzzle-id"];
         if (gridPuzzleId == this.options["data-puzzle-id"]) { gridPuzzleId = this.puzzleId + "|" + index; }
@@ -1329,7 +1374,7 @@ function PuzzleEntry(p, index) {
 
     this.dx = 0;
     this.dy = 0;
-    if (this.options["data-text-advance-on-type"]) {
+    if (this.activeGrid.options["data-text-advance-on-type"]) {
         if (this.activeGrid.numCols > 1) { this.dx = 1; }        
         else if (this.activeGrid.numRows > 1) { this.dy = 1; }        
     }
@@ -1381,6 +1426,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     this.tilt = 0;
     this.stateDirty = false;
     this.inhibitSave = false;
+    this.tabstopGrid = null;
 
     this.parseOuterClues = function(clues) {
         var clueDepth = 0;
@@ -1504,7 +1550,11 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             var primary = this.lookup[c.locationKey];
 
             var extractId = primary.getAttribute("data-extract-id");
-            var elems = extractId ? document.querySelectorAll("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']") : [primary];
+            var linkId = primary.getAttribute("data-link-id");
+            var asel = []
+            if (extractId) asel.push("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']");
+            if (linkId) asel.push("table:not(.copy-only) .cell[data-link-id='" + linkId + "']");
+            var elems = asel.length > 0 ? document.querySelectorAll(asel.join(", ")) : [primary];
 
             elems.forEach(elem => {
                 if (!changedElems.includes(elem)) { changedElems.push(elem); }
@@ -1677,6 +1727,12 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (downNumber) { label += `Cell is part of ${downNumber} Down. `}
         }
 
+        // link
+        if (td.classList.contains("link")) {
+            const linkId = td.getAttribute("data-link-id");
+            if (linkId) { label += `Cell is linked with id ${linkId}. `}
+        }
+
         // fill
         if (this.puzzleEntry.fillClasses) {
             let fill = this.puzzleEntry.findClassInList(td, this.puzzleEntry.fillClasses);
@@ -1790,6 +1846,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         spokes[l] = spoke;
     }
     var extracts = puzzleEntry.getOptionArray(this.options, "data-extracts", " ");
+    var links = puzzleEntry.getOptionArray(this.options, "data-links", " ");
+    var linkpos = puzzleEntry.getOptionPosArray(this.options, "data-link-position", "|");
     var topClues = puzzleEntry.getOptionArray(this.options, "data-top-clues", "|");
     var bottomClues = puzzleEntry.getOptionArray(this.options, "data-bottom-clues", "|");
     var leftClues = puzzleEntry.getOptionArray(this.options, "data-left-clues", "|");
@@ -1819,6 +1877,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     table.puzzleGrid = this;
     var clueNum = 0;
     var extractNum = 0;
+    var linkNum = 0;
 
     var regularRowBorder = 0;
     var regularColBorder = 0;
@@ -1876,6 +1935,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = this.leftClueDepth + c + 1; }
             td.classList.add("cell");
             td.classList.add("inner-cell");
+            let avoid = this.options["data-text-avoid-position"];
+            if (avoid) { td.classList.add("pos-avoid-" + avoid); }
             td.id = "cell-" + r + "-" + c;
             this.lookup[td.id] = td;
             var ch = textLines[r][c];
@@ -1930,8 +1991,9 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
             if (!td.classList.contains("unselectable")) {
                 if (allowInput) {
-                    td.tabIndex = this.puzzleEntry.firstCenterFocus ? -1 : 0;
+                    td.tabIndex = (this.puzzleEntry.firstCenterFocus && this.tabstopGrid) ? -1 : 0;
                     if (!this.puzzleEntry.firstCenterFocus) { this.puzzleEntry.firstCenterFocus = td; }
+                    if (!this.tabstopGrid) { this.tabstopGrid = td; }
                     td.addEventListener("keydown",  e => { this.puzzleEntry.keyDown(e); });
                     td.addEventListener("beforeinput", e => { this.puzzleEntry.beforeInput(e); });
                     td.addEventListener("pointerdown",  e => { this.puzzleEntry.pointerDown(e); });
@@ -2077,6 +2139,30 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                 if (this.options["data-clue-locations"] == "crossword") {
                     if (!acrossClue && c > 0 && textLines[r][c-1] != '@' && !(edgeCode & 4)) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
                     if (!downClue && r > 0 && textLines[r-1][c] != '@' && !(edgeCode & 1)) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
+                }
+            }
+
+            if (this.options["data-links"] && textLines[r][c] != '@') {
+                var link = links[linkNum++];
+                if (link) {
+                    var aval = String(link).split("|");
+                    var linkid = String(aval[0]).trim();
+                    if (linkid !== "") {
+                        var id = "link-id-" + linkid;
+                        td.setAttribute("data-link-id", id);
+                        td.classList.add("link");
+                    }
+                    aval.forEach((val, i) => {
+                        if (val !== "" && linkpos[i] && linkpos[i] !== "") {
+                            var divT = document.createElement("div");
+                            divT.setAttribute("aria-hidden", true);
+                            divT.contentEditable = false;
+                            divT.classList.add("link-label");
+                            divT.classList.add(linkpos[i]);
+                            divT.innerText = val;
+                            td.appendChild(divT);
+                        }
+                    });
                 }
             }
 
