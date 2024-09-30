@@ -1836,7 +1836,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         spokes[l] = spoke;
     }
     var extracts = puzzleEntry.getOptionArray(this.options, "data-extracts", " ");
-    var links = puzzleEntry.getOptionArray(this.options, "data-links", /\s+/);
+    var links = puzzleEntry.getOptionArray(this.options, "data-links", " ");
     var linkpos = puzzleEntry.getOptionPosArray(this.options, "data-link-position", "|");
     var topClues = puzzleEntry.getOptionArray(this.options, "data-top-clues", "|");
     var bottomClues = puzzleEntry.getOptionArray(this.options, "data-bottom-clues", "|");
