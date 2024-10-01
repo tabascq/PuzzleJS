@@ -1462,11 +1462,15 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
         var changedGrids = [];
 
-        this.container.querySelectorAll(".inner-cell.extract").forEach(s => {
+        this.container.querySelectorAll(".inner-cell.extract, .inner-cell.link").forEach(s => {
             var extractId = s.getAttribute("data-extract-id");
+            var linkId = s.getAttribute("data-link-id");
+            var asel = []
+            if (extractId) asel.push("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']");
+            if (linkId) asel.push("table:not(.copy-only) .cell[data-link-id='" + linkId + "']");
 
-            if (extractId) {
-                document.querySelectorAll("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']").forEach(elem => {
+            if (asel.length > 0) {
+                document.querySelectorAll(asel.join(", ")).forEach(elem => {
                     elem.querySelector(".text span").innerText = "";
                     var grid = this.puzzleEntry.puzzleGridFromCell(elem);
                     if (!changedGrids.includes(grid) && grid != this) { changedGrids.push(grid); }
