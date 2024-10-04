@@ -21,6 +21,7 @@
     display: flex;
     gap: 20px;
     flex-flow: row wrap;
+    justify-content: center;
     margin: 0px auto;
 }
 
@@ -297,6 +298,20 @@
 .puzzle-entry .reticle-front {
     stroke-width: 1px;
     stroke: lightblue;
+}
+
+.puzzle-toggle-item {
+    cursor: pointer;
+    user-select: none;
+}
+
+.puzzle-toggle-item:hover {
+    background: #8080803f;
+}
+
+.puzzle-toggle-item.toggled {
+    text-decoration: line-through;
+    opacity: 0.6;
 }
 
 .commands {

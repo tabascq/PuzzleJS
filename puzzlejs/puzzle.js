@@ -577,7 +577,7 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
-                this.toggleInteresting(e.currentTarget);
+                this.toggleClass(e.currentTarget, "interesting");
             } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
@@ -637,11 +637,11 @@ function PuzzleEntry(p, index) {
         return target.querySelector(".text span").innerText;
     }
 
-    this.toggleInteresting = function(target) {
+    this.toggleClass = function(target, className) {
         var grid = this.locateGrid(target);
-        var wasInteresting = target.classList.contains("interesting");
+        var wasSet = target.classList.contains(className);
         this.undoManager.startAction(this);
-        this.undoManager.addUnit(grid, target, "class-interesting", wasInteresting ? "interesting" : null, wasInteresting ? null : "interesting");
+        this.undoManager.addUnit(grid, target, "class-" + className, wasSet ? className : null, wasSet ? null : className);
         this.undoManager.endAction();
     }
 
@@ -797,7 +797,7 @@ function PuzzleEntry(p, index) {
         this.currentFill = null;
 
         if (e.ctrlKey) {
-            this.toggleInteresting(e.currentTarget);
+            this.toggleClass(e.currentTarget, "interesting");
             e.preventDefault();
             return;
         }
@@ -1461,6 +1461,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     this.prepareToReset = function() {
         localStorage.removeItem(this.puzzleId);
+        localStorage.removeItem(this.puzzleId + "-toggles");
         this.inhibitSave = true;
 
         var changedGrids = [];
@@ -1538,6 +1539,8 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         if (hasState) { localStorage.setItem(this.puzzleId, stateArray.join("|")); }
         else { localStorage.removeItem(this.puzzleId); }
 
+        if (this.toggleState) { localStorage.setItem(this.puzzleId + "-toggles", JSON.stringify(this.toggleState)); }
+
         this.stateDirty = false;
     }
 
@@ -1580,6 +1583,10 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                         if (c.value) { elem.classList.add("interesting"); }
                         else { elem.classList.remove("interesting"); }
                         break;
+                    case "class-toggled":
+                        if (c.value) { elem.classList.add("toggled"); grid.toggleState[elem.id] = true; }
+                        else { elem.classList.remove("toggled"); delete grid.toggleState[elem.id]; }
+                        break;
                     default:
                         if (c.propertyKey.endsWith("-code") && !svgChangedElems.includes(elem)) { svgChangedElems.push(elem); }
                         elem.setAttribute(c.propertyKey, c.value);
@@ -1589,7 +1596,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         });
 
         svgChangedElems.forEach(el => { this.updateSvg(el); });
-        changedElems.forEach(el => { this.processTdForCopyjack(el); this.updateLabel(el); });
+        changedElems.forEach(el => { if (el.classList.contains("cell")) { this.processTdForCopyjack(el); this.updateLabel(el); } });
 
         changedGrids.forEach(g => { g.stateDirty = true; });
         if (!this.puzzleEntry.pointerIsDown) { changedGrids.forEach(g => { g.saveState(); }) }
@@ -1828,6 +1835,29 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     this.lookup = {};
 
+    this.toggleState = localStorage.getItem(this.puzzleId + "-toggles");
+    this.toggleState = this.toggleState ? JSON.parse(this.toggleState) : {};
+
+    this.wireToggleInteractivity = function(toggleItem, id) {
+        toggleItem.id = id;
+        this.lookup[id] = toggleItem;
+        if (this.toggleState[id]) { toggleItem.classList.add("toggled"); }
+        toggleItem.addEventListener("pointerdown", e => { this.puzzleEntry.toggleClass(e.target, "toggled"); });
+    }
+
+    this.container.querySelectorAll(".puzzle-toggle-item").forEach((ti, index) => {
+        this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? ("item-" + index));
+    });
+
+    this.container.querySelectorAll(".puzzle-toggle-list").forEach((tl, index) => {
+        var tlBase = tl.getAttribute("data-toggle-id") ?? ("list-" + index);
+        for (var i = 0; i < tl.children.length; i++) {
+            var ti = tl.children[i];
+            ti.classList.add("puzzle-toggle-item");
+            this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? (tlBase + "-" + i));
+        }
+    });
+
     var clueIndicators = puzzleEntry.getOptionArray(this.options, "data-clue-indicators", " ", "auto");
     var textLines = puzzleEntry.getOptionArray(this.options, "data-text", "|");
     var textReplacements = puzzleEntry.getOptionDict(this.options, "data-text-replacements");
@@ -1872,6 +1902,12 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
     if (this.puzzleEntry.container.classList.contains("puzzle-box")) { this.screenreaderSupported = false; }
 
     var allowInput = !this.options["data-no-input"];
+    if (!allowInput) {
+        this.container.classList.add("no-input");
+    }
+
+    if (!textLines) return;
+
     var table = document.createElement("table");
     table.classList.add("puzzle-grid-content");
     table.puzzleGrid = this;
@@ -1884,10 +1920,6 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     var savedState = localStorage.getItem(this.puzzleId);
     if (savedState) { savedState = savedState.split("|"); }
-
-    if (!allowInput) {
-        this.container.classList.add("no-input");
-    }
 
     if (textLines.length == 1 && /^\d+x\d+$/.test(textLines[0])) {
         var dim = textLines[0].split("x");

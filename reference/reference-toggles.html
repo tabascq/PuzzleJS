@@ -1,0 +1,80 @@
+<!-- (c) 2024 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<html>
+    <head>
+        <title>Puzzle.js Reference: Toggles</title>
+        <link rel="stylesheet" href="reference-example.css"/>
+        <script type="text/javascript" src="reference-example.js"></script>
+        <link rel="stylesheet" href="../puzzlejs/puzzle.css"/>
+        <link rel="stylesheet" href="../puzzlejs/puzzle-basic-colors.css"/>
+        <script type="text/javascript" src="../puzzlejs/puzzle.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+            });
+        </script>
+        <style>
+            body {
+                padding: 1rem;
+            }
+
+            h1, h2, p, li {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            h3 {
+                font-family: monospace;
+            }
+
+            code {
+                background-color: #ddf;
+            }
+
+            .wordsearch-example .cell[data-spoke-code]:not([data-spoke-code="0"]) { background: lightgray; }
+        </style>
+    </head>
+    <body>
+        <h1>Puzzle.js Reference: Toggles</h1>
+        <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
+        <h2>Overview</h2>
+        <p>Some puzzles want to toggle things: clues that have or have not been used, statements that are true or false, etc. Puzzle.js can easily create interactivity for these scenarios, with automatic undo/redo and state-saving support.</p>
+        <div class="example">
+            <div class="puzzle-entry wordsearch-example" data-mode="wordsearch" data-show-commands="true" data-text="vbluew|indigo|oedcnl|leoeal|erlore|tgrsoy">
+    <div class="puzzle-toggle-list">
+        <div>RED</div>
+        <div>ORANGE</div>
+        <div>YELLOW</div>
+        <div>GREEN</div>
+        <div>BLUE</div>
+        <div>INDIGO</div>
+        <div>VIOLET</div>
+    </div>
+</div>
+        </div>
+        <h2>Toggle Items and Lists</h2>
+        <p>To mark a single item as being toggleable, set <code>puzzle-toggle-item</code> on the class. To mark an entire list of items as toggleable, set <code>puzzle-toggle-list</code> on the class. Note as well that the example below has no grid; this demonstrates that toggles can be used without any grid at all, if desired.</p>
+        <div class="example">
+            <div class="puzzle-entry" data-show-commands="true">
+    <div class="puzzle-toggle-list">
+        <div>Gold</div>
+        <div>Silver</div>
+        <div>Bronze</div>
+    </div>
+    <div class="puzzle-toggle-item">Steel</div>
+</div>
+        </div>
+        <h2>Toggle IDs</h2>
+        <p>Each toggle item needs an ID so its state can be persisted. These IDs are dynamically assigned by default based on the items&rsquo; positions within the puzzle, which could cause issues if your set of toggleable items changes over time. If you need an ID to be stable, you can set <code>data-toggle-id</code> on your item or list.</p>
+        <div class="example">
+            <div class="puzzle-entry" data-show-commands="true">
+    <div class="puzzle-toggle-list" data-toggle-id="my-list">
+        <div>Gold</div>
+        <div data-toggle-id="my-item-in-a-list">Silver</div>
+        <div>Bronze</div>
+    </div>
+    <div class="puzzle-toggle-item" data-toggle-id="my-item">Steel</div>
+</div>
+        </div>
+</body>
+</html>
