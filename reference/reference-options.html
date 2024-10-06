@@ -758,6 +758,12 @@
                 <div class="puzzle-entry" data-mode="slitherlink" data-text="6x4" data-show-commands="true"></div>
             </div>
         </div>
+        <div class="option" data-name="data-reset-prompt">
+            <p>Specifies a prompt to show to confirm clearing the puzzle when the Reset button is pressed. The text of this option is shown in the dialog.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="slitherlink" data-text="6x4" data-show-commands="true" data-reset-prompt="Clear all puzzle content?"></div>
+            </div>
+        </div>
         <div class="option" data-name="data-puzzle-id">
             <p>Allows for a specifically-named identifier to be used for the puzzle, both for saved state in localStorage and for co-op scenarios. When not present, the identifier will be constructed from the page and the index of the puzzle among all <code>.puzzle-entry</code> objects on the page. When needed, the page portion of the identifier will be either the <code>data-puzzle-page-id</code> property of the <code>body</code> element, or if that is not present the <code>window.location.pathname</code> of the page.</p>
             <div class="example">

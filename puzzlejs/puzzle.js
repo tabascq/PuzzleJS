@@ -63,6 +63,7 @@ puzzleModes["default"] = {
     "data-no-input": false,
     "data-no-screenreader": false,
     "data-show-commands": false,
+    "data-reset-prompt": null,
     "data-puzzle-id": null,
     "data-team-id": null,
     "data-player-id": null
@@ -1384,9 +1385,11 @@ function PuzzleEntry(p, index) {
         this.commands.querySelector(".puzzle-about-button").addEventListener("click", e => { this.aboutPopup(); });
         this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
         this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
-        // TODO shouldn't need a reload
-        this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { this.prepareToReset(); window.location.reload(); });
-
+        // TODO shouldn't need a reload after reset
+        if (this.options["data-reset-prompt"])
+            this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { if (confirm(this.options["data-reset-prompt"])) {this.prepareToReset(); window.location.reload();} });
+        else
+            this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { this.prepareToReset(); window.location.reload(); });
         this.container.appendChild(this.commands);
     }
 
@@ -1467,7 +1470,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             var linkId = s.getAttribute("data-link-id");
             var asel = []
             if (extractId) asel.push("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']");
-            if (linkId) asel.push("table:not(.copy-only) .cell[data-link-id='" + linkId + "']");
+            if (linkId) asel.push("table:not(.copy-only) .link[data-link-id='" + linkId + "']");
 
             if (asel.length > 0) {
                 document.querySelectorAll(asel.join(", ")).forEach(elem => {
@@ -1554,7 +1557,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
             var linkId = primary.getAttribute("data-link-id");
             var asel = []
             if (extractId) asel.push("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']");
-            if (linkId) asel.push("table:not(.copy-only) .cell[data-link-id='" + linkId + "']");
+            if (linkId) asel.push("table:not(.copy-only) .link[data-link-id='" + linkId + "']");
             var elems = asel.length > 0 ? document.querySelectorAll(asel.join(", ")) : [primary];
 
             elems.forEach(elem => {
