@@ -1367,11 +1367,11 @@ function PuzzleEntry(p, index) {
         this.readLocalOptions(g, gridOptions);
         var gridPuzzleId = gridOptions["data-puzzle-id"];
         if (gridPuzzleId == this.options["data-puzzle-id"]) { gridPuzzleId = this.puzzleId + "|" + index; }
-        this.puzzleGrids.push(new PuzzleGrid(this, gridOptions, g, gridPuzzleId));
+        this.puzzleGrids.push(new PuzzleGrid(this, gridOptions, g, gridPuzzleId, true, false));
     });
     
-    // if there are no subgrids, this is the one true grid
-    if (!this.puzzleGrids.length) { this.puzzleGrids.push(new PuzzleGrid(this, this.options, this.content, this.puzzleId)); }
+    // push a grid to manage toggles. Also, if there are no subgrids yet, this is the one true grid
+    this.puzzleGrids.push(new PuzzleGrid(this, this.options, this.content, this.puzzleId, this.puzzleGrids.length == 0, true));
     this.activeGrid = this.puzzleGrids[0];
 
     this.dx = 0;
@@ -1419,7 +1419,7 @@ function PuzzleEntry(p, index) {
     this.container.classList.add("loaded");
 }
 
-function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
+function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles) {
     this.puzzleEntry = puzzleEntry;
     this.container = container;
     this.options = options;
@@ -1867,28 +1867,32 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
     this.lookup = {};
 
-    this.toggleState = localStorage.getItem(this.puzzleId + "-toggles");
-    this.toggleState = this.toggleState ? JSON.parse(this.toggleState) : {};
-
-    this.wireToggleInteractivity = function(toggleItem, id) {
-        toggleItem.id = id;
-        this.lookup[id] = toggleItem;
-        if (this.toggleState[id]) { toggleItem.classList.add("toggled"); }
-        toggleItem.addEventListener("pointerdown", e => { this.puzzleEntry.toggleClass(e.target, "toggled"); });
+    if (doToggles) {
+        this.toggleState = localStorage.getItem(this.puzzleId + "-toggles");
+        this.toggleState = this.toggleState ? JSON.parse(this.toggleState) : {};
+    
+        this.wireToggleInteractivity = function(toggleItem, id) {
+            toggleItem.id = id;
+            this.lookup[id] = toggleItem;
+            if (this.toggleState[id]) { toggleItem.classList.add("toggled"); }
+            toggleItem.addEventListener("pointerdown", e => { this.puzzleEntry.toggleClass(e.target, "toggled"); });
+        }
+    
+        this.container.querySelectorAll(".puzzle-toggle-item").forEach((ti, index) => {
+            this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? ("item-" + index));
+        });
+    
+        this.container.querySelectorAll(".puzzle-toggle-list").forEach((tl, index) => {
+            var tlBase = tl.getAttribute("data-toggle-id") ?? ("list-" + index);
+            for (var i = 0; i < tl.children.length; i++) {
+                var ti = tl.children[i];
+                ti.classList.add("puzzle-toggle-item");
+                this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? (tlBase + "-" + i));
+            }
+        });
     }
 
-    this.container.querySelectorAll(".puzzle-toggle-item").forEach((ti, index) => {
-        this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? ("item-" + index));
-    });
-
-    this.container.querySelectorAll(".puzzle-toggle-list").forEach((tl, index) => {
-        var tlBase = tl.getAttribute("data-toggle-id") ?? ("list-" + index);
-        for (var i = 0; i < tl.children.length; i++) {
-            var ti = tl.children[i];
-            ti.classList.add("puzzle-toggle-item");
-            this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? (tlBase + "-" + i));
-        }
-    });
+    if (!doGrid) return;
 
     var textLines = puzzleEntry.getOptionArray(this.options, "data-text", "|");
     var textReplacements = puzzleEntry.getOptionDict(this.options, "data-text-replacements");
