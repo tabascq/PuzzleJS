@@ -44,6 +44,7 @@ puzzleModes["default"] = {
     // clues
     "data-clue-locations": null,
     "data-clue-indicators": null,
+    "data-clue-position": "top-left",
     "data-top-clues": null,
     "data-bottom-clues": null,
     "data-left-clues": null,
@@ -52,6 +53,8 @@ puzzleModes["default"] = {
     // linked content
     "data-links": null,
     "data-link-position": "top-left",
+    "data-extracts": null,
+    "data-extract-position": "bottom-right",
 
     // misc
     "data-drag-paint-fill": true,
@@ -61,7 +64,6 @@ puzzleModes["default"] = {
     "data-unselectable-givens": false,
     "data-extra-style-classes": null,
     "data-extra-styles": null,
-    "data-extracts": null,
     "data-no-input": false,
     "data-no-screenreader": false,
     "data-show-commands": false,
@@ -1725,8 +1727,10 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         }
 
         // clue
-        const clue = td.querySelector(".clue");
-        if (clue) label += `Cell clue indicator is ${clue.innerText}. `;
+        if (td.classList.contains("clue")) {
+            const clueId = td.getAttribute("data-clue-id");
+            if (clueId) label += `Cell clue indicator is ${clueId}. `;
+        }
         if (this.options["data-clue-locations"] == "crossword") {
             const acrossNumber = td.getAttribute("data-across-cluenumber");
             if (acrossNumber) { label += `Cell is part of ${acrossNumber} Across. `}
@@ -1795,6 +1799,34 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         return replacements[ch];
     }
 
+    this.createLabels = function(cell, labelIdType, labelData, labelPos) {
+        var labelId = null;
+
+        if (labelData) {
+            var labelDataParts = String(labelData).split("|");
+            if (labelIdType) {
+                labelId = String(labelDataParts[0]).trim();
+                if (labelId) {
+                    cell.setAttribute(`data-${labelIdType}-id`, labelId);
+                    cell.classList.add(labelIdType);
+                }
+            }
+            labelDataParts.forEach((labelDataPart, i) => {
+                if (labelDataPart && labelPos.length > i && labelPos[i]) {
+                    var label = document.createElement("div");
+                    label.setAttribute("aria-hidden", true);
+                    label.contentEditable = false;
+                    label.classList.add(`${labelIdType}-label`);
+                    label.classList.add(labelPos[i]);
+                    label.innerText = labelDataPart;
+                    cell.appendChild(label);
+                }
+            });
+        }
+
+        return labelId;
+    }
+
     // Copyjack support.
     //
     // Reads from inputTd, a td that's part of an interactive puzzle element.
@@ -1858,7 +1890,6 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         }
     });
 
-    var clueIndicators = puzzleEntry.getOptionArray(this.options, "data-clue-indicators", " ", "auto");
     var textLines = puzzleEntry.getOptionArray(this.options, "data-text", "|");
     var textReplacements = puzzleEntry.getOptionDict(this.options, "data-text-replacements");
     var fills = puzzleEntry.getOptionArray(this.options, "data-fills", "|");
@@ -1875,7 +1906,10 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
         if (!spoke) { spoke = ""; }
         spokes[l] = spoke;
     }
+    var clueIndicators = puzzleEntry.getOptionArray(this.options, "data-clue-indicators", " ", "auto");
+    var cluepos = puzzleEntry.getOptionPosArray(this.options, "data-clue-position", "|");
     var extracts = puzzleEntry.getOptionArray(this.options, "data-extracts", " ");
+    var extractpos = puzzleEntry.getOptionPosArray(this.options, "data-extract-position", "|");
     var links = puzzleEntry.getOptionArray(this.options, "data-links", " ");
     var linkpos = puzzleEntry.getOptionPosArray(this.options, "data-link-position", "|");
     var topClues = puzzleEntry.getOptionArray(this.options, "data-top-clues", "|");
@@ -1990,17 +2024,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                 else if (allowInput && this.options["data-text-characters"]) { td.contentEditable = true; td.autocapitalize="off"; }
 
                 if (extracts) {
-                    var code = extracts[extractNum++];
-                    var id = "extract-id-" + code;
-                    td.setAttribute("data-extract-id", id);
-                    td.classList.add(id);
-
-                    var extractCode = document.createElement("div");
-                    extractCode.setAttribute("aria-hidden", true);
-                    extractCode.contentEditable = false;
-                    extractCode.classList.add("extract-code");
-                    extractCode.innerText = code;
-                    td.appendChild(extractCode);
+                    this.createLabels(td, "extract", extracts[extractNum++], extractpos);
                 }
             }
             else if (ch == '@') {
@@ -2143,29 +2167,22 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
                 
                 if (acrossClue || downClue || this.options["data-clue-locations"] == "all") {
                     var clueIndicator = (!clueIndicators) ? ++clueNum : clueIndicators[clueNum++];
-                    const isClueEmpty = String(clueIndicator).trim() === "";
+                    const clueId = this.createLabels(td, "clue", clueIndicator, cluepos);
 
-                    if (!isClueEmpty && this.options["data-clue-locations"] == "crossword") {
-                        if (acrossClue) { td.setAttribute("data-across-cluenumber", clueIndicator); }
-                        if (downClue) { td.setAttribute("data-down-cluenumber", clueIndicator); }
+                    if (this.options["data-clue-locations"] == "crossword" && clueId) {
+                        if (acrossClue) { td.setAttribute("data-across-cluenumber", clueId); }
+                        if (downClue) { td.setAttribute("data-down-cluenumber", clueId); }
                         if (acrossClue && acrossClues[acrossClueIndex]) {
-                          acrossClues[acrossClueIndex].setAttribute("data-across-cluenumber", clueIndicator);
-                          acrossClues[acrossClueIndex].setAttribute("value", clueIndicator);
+                          acrossClues[acrossClueIndex].setAttribute("data-across-cluenumber", clueId);
+                          acrossClues[acrossClueIndex].setAttribute("value", clueId);
                           acrossClueIndex++;
                         }
                         if (downClue && downClues[downClueIndex]) {
-                          downClues[downClueIndex].setAttribute("data-down-cluenumber", clueIndicator);
-                          downClues[downClueIndex].setAttribute("value", clueIndicator);
+                          downClues[downClueIndex].setAttribute("data-down-cluenumber", clueId);
+                          downClues[downClueIndex].setAttribute("value", clueId);
                           downClueIndex++;
                         }
                     }
-
-                    var clue = document.createElement("div");
-                    clue.setAttribute("aria-hidden", true);
-                    clue.contentEditable = false;
-                    clue.classList.add("clue");
-                    clue.innerText = clueIndicator;
-                    td.appendChild(clue);
                 }
 
                 if (this.options["data-clue-locations"] == "crossword") {
@@ -2176,26 +2193,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId) {
 
             if (this.options["data-links"] && textLines[r][c] != '@') {
                 var link = links[linkNum++];
-                if (link) {
-                    var aval = String(link).split("|");
-                    var linkid = String(aval[0]).trim();
-                    if (linkid !== "") {
-                        var id = "link-id-" + linkid;
-                        td.setAttribute("data-link-id", id);
-                        td.classList.add("link");
-                    }
-                    aval.forEach((val, i) => {
-                        if (val !== "" && linkpos[i] && linkpos[i] !== "") {
-                            var divT = document.createElement("div");
-                            divT.setAttribute("aria-hidden", true);
-                            divT.contentEditable = false;
-                            divT.classList.add("link-label");
-                            divT.classList.add(linkpos[i]);
-                            divT.innerText = val;
-                            td.appendChild(divT);
-                        }
-                    });
-                }
+                this.createLabels(td, "link", link, linkpos);
             }
 
             if (this.puzzleEntry.fillClasses) {

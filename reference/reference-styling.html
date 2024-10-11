@@ -297,6 +297,7 @@
             <tr><td><code>.cell.interesting</code></td><td>A cell that has been marked by the player as &ldquo;interesting&rdquo;.</td></tr>
             <tr><td><code>.cell.strikethrough</code></td><td>A cell containing a clue that the player has marked as complete.</td></tr>
             <tr><td><code>.cell.extract</code></td><td>A cell that has been marked for answer letter extraction via <code>#</code> in <code>data-text</code>.</td></tr>
+            <tr><td><code>.cell .extract-label</code></td><td>The label for a cell from the <code>data-extracts</code> list.</td></tr>
             <tr><td><code>.cell.link</code></td><td>A cell that is linked to another cell via the <code>data-links</code> option.</td></tr>
             <tr><td><code>.cell .link-label</code></td><td>The label for a link from the <code>data-links</code> list.</td></tr>
             <tr><td><code>.cell.outer-cell</code></td><td>A cell outside the grid, such as an exterior clue.</td></tr>
@@ -321,7 +322,7 @@
             <tr><td><code>.cell .spoke</code></td><td>Any of the 8 spokes emanating from a cell, if present.</td></tr>
             <tr><td><code>.cell .x-spoke</code></td><td>Any of the 8 "no" spokes emanating from a cell, if present.</td></tr>
             <tr><td><code>.cell .spoke-2</code></td><td>Any of the 4 double spokes emanating from a cell, if present.</td></tr>
-            <tr><td><code>.cell .clue</code></td><td>The interior (e.g. crossword) clue of a cell.</td></tr>
+            <tr><td><code>.cell .clue-label</code></td><td>The interior (e.g. crossword) clue of a cell.</td></tr>
             <tr><td><code>.cell.hovered</code></td><td>A crossword cell when the player is hovering over one of that cell&rsquo;s crossword clues.</td></tr>
             <tr><td><code>.cell.marked</code></td><td>A crossword cell when one of that cell&rsquo;s clues is selected.</td></tr>
             <tr><td><code>.crossword-clues li.marked</code></td><td>A crossword clue that is selected.</td></tr>
@@ -335,5 +336,6 @@
 
         <h2 id="BreakingChanges">Breaking Changes</h2>
         <p>Cell sizing is now controlled best from a <code>--puzzle-cell-size</code> CSS variable set on the puzzle, rather than by the <code>width</code> and <code>height</code> properties of a cell.</p>
+        <p>To be consistent with the nomenclature used for links and extracts, <code>.clue</code> now refers to a cell with a clue, and <code>.clue-label</code> refers to the label itself.</p>
     </body>
 </html>

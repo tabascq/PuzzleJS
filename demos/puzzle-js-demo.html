@@ -207,22 +207,23 @@
             
             <h2>Cryptogram</h2>
             <div class="example">
-                <div class="puzzle-entry" data-mode="linear" data-text="#### ## #|##### ###" data-extracts="G O A T A T I T O N K G N Y M"></div>
+                <div class="puzzle-entry" data-mode="linear" data-text="....@..@.|.....@..." data-links="G O A T A T I T O N K G N Y M" data-link-position="bottom-right" data-text-avoid-position="bottom"></div>
             </div>
 
             <h2>Acrostic (with multiple grids in one puzzle)</h2>
             <div class="example">
-                <div class="puzzle-entry acrostic-example" data-mode="linear" data-show-commands="true">
+                <div class="puzzle-entry">
     <div style="min-width: 400px; background-color: white; padding: 10px;">
-        <div class="puzzle-grid" data-text="#####@#|#######" data-extracts="C1 A2 C3 C4 C5 B6 C7 B8 B9 B10 A11 C12 A13"></div>
-        <br/>
+        <div class="puzzle-grid"  data-mode="crostic-grid" data-text=".....@.|......."
+            data-links="1|C 2|A 3|C 4|C 5|C 6|B 7|C 8|B 9|B 10|B 11|A 12|C 13|A"></div>
+        <br>
         <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
-            <div>Not new</div>
-            <div class="puzzle-grid" data-text="###" data-extracts="A11 A2 A13"></div>
-            <div>Left, on a map</div>
-            <div class="puzzle-grid" data-text="####" data-extracts="B10 B6 B8 B9"></div>
-            <div>Lights, Camera, ____!</div>
-            <div class="puzzle-grid" data-text="######" data-extracts="C7 C1 C5 C3 C12 C4"></div>
+            <div>A. Not new</div>
+            <div class="puzzle-grid" data-mode="crostic-clue" data-text="..." data-links="11 2 13"></div>
+            <div>B. Left, on a map</div>
+            <div class="puzzle-grid" data-mode="crostic-clue" data-text="...." data-links="10 6 8 9"></div>
+            <div>C. Lights, Camera, ____!</div>
+            <div class="puzzle-grid" data-mode="crostic-clue" data-text="......" data-links="7 1 5 3 12 4"></div>
         </div>
     </div>
 </div>
