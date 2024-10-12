@@ -1461,6 +1461,27 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles
         tr.appendChild(td);
     }
 
+    this.appendElementToLinkExtractSearch = function(elem, queries, result) {
+        if (result.includes(elem)) return;
+        result.push(elem);
+        var extract = elem.getAttribute("data-extract-id");
+        var link = elem.getAttribute("data-link-id");
+        if (extract) { extract = `table:not(.copy-only) .extract[data-extract-id='${extract}']`; if (!queries.includes(extract)) queries.push(extract); }
+        if (link) { link = `table:not(.copy-only) .link[data-link-id='${link}']`; if (!queries.includes(link)) queries.push(link); };
+    }
+
+    this.findLinkExtractCells = function(primary) {
+        var result = [];
+        var queries = [];
+
+        this.appendElementToLinkExtractSearch(primary, queries, result);
+        for (var i = 0; i < queries.length; i++) {
+            document.querySelectorAll(queries[i]).forEach(elem => { this.appendElementToLinkExtractSearch(elem, queries, result); });
+        }
+
+        return result;
+    }
+
     this.prepareToReset = function() {
         localStorage.removeItem(this.puzzleId);
         localStorage.removeItem(this.puzzleId + "-toggles");
@@ -1469,19 +1490,13 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles
         var changedGrids = [];
 
         this.container.querySelectorAll(".inner-cell.extract, .inner-cell.link").forEach(s => {
-            var extractId = s.getAttribute("data-extract-id");
-            var linkId = s.getAttribute("data-link-id");
-            var asel = []
-            if (extractId) asel.push("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']");
-            if (linkId) asel.push("table:not(.copy-only) .link[data-link-id='" + linkId + "']");
-
-            if (asel.length > 0) {
-                document.querySelectorAll(asel.join(", ")).forEach(elem => {
-                    elem.querySelector(".text span").innerText = "";
-                    var grid = this.puzzleEntry.puzzleGridFromCell(elem);
-                    if (!changedGrids.includes(grid) && grid != this) { changedGrids.push(grid); }
-                });
-            }
+            var elems = this.findLinkExtractCells(s);
+            elems.forEach(elem => {
+                var span = elem.querySelector(".text span");
+                if (span) span.innerText = "";
+                var grid = this.puzzleEntry.puzzleGridFromCell(elem);
+                if (!changedGrids.includes(grid) && grid != this) { changedGrids.push(grid); }
+            });
         });
 
         changedGrids.forEach(g => { g.stateDirty = true; g.saveState(); });
@@ -1557,13 +1572,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles
 
         changes.forEach(c => {
             var primary = this.lookup[c.locationKey];
-
-            var extractId = primary.getAttribute("data-extract-id");
-            var linkId = primary.getAttribute("data-link-id");
-            var asel = []
-            if (extractId) asel.push("table:not(.copy-only) .extract[data-extract-id='" + extractId + "']");
-            if (linkId) asel.push("table:not(.copy-only) .link[data-link-id='" + linkId + "']");
-            var elems = asel.length > 0 ? document.querySelectorAll(asel.join(", ")) : [primary];
+            var elems = this.findLinkExtractCells(primary);
 
             elems.forEach(elem => {
                 if (!changedElems.includes(elem)) { changedElems.push(elem); }
