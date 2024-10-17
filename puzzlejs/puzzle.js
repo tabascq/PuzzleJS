@@ -338,6 +338,29 @@ function PuzzleEntry(p, index) {
         return dirRotates[dirIndex];
     }
 
+    this.setDxDy = function(dx, dy) {
+        if (this.dx && !dx) this.container.classList.remove("advance-horizontal");
+        else if (this.dy && !dy) this.container.classList.remove("advance-vertical");
+        if (!this.dx && dx) this.container.classList.add("advance-horizontal");
+        else if (!this.dy && dy) this.container.classList.add("advance-vertical");
+        this.dx = dx;
+        this.dy = dy;
+    }
+
+    this.setActiveGrid = function(grid) {
+        if (this.activeGrid === grid) return;
+
+        var dx = 0;
+        var dy = 0;
+        if (grid.options["data-text-advance-on-type"]) {
+            if (grid.numCols > 1) { dx = 1; }        
+            else if (grid.numRows > 1) { dy = 1; }        
+        }
+        this.setDxDy(dx, dy);
+    
+        this.activeGrid = grid;
+    }
+
     // --- Functions to update state ---
     // keyboard support
     this.move = function(td, drow, dcol) {
@@ -403,8 +426,7 @@ function PuzzleEntry(p, index) {
 
             if (text && !td.classList.contains("unselectable")) {
                 if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap") {
-                    this.dx = Math.abs(dcol);
-                    this.dy = Math.abs(drow);
+                    this.setDxDy(Math.abs(dcol), Math.abs(drow));
                 }
                 this.updateCenterFocus(td);
                 if (puzzleGrid != puzzleGridOrig) {
@@ -441,7 +463,7 @@ function PuzzleEntry(p, index) {
 
                 var detail = { oldGridId: this.activeGrid.puzzleId, newGridId: sideLink.puzzleGrid.puzzleId };
 
-                this.activeGrid = sideLink.puzzleGrid;
+                this.setActiveGrid(sideLink.puzzleGrid);
                 dirCode = 8 - adjacentDir;
                 if (adjacentDir == 1 || adjacentDir == 7) {
                     this.cornerFocusX = edgeVal;
@@ -584,7 +606,7 @@ function PuzzleEntry(p, index) {
             } else if (this.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
-                if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.dx = 1 - this.dx; this.dy = 1 - this.dy; }
+                if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.setDxDy(1 - this.dx, 1 - this.dy); }
                 if (this.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
                 if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.fillClasses, e.shiftKey); }
@@ -714,7 +736,7 @@ function PuzzleEntry(p, index) {
             var col = parseInt(parts[2]);
             if (this.canHaveCornerFocus) {
                 this.setCornerFocusMode();
-                this.activeGrid = puzzleGrid;
+                this.setActiveGrid(puzzleGrid);
                 this.cornerFocusX = col + (closeRight ? 1 : 0);
                 this.cornerFocusY = row + (closeBottom ? 1 : 0);
                 this.updateCornerFocus();
@@ -793,7 +815,7 @@ function PuzzleEntry(p, index) {
         if (e.target.hasPointerCapture(e.pointerId)) { e.target.releasePointerCapture(e.pointerId); }
 
         if ((document.activeElement == e.currentTarget) && this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) {
-            this.dx = 1 - this.dx; this.dy = 1 - this.dy;
+            this.setDxDy(1 - this.dx, 1 - this.dy);
             e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
         }
         this.lastCell = e.currentTarget;
@@ -927,8 +949,8 @@ function PuzzleEntry(p, index) {
     this.clueClick = function(e) {
         var acrosscluenumber = e.currentTarget.getAttribute("data-across-cluenumber");
         var downcluenumber = e.currentTarget.getAttribute("data-down-cluenumber");
-        if (acrosscluenumber) { this.dx = 1; this.dy = 0; this.content.querySelector(".cell[data-across-cluenumber='" + acrosscluenumber + "']").focus(); }
-        if (downcluenumber) { this.dx = 0; this.dy = 1; this.content.querySelector(".cell[data-down-cluenumber='" + downcluenumber + "']").focus(); }
+        if (acrosscluenumber) { this.setDxDy(1, 0); this.content.querySelector(".cell[data-across-cluenumber='" + acrosscluenumber + "']").focus(); }
+        if (downcluenumber) { this.setDxDy(0, 1); this.content.querySelector(".cell[data-down-cluenumber='" + downcluenumber + "']").focus(); }
     }
 
     this.scrollClue = function(li) {
@@ -1373,14 +1395,7 @@ function PuzzleEntry(p, index) {
     
     // push a grid to manage toggles. Also, if there are no subgrids yet, this is the one true grid
     this.puzzleGrids.push(new PuzzleGrid(this, this.options, this.content, this.puzzleId, this.puzzleGrids.length == 0, true));
-    this.activeGrid = this.puzzleGrids[0];
-
-    this.dx = 0;
-    this.dy = 0;
-    if (this.activeGrid.options["data-text-advance-on-type"]) {
-        if (this.activeGrid.numCols > 1) { this.dx = 1; }        
-        else if (this.activeGrid.numRows > 1) { this.dy = 1; }        
-    }
+    this.setActiveGrid(this.puzzleGrids[0]);
 
     if (this.options["data-show-commands"]) {
         this.commands = document.createElement("div");
@@ -2073,7 +2088,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles
                     td.addEventListener("pointermove",  e => { this.puzzleEntry.pointerMove(e); });
                     td.addEventListener("pointercancel",  e => { this.puzzleEntry.pointerCancel(e); });
                     td.addEventListener("contextmenu",  e => { e.preventDefault(); });
-                    td.addEventListener("focus",  e => { this.puzzleEntry.activeGrid = this; });
+                    td.addEventListener("focus",  e => { this.puzzleEntry.setActiveGrid(this); });
                     if (this.options["data-clue-locations"] === "crossword") {
                         td.addEventListener("focus",  e => { this.puzzleEntry.mark(e.target); });
                         td.addEventListener("blur",  e => { this.puzzleEntry.unmark(e.target); });
