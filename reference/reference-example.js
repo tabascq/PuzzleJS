@@ -16,10 +16,16 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         });
 
-        if (classes) classes += "\n";
-        
-        let code = document.createElement("pre");
-        code.innerText = classes + example.innerHTML.replace(/&amp;/g,'&').trim();
+        let source = example.innerHTML.replace(/&amp;/g,'&').replace(/&quot;/g,'"').trim();
+
+        let code = document.createElement("div");
+        code.insertAdjacentHTML("afterbegin", "<div class='example-title'><button type='button' class='designer-button'>Open in designer</button></div>");
+        code.querySelector(".designer-button").addEventListener("click", e => {
+            window.open(`${puzzleJsFolderPath}/../../designer/puzzle-designer.html?puzzle=${encodeURIComponent(source)}&css=${encodeURIComponent(classes)}`);
+        });
+        let pre = document.createElement("pre");
+        pre.innerText = classes ? `${classes}\n${source}` : source;
+        code.appendChild(pre);
         example.insertBefore(code, example.firstChild);
     });
 });

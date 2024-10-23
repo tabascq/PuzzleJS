@@ -19,7 +19,16 @@
     white-space: pre-wrap;
 }
 
-.example pre::before {
+.example-title {
+    display: flex;
+    align-items: center;
+}
+
+.designer-button {
+    margin-left: 10px;
+}
+
+.example .example-title::before {
     content: "Interactive Example";
     font-family: serif;
     font-weight: bold;
@@ -28,7 +37,7 @@
     margin-left: -2em;
 }
 
-.example.non-interactive pre::before {
+.example.non-interactive .example-title::before {
     content: "Example";
 }
 

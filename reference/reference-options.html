@@ -289,13 +289,16 @@
         </div>
         <div class="option" data-name="data-text-replacements">
             <p>A way to replace a single character in the <a href="#data-text"><code>data-text</code></a> option with a string of any length.</p>
-            <p>Currently, the only way to specify this option is with a JSON object using its key-value features.</p>
+            <p>Currently, the only way to specify this option is with a JSON object using its key-value features. This can be expressed either as a property-value pair in a JSON object, or as an attribute with JSON contents.</p>
             <div class="example">
                 <div class="puzzle-entry" data-text="235|7ET|SNW">
     { "data-text-replacements":
         { "E": "11", "T": "13", "S": "17", "N": "19", "W": "23" }
     }
 </div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="235|7ET|SNW" data-text-replacements="{ 'E': '11', 'T': '13', 'S': '17', 'N': '19', 'W': '23' }"></div>
             </div>
         </div>
         <div class="option" data-name="data-text-characters">

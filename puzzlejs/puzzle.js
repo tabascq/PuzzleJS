@@ -265,37 +265,38 @@ function PuzzleEntry(p, index) {
         if (fDefault)
             modes.push("default"); 
         modes.reverse();
-        modes.forEach(m => { for (const [key, value] of Object.entries(puzzleModes[m])) { options[key] = value; } });
+        modes.forEach(m => { if (puzzleModes[m]) for (const [key, value] of Object.entries(puzzleModes[m])) { options[key] = value; } });
     }
 
-    this.options = {};
-    this.setDataModeOptions(this.container, this.options, true);
-
-    // Finally, any explicitly-specified attributes win.
-    this.readLocalOptions = function(element, options) {
-        for (const [key, value] of Object.entries(options)) {
-            if (element.hasAttribute(key)) { options[key] = parseFalseStrings(element.getAttribute(key)); }
-        }
+    this.extractJsonOptions = function(element) {
+        var jsonOptions = {};
 
         if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
             try {
                 var json = JSON.parse(element.firstChild.textContent);
-                for (const[key, value] of Object.entries(json)) { options[key] = value; }
+                for (const[key, value] of Object.entries(json)) { jsonOptions[key] = value; }
                 element.removeChild(element.firstChild);
             } catch {}
         }
+
+        return jsonOptions;
     }
 
-    this.readLocalOptions(this.container, this.options);
+    // Finally, any explicitly-specified attributes win.
+    this.readLocalOptions = function(element, jsonOptions, options) {
+        for (const [key, value] of Object.entries(options)) {
+            if (element.hasAttribute(key)) { options[key] = parseFalseStrings(element.getAttribute(key)); }
+            if (jsonOptions[key] != undefined) { options[key] = jsonOptions[key];}
+        }
+    }
 
     this.pointerIsDown = false;
     this.lastCell = null;
     this.currentFill = null;
-    this.puzzleId = this.options["data-puzzle-id"];
-    if (!this.puzzleId) { this.puzzleId = (document.body.getAttribute("data-puzzle-page-id") ?? window.location.pathname) + "|" + index; }
     this.xKeyMode = false;
     this.tilt = 0;
     this.reticleXMode = false;
+    this.jsonOptions = this.extractJsonOptions(this.container);
 
     this.locateScope = function(scopeId) {
         var ancestor = this.container;
@@ -357,6 +358,11 @@ function PuzzleEntry(p, index) {
             else if (grid.numRows > 1) { dy = 1; }        
         }
         this.setDxDy(dx, dy);
+
+        this.canDrawOnEdges = grid.options["data-drag-draw-edge"] && !grid.options["data-no-input"];
+        this.canHaveCenterFocus = grid.options["data-text-characters"] || (grid.fillClasses && grid.options["data-fill-cycle"]) || grid.options["data-drag-draw-path"] || grid.options["data-drag-draw-spoke"];
+        this.canHaveCornerFocus = this.canDrawOnEdges;
+        this.keyboardFocusModel = grid.options["data-no-input"] ? "none" : (this.canHaveCornerFocus ? "corner" : "center");
     
         this.activeGrid = grid;
     }
@@ -377,7 +383,7 @@ function PuzzleEntry(p, index) {
         var row = drow + parseInt(parts[1]);
         var col = dcol + parseInt(parts[2]);
 
-        if (this.fShift && (this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"])) {
+        if (this.fShift && (this.activeGrid.options["data-drag-draw-path"] || this.activeGrid.options["data-drag-draw-spoke"])) {
             var tdTo;
             if (td.cellLinks && td.cellLinks[dirCode]) {
                 tdTo = td.cellLinks[dirCode];
@@ -388,7 +394,7 @@ function PuzzleEntry(p, index) {
 
             if (tdTo && tdTo.classList.contains("inner-cell")) {
                 this.lastCell = td;
-                this.currentFill = this.findClassInList(td, this.fillClasses);
+                this.currentFill = this.findClassInList(td, this.activeGrid.fillClasses);
                 this.dragBetweenCells(tdTo, false);
             }
         }
@@ -535,9 +541,9 @@ function PuzzleEntry(p, index) {
     }
 
     this.handleEventChar = function(e, ch) {
-        if (this.options["data-text-shift-key"] != "none" && (e.shiftKey || this.options["data-text-shift-lock"])) {
+        if (this.activeGrid.options["data-text-shift-key"] != "none" && (e.shiftKey || this.activeGrid.options["data-text-shift-lock"])) {
             var val = this.getText(e.target).replace("\xa0", " ");
-            if (this.options["data-text-shift-key"] == "rebus" || !val.includes(ch)) { val = val + ch; }
+            if (this.activeGrid.options["data-text-shift-key"] == "rebus" || !val.includes(ch)) { val = val + ch; }
             else { val = val.replace(ch, ""); }
 
             this.setText(e.target, val, true);
@@ -550,7 +556,7 @@ function PuzzleEntry(p, index) {
     this.handleBackspaceChar = function(e) {
         var newVal = "";
 
-        if ((e.shiftKey || this.options["data-text-shift-lock"]) && this.options["data-text-shift-key"] == "rebus") {
+        if ((e.shiftKey || this.activeGrid.options["data-text-shift-lock"]) && this.activeGrid.options["data-text-shift-key"] == "rebus") {
             newVal = this.getText(e.target).replace("\xa0", " ");
             newVal = newVal.substring(0, newVal.length - 1);
             if (newVal.length && newVal[newVal.length - 1] == " ") {
@@ -587,7 +593,7 @@ function PuzzleEntry(p, index) {
         if (e.keyCode == 9) return;
 
         e.preventDefault();
-        if (this.options["data-text-solution"] || this.options["data-no-input"]) { return; }
+        if (this.activeGrid.options["data-text-solution"] || this.activeGrid.options["data-no-input"]) { return; }
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
@@ -595,21 +601,21 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 38) { this.move(e.target, -1, 0); } // up
         else if (e.keyCode == 39) { this.move(e.target, 0, 1); } // right
         else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
-        else if (e.keyCode == 191 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, 1); } // /
-        else if (e.keyCode == 220 && this.options["data-drag-draw-spoke"]) { this.setTilt(e, -1); } // \
-        else if (e.keyCode == 187 && this.fShift && this.options["data-drag-draw-spoke"]) { this.toggleReticle(e); } // +
-        else if (e.keyCode == 88 && this.options["data-drag-draw-spoke"] && !this.options["data-text-characters"].includes("X")) { this.toggleReticle(e); } // x
+        else if (e.keyCode == 191 && this.activeGrid.options["data-drag-draw-spoke"]) { this.setTilt(e, 1); } // /
+        else if (e.keyCode == 220 && this.activeGrid.options["data-drag-draw-spoke"]) { this.setTilt(e, -1); } // \
+        else if (e.keyCode == 187 && this.fShift && this.activeGrid.options["data-drag-draw-spoke"]) { this.toggleReticle(e); } // +
+        else if (e.keyCode == 88 && this.activeGrid.options["data-drag-draw-spoke"] && !this.activeGrid.options["data-text-characters"].includes("X")) { this.toggleReticle(e); } // x
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
                 this.toggleClass(e.currentTarget, "interesting");
-            } else if (this.options["data-text-characters"].includes(" ")) {
+            } else if (this.activeGrid.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
                 if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.setDxDy(1 - this.dx, 1 - this.dy); }
-                if (this.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
+                if (this.activeGrid.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
-                if (this.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.fillClasses, e.shiftKey); }
+                if (this.activeGrid.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.activeGrid.fillClasses, e.shiftKey); }
             }
         } else if (e.keyCode == 8) { // backspace
             this.handleBackspaceChar(e);
@@ -620,9 +626,9 @@ function PuzzleEntry(p, index) {
             if (code >= 96 && code <= 105) { code -= 48; }
             var ch = String.fromCharCode(code);
 
-            if (this.options["data-text-shift-key"] == "none" && e.key.length == 1) { ch = e.key.toUpperCase(); }
+            if (this.activeGrid.options["data-text-shift-key"] == "none" && e.key.length == 1) { ch = e.key.toUpperCase(); }
 
-            if (this.options["data-text-characters"].includes(ch)) {
+            if (this.activeGrid.options["data-text-characters"].includes(ch)) {
                 this.handleEventChar(e, ch);
             }
         }
@@ -634,7 +640,7 @@ function PuzzleEntry(p, index) {
         if (e.keyCode == 9) return;
 
         e.preventDefault();
-        if (this.options["data-no-input"]) { return; }
+        if (this.activeGrid.options["data-no-input"]) { return; }
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
@@ -837,8 +843,8 @@ function PuzzleEntry(p, index) {
             }
         }
         
-        if (this.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, "class-fill", this.fillClasses, e.button > 0 || e.shiftKey); }
-        else { this.currentFill = this.findClassInList(e.currentTarget, this.fillClasses); }
+        if (this.activeGrid.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, "class-fill", this.activeGrid.fillClasses, e.button > 0 || e.shiftKey); }
+        else { this.currentFill = this.findClassInList(e.currentTarget, this.activeGrid.fillClasses); }
         
         if (this.canHaveCenterFocus) {
             this.setCenterFocusMode();
@@ -879,31 +885,31 @@ function PuzzleEntry(p, index) {
     this.dragBetweenCells = function(to, rightMouse) {
         if (this.lastCell === to) return;
 
-        var wantPaint = this.options["data-drag-paint-fill"] && !!this.currentFill;
+        var wantPaint = this.activeGrid.options["data-drag-paint-fill"] && !!this.currentFill;
         var canPaint = wantPaint;
 
         this.undoManager.startAction(this);
 
-        if (wantPaint && (this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"])) {
-            var targetFill = this.findClassInList(to, this.fillClasses);
+        if (wantPaint && (this.activeGrid.options["data-drag-draw-path"] || this.activeGrid.options["data-drag-draw-spoke"])) {
+            var targetFill = this.findClassInList(to, this.activeGrid.fillClasses);
             var setLast = false; 
-            if (wantPaint && this.currentFill == this.fillClasses[0]) { this.currentFill = targetFill; setLast = true; }
-            if (wantPaint && targetFill != this.fillClasses[0] && targetFill != this.currentFill) { canPaint = false; }
+            if (wantPaint && this.currentFill == this.activeGrid.fillClasses[0]) { this.currentFill = targetFill; setLast = true; }
+            if (wantPaint && targetFill != this.activeGrid.fillClasses[0] && targetFill != this.currentFill) { canPaint = false; }
         }
 
-        if (this.options["data-drag-draw-spoke"] && (!wantPaint || canPaint)) {
+        if (this.activeGrid.options["data-drag-draw-spoke"] && (!wantPaint || canPaint)) {
             canPaint &= this.LinkCellsSpoke(this.lastCell, to, rightMouse);
         }
 
-        if (this.options["data-drag-draw-path"] && (!wantPaint || canPaint)) {
+        if (this.activeGrid.options["data-drag-draw-path"] && (!wantPaint || canPaint)) {
             canPaint &= this.LinkCellsPath(this.lastCell, to);
         }
 
         if (canPaint && !to.classList.contains("given-fill")) {
-            this.setClassInCycle(to, "class-fill", this.fillClasses, this.currentFill);
+            this.setClassInCycle(to, "class-fill", this.activeGrid.fillClasses, this.currentFill);
         }
 
-        if (canPaint && setLast) { this.setClassInCycle(this.lastCell, "class-fill", this.fillClasses, this.currentFill); }
+        if (canPaint && setLast) { this.setClassInCycle(this.lastCell, "class-fill", this.activeGrid.fillClasses, this.currentFill); }
 
         var didWork = this.undoManager.endAction();
 
@@ -915,13 +921,24 @@ function PuzzleEntry(p, index) {
 
     this.getOptionArray = function(options, option, splitchar, special) {
         var val = options[option];
+        if (/^\[.*\]$/.test(val)) {
+            try {
+                val = JSON.parse(val.replaceAll("'", '"'));
+            } catch {}
+        }
         if (!val || Array.isArray(val) || val == special) { return val; }
         return val.split(splitchar);
     }
 
     this.getOptionDict = function(options, option) {
         var val = options[option];
-        // TODO attribute version
+        if (typeof val === 'string' || val instanceof String) {
+            try {
+                val = JSON.parse(val.replaceAll("'", '"'));
+            } catch {
+                val = null;
+            }
+        }
         return val;
     }
 
@@ -962,7 +979,7 @@ function PuzzleEntry(p, index) {
     }
 
     this.mark = function(cell) {
-        if (this.options["data-clue-locations"] !== "crossword") return;
+        if (this.activeGrid.options["data-clue-locations"] !== "crossword") return;
         
         // Strip highlighting on all cells.
         this.content.querySelectorAll(".cell[data-across-cluenumber]").forEach(td => { td.classList.remove("marked"); });
@@ -993,7 +1010,7 @@ function PuzzleEntry(p, index) {
     }
 
     this.unmark = function(cell) {
-        if (this.options["data-clue-locations"] !== "crossword") return;
+        if (this.activeGrid.options["data-clue-locations"] !== "crossword") return;
 
         var acrosscluenumber = cell.getAttribute("data-across-cluenumber");
         var downcluenumber = cell.getAttribute("data-down-cluenumber");
@@ -1042,7 +1059,7 @@ function PuzzleEntry(p, index) {
         if (!codeFrom) { codeFrom = 0; } else { codeFrom = parseInt(codeFrom); }
         if (!codeTo) { codeTo = 0; } else { codeTo = parseInt(codeTo); }
         var currentSpokeLevel = 0;
-        var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
+        var maxSpokeLevels = parseInt(this.activeGrid.options["data-spoke-levels"]) + 1;
         if (attributeNameBase.includes("spoke")) {
             if ((codeFrom & directionFrom) && (codeTo & directionTo) && (attributeNameBase === "spoke")) { currentSpokeLevel++; }
             else {
@@ -1105,12 +1122,12 @@ function PuzzleEntry(p, index) {
                     this.undoManager.addUnit(toGrid, cellTo, otherAttributeName, otherTo, otherTo | directionTo);
                 }
 
-                if (this.options["data-drag-paint-fill"]) {
+                if (this.activeGrid.options["data-drag-paint-fill"]) {
                     if ((codeFrom & ~directionFrom) == 0 && !attributeNameBase.startsWith("x-") && !cellFrom.classList.contains("given-fill")) {
-                        this.setClassInCycle(cellFrom, "class-fill", this.fillClasses, this.fillClasses ? this.fillClasses[0] : null);
+                        this.setClassInCycle(cellFrom, "class-fill", this.activeGrid.fillClasses, this.activeGrid.fillClasses ? this.activeGrid.fillClasses[0] : null);
                     }
                     if ((codeTo & ~directionTo) == 0 && !attributeNameBase.startsWith("x-") && !cellTo.classList.contains("given-fill")) {
-                        this.setClassInCycle(cellTo, "class-fill", this.fillClasses, this.fillClasses ? this.fillClasses[0] : null);
+                        this.setClassInCycle(cellTo, "class-fill", this.activeGrid.fillClasses, this.activeGrid.fillClasses ? this.activeGrid.fillClasses[0] : null);
                     }
                 }
                 return true;
@@ -1122,7 +1139,7 @@ function PuzzleEntry(p, index) {
 
     this.LinkCellsPath = function(cellFrom, cellTo)
     {
-        var maxDirections = this.options["data-path-max-directions"];
+        var maxDirections = this.activeGrid.options["data-path-max-directions"];
 
         if (this.puzzleGridFromCell(cellFrom) == this.puzzleGridFromCell(cellTo)) {
             var partsFrom = cellFrom.id.split("-");
@@ -1175,8 +1192,8 @@ function PuzzleEntry(p, index) {
             var colTo = parseInt(partsTo[2]);
     
             if ((colFrom === colTo && rowFrom === rowTo) || Math.abs(colFrom - colTo) > 1 || Math.abs(rowFrom - rowTo) > 1) return false;
-            if (((this.options["data-spoke-allowed-directions"] === "x") || (this.options["data-spoke-allowed-directions"] === "X")) && ((colFrom === colTo) || (rowFrom === rowTo))) return false;
-            if ((this.options["data-spoke-allowed-directions"] === "+") && (colFrom !== colTo) && (rowFrom !== rowTo)) return false;
+            if (((this.activeGrid.options["data-spoke-allowed-directions"] === "x") || (this.activeGrid.options["data-spoke-allowed-directions"] === "X")) && ((colFrom === colTo) || (rowFrom === rowTo))) return false;
+            if ((this.activeGrid.options["data-spoke-allowed-directions"] === "+") && (colFrom !== colTo) && (rowFrom !== rowTo)) return false;
     
             var index = (rowTo - rowFrom + 1) * 3 + (colTo - colFrom + 1);
             fromDir = fromVals[index];
@@ -1196,7 +1213,7 @@ function PuzzleEntry(p, index) {
             if (!fromDir || !toDir) return false;
         }
 
-        return this.LinkCellsDirectional((rightMouse ^ this.reticleXMode) ? "x-spoke" : "spoke", this.options["data-spoke-max-directions"], cellFrom, fromDir, cellTo, toDir);
+        return this.LinkCellsDirectional((rightMouse ^ this.reticleXMode) ? "x-spoke" : "spoke", this.activeGrid.options["data-spoke-max-directions"], cellFrom, fromDir, cellTo, toDir);
     }
 
     this.setCornerFocusMode = function(notyet) {
@@ -1230,7 +1247,7 @@ function PuzzleEntry(p, index) {
         const edgeCode = cell.getAttribute("data-edge-code");
         const givenEdgeCode = cell.getAttribute("data-given-edge-code");
         const xEdgeCode = cell.getAttribute("data-x-edge-code");
-        const edgeEditable = this.options["data-drag-draw-edge"];
+        const edgeEditable = this.activeGrid.options["data-drag-draw-edge"];
         if ((edgeCode & dirCode) || (xEdgeCode & dirCode)) { return `Corner has ${dirName} edge${(xEdgeCode & dirCode) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & dirCode) == 0) ? "editable" : "not editable"}. `; }
         return "";
     }
@@ -1283,7 +1300,7 @@ function PuzzleEntry(p, index) {
         this.currentCenterFocus = center;
         this.currentCenterFocus.focus();
 
-        if (this.options["data-drag-draw-spoke"]) {
+        if (this.activeGrid.options["data-drag-draw-spoke"]) {
             if (oldCenter) this.updateSvg(oldCenter);
             if (center) this.updateSvg(center);
         }
@@ -1306,35 +1323,35 @@ function PuzzleEntry(p, index) {
         lines.push("<tr><th>Function</th><th>Keyboard</th><th>Mouse/Touch</th></tr>");
         lines.push("<tr><td>Reset saved state</td><td>N/A</td><td>Reset Button</td></tr>");
         lines.push("<tr><td>Undo/Redo</td><td>Ctrl+Z/Y</td><td>Undo/Redo Buttons</td></tr>");
-        if (this.options["data-text-characters"]) {
-            if (this.options["data-text-shift-lock"]) {
+        if (this.activeGrid.options["data-text-characters"]) {
+            if (this.activeGrid.options["data-text-shift-lock"]) {
                 lines.push("<tr><td>Multiple-character text entry</td><td>Type to append; Backspace to remove, Del to clear</td><td>N/A</td></tr>");
             } else {
                 lines.push("<tr><td>Single-character text entry</td><td>Type to replace; Backspace/Del to clear</td><td>N/A</td></tr>");
-                if (this.options["data-text-shift-key"] == "rebus") {
+                if (this.activeGrid.options["data-text-shift-key"] == "rebus") {
                     lines.push("<tr><td>Rebus clue text entry</td><td>Shift-Type to append; Shift-Backspace to remove</td><td>N/A</td></tr>");
-                } else if (this.options["data-text-shift-key"] == "candidates") {
+                } else if (this.activeGrid.options["data-text-shift-key"] == "candidates") {
                     lines.push("<tr><td>Candidate-value text entry</td><td>Shift-Type to toggle a character</td><td>N/A</td></tr>");
                 }
             }
         }
         if (this.canHaveCenterFocus) {
-            if (this.options["data-drag-draw-spoke"]) {
+            if (this.activeGrid.options["data-drag-draw-spoke"]) {
                 lines.push("<tr><td>Navigate between cells (8 directions)</td><td>Arrow keys, plus / or \\ to toggle axis tilt</td><td>Click a cell</td></tr>");
             } else {
                 lines.push("<tr><td>Navigate between cells (4 directions)</td><td>Arrow keys</td><td>Click a cell</td></tr>");
             }
         }
-        if (this.fillClasses && this.fillClasses.length > 0 && this.options["data-fill-cycle"]) {
+        if (this.activeGrid.fillClasses && this.activeGrid.fillClasses.length > 0 && this.activeGrid.options["data-fill-cycle"]) {
             lines.push("<tr><td>Change cell background (forwards or backwards)</td><td>Space or Shift-Space</td><td>Click/Left-Click or Right/Shift-Click</td></tr>");
         }
-        if (this.options["data-drag-draw-path"]) {
+        if (this.activeGrid.options["data-drag-draw-path"]) {
             lines.push("<tr><td>Draw lines between cells (4 directions)</td><td>Shift-arrow keys</td><td>Click one cell, drag to others</td></tr>");
         }
-        if (this.options["data-drag-draw-spoke"]) {
+        if (this.activeGrid.options["data-drag-draw-spoke"]) {
             lines.push("<tr><td>Draw lines between cells (8 directions)</td><td>Shift-arrow keys, plus / or \\ to toggle axis tilt</td><td>Click one cell, drag to others</td></tr>");
         }
-        if (this.options["data-drag-draw-edge"]) {
+        if (this.activeGrid.options["data-drag-draw-edge"]) {
             if (this.canHaveCenterFocus) {
                 lines.push("<tr><td>Draw an edge between cells</td><td>'.' to enter/exit corner mode, then Shift-arrow keys</td><td>Click one corner or edge, drag to others</td></tr>");
             } else {
@@ -1361,10 +1378,36 @@ function PuzzleEntry(p, index) {
 
     this.prepareToReset = function() { this.puzzleGrids.forEach(g => { g.prepareToReset(); }); }
 
-    // --- Construct the interactive player. ---
-    this.fillClasses = this.getOptionArray(this.options, "data-fill-classes", " ");
-    this.extraStyleClasses = this.getOptionArray(this.options, "data-extra-style-classes", " ");
+    this.rebuildContents = function() {
+        if (this.commands) { this.commands.remove(); this.commands = null; }
+        this.buildContents(true);
+    }
 
+    this.buildContents = function(rebuild) {
+        this.options = {};
+        this.setDataModeOptions(this.container, this.options, true);
+        this.readLocalOptions(this.container, this.jsonOptions, this.options);
+        this.puzzleId = this.options["data-puzzle-id"];
+        if (!this.puzzleId) { this.puzzleId = (document.body.getAttribute("data-puzzle-page-id") ?? window.location.pathname) + "|" + index; }
+
+        if (rebuild) { this.puzzleGrids.forEach((g) => { g.rebuildContents(); }); }
+        else { this.puzzleGrids.forEach((g) => { g.buildContents(); }); }
+
+        if (this.options["data-show-commands"]) {
+            this.commands = document.createElement("div");
+            this.commands.classList.add("puzzle-commands");
+            this.commands.classList.add("no-copy");
+            this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button>";
+            this.commands.querySelector(".puzzle-about-button").addEventListener("click", e => { this.aboutPopup(); });
+            this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
+            this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
+            // TODO shouldn't need a reload after reset
+            this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { var prompt = this.options["data-reset-prompt"]; if (!prompt || confirm(prompt)) { this.prepareToReset(); window.location.reload(); } });
+            this.container.appendChild(this.commands);
+        }
+    }
+
+    // --- Construct the interactive player. ---
     this.content = document.createElement("div");
     this.content.classList.add("puzzle-entry-content");
     while (this.container.childNodes.length > 0) { this.content.appendChild(this.container.childNodes[0]); }
@@ -1373,42 +1416,19 @@ function PuzzleEntry(p, index) {
     this.puzzleGrids = [];
     this.usePrecisionHitTesting = false;
 
-    this.canDrawOnEdges = this.options["data-drag-draw-edge"] && !this.options["data-no-input"];
-
-    this.canHaveCenterFocus = this.options["data-text-characters"] || (this.fillClasses && this.options["data-fill-cycle"]) || this.options["data-drag-draw-path"] || this.options["data-drag-draw-spoke"];
-    this.canHaveCornerFocus = this.canDrawOnEdges;
-    this.keyboardFocusModel = this.options["data-no-input"] ? "none" : (this.canHaveCornerFocus ? "corner" : "center");
     this.cornerFocus = null;
     this.firstCenterFocus = null;
 
     // load all the subgrids
     this.container.querySelectorAll(".puzzle-grid").forEach((g, index) => {
-        // start with a copy of the global options and then add local modifications
-        var gridOptions = {};
-        for (const [key, value] of Object.entries(this.options)) { gridOptions[key] = value; }
-        this.setDataModeOptions(g, gridOptions, false);
-        this.readLocalOptions(g, gridOptions);
-        var gridPuzzleId = gridOptions["data-puzzle-id"];
-        if (gridPuzzleId == this.options["data-puzzle-id"]) { gridPuzzleId = this.puzzleId + "|" + index; }
-        this.puzzleGrids.push(new PuzzleGrid(this, gridOptions, g, gridPuzzleId, true, false));
+        this.puzzleGrids.push(new PuzzleGrid(this, index, g, true, false));
     });
     
     // push a grid to manage toggles. Also, if there are no subgrids yet, this is the one true grid
-    this.puzzleGrids.push(new PuzzleGrid(this, this.options, this.content, this.puzzleId, this.puzzleGrids.length == 0, true));
-    this.setActiveGrid(this.puzzleGrids[0]);
+    this.puzzleGrids.push(new PuzzleGrid(this, this.puzzleGrids.length, this.content, this.puzzleGrids.length == 0, true));
 
-    if (this.options["data-show-commands"]) {
-        this.commands = document.createElement("div");
-        this.commands.classList.add("puzzle-commands");
-        this.commands.classList.add("no-copy");
-        this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button>";
-        this.commands.querySelector(".puzzle-about-button").addEventListener("click", e => { this.aboutPopup(); });
-        this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
-        this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
-        // TODO shouldn't need a reload after reset
-        this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { var prompt = this.options["data-reset-prompt"]; if (!prompt || confirm(prompt)) { this.prepareToReset(); window.location.reload(); } });
-        this.container.appendChild(this.commands);
-    }
+    this.buildContents();
+    this.setActiveGrid(this.puzzleGrids[0]);
 
     if (this.keyboardFocusModel == "corner") {
         this.setCornerFocusMode(true);        
@@ -1434,16 +1454,18 @@ function PuzzleEntry(p, index) {
     this.container.classList.add("loaded");
 }
 
-function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles) {
+function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     this.puzzleEntry = puzzleEntry;
+    this.index = index;
     this.container = container;
-    this.options = options;
     this.container.puzzleGrid = this;
-    this.puzzleId = puzzleId;
     this.tilt = 0;
     this.stateDirty = false;
     this.inhibitSave = false;
     this.tabstopGrid = null;
+    this.doGrid = doGrid;
+    this.isRootGrid = isRootGrid;
+    this.jsonOptions = this.puzzleEntry.extractJsonOptions(this.container);
 
     this.parseOuterClues = function(clues) {
         var clueDepth = 0;
@@ -1525,7 +1547,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles
 
         this.container.querySelectorAll(".puzzle-grid-content .inner-cell").forEach(td => {
             var fillIndex = 0;
-            if (this.puzzleEntry.fillClasses && !td.classList.contains("given-fill")) { fillIndex = this.puzzleEntry.fillClasses.indexOf(this.puzzleEntry.findClassInList(td, this.puzzleEntry.fillClasses)); }
+            if (this.fillClasses && !td.classList.contains("given-fill")) { fillIndex = this.fillClasses.indexOf(this.puzzleEntry.findClassInList(td, this.fillClasses)); }
 
             var edgeCode = td.getAttribute("data-edge-code");
             var givenEdgeCode = td.getAttribute("data-given-edge-code");
@@ -1606,7 +1628,7 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles
                         else { elem.classList.remove("small-text"); }
                         break;
                     case "class-fill":
-                        this.puzzleEntry.fillClasses.forEach(fc => elem.classList.remove(fc));
+                        this.fillClasses.forEach(fc => elem.classList.remove(fc));
                         if (c.value) { elem.classList.add(c.value); }
                         break;
                     case "class-interesting":
@@ -1773,15 +1795,15 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles
         }
 
         // fill
-        if (this.puzzleEntry.fillClasses) {
-            let fill = this.puzzleEntry.findClassInList(td, this.puzzleEntry.fillClasses);
+        if (this.fillClasses) {
+            let fill = this.puzzleEntry.findClassInList(td, this.fillClasses);
             const editable = this.options["data-fill-cycle"] && !td.classList.contains("given-fill");
             label += `Cell fill is ${fill} and is ${editable ? "editable" : "not editable"}. `;
         }
 
         // extra styles
-        if (this.puzzleEntry.extraStyleClasses) {
-            let extraStyle = this.puzzleEntry.findClassInList(td, this.puzzleEntry.extraStyleClasses);
+        if (this.extraStyleClasses) {
+            let extraStyle = this.puzzleEntry.findClassInList(td, this.extraStyleClasses);
             if (extraStyle) label += `Cell also has ${extraStyle}. `;
         }
 
@@ -1893,16 +1915,446 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles
         }
     }
 
-    this.lookup = {};
+    this.rebuildContents = function() {
+        if (this.grid) {
+            this.container.removeChild(this.container.firstChild);
+            if (this.isUsingCopyjack) { this.container.removeChild(this.container.firstChild); }
+            this.grid = null;
+        }
+        this.buildContents();
+    }
 
-    if (doToggles) {
-        this.toggleState = localStorage.getItem(this.puzzleId + "-toggles");
-        this.toggleState = this.toggleState ? JSON.parse(this.toggleState) : {};
+    this.buildContents = function() {
+        if (this.isRootGrid) {
+            this.options = this.puzzleEntry.options;
+            this.puzzleId = this.puzzleEntry.puzzleId;
+        }
+        else {
+            // start with a copy of the global options and then add local modifications
+            this.options = {};
+            for (const [key, value] of Object.entries(this.puzzleEntry.options)) { this.options[key] = value; }
+            this.puzzleEntry.setDataModeOptions(this.container, this.options, false);
+            this.puzzleEntry.readLocalOptions(this.container, this.jsonOptions, this.options);
+            this.puzzleId = this.options["data-puzzle-id"];
+            if (this.puzzleId == this.puzzleEntry.options["data-puzzle-id"]) { this.puzzleId = this.puzzleEntry.puzzleId + "|" + this.index; }
+        }
+
+        this.fillClasses = puzzleEntry.getOptionArray(this.options, "data-fill-classes", " ");
+        this.extraStyleClasses = puzzleEntry.getOptionArray(this.options, "data-extra-style-classes", " ");
     
+        this.lookup = {};
+
+        if (this.isRootGrid) {
+            this.container.querySelectorAll(".puzzle-toggle-item").forEach((ti) => { this.lookup[ti.id] = ti; });
+        }
+
+        if (!this.doGrid) return;
+
+        var textLines = puzzleEntry.getOptionArray(this.options, "data-text", "|");
+        var textReplacements = puzzleEntry.getOptionDict(this.options, "data-text-replacements");
+        var fills = puzzleEntry.getOptionArray(this.options, "data-fills", "|");
+        var extraStyles = puzzleEntry.getOptionArray(this.options, "data-extra-styles", "|");
+        var solution = puzzleEntry.getOptionArray(this.options, "data-text-solution", "|");
+        var edges = puzzleEntry.getOptionArray(this.options, "data-edges", "|");
+        var paths = puzzleEntry.getOptionArray(this.options, "data-paths", "|");
+        var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
+        var spokes = new Array(maxSpokeLevels);
+        for (var l = 1; l < maxSpokeLevels; l++) {
+            var spoke;
+            if (l > 1) { spoke = puzzleEntry.getOptionArray(this.options, "data-spokes-" + l.toString(), "|"); }
+            else { spoke = puzzleEntry.getOptionArray(this.options, "data-spokes", "|"); }
+            if (!spoke) { spoke = ""; }
+            spokes[l] = spoke;
+        }
+        var clueIndicators = puzzleEntry.getOptionArray(this.options, "data-clue-indicators", " ", "auto");
+        var cluepos = puzzleEntry.getOptionPosArray(this.options, "data-clue-position", "|");
+        var extracts = puzzleEntry.getOptionArray(this.options, "data-extracts", " ");
+        var extractpos = puzzleEntry.getOptionPosArray(this.options, "data-extract-position", "|");
+        var links = puzzleEntry.getOptionArray(this.options, "data-links", " ");
+        var linkpos = puzzleEntry.getOptionPosArray(this.options, "data-link-position", "|");
+        var topClues = puzzleEntry.getOptionArray(this.options, "data-top-clues", "|");
+        var bottomClues = puzzleEntry.getOptionArray(this.options, "data-bottom-clues", "|");
+        var leftClues = puzzleEntry.getOptionArray(this.options, "data-left-clues", "|");
+        var rightClues = puzzleEntry.getOptionArray(this.options, "data-right-clues", "|");
+    
+        var unselectableGivens = this.options["data-unselectable-givens"];
+    
+        this.topClueDepth = this.parseOuterClues(topClues);
+        this.bottomClueDepth = this.parseOuterClues(bottomClues);
+        this.leftClueDepth = this.parseOuterClues(leftClues);
+        this.rightClueDepth = this.parseOuterClues(rightClues);
+    
+        var acrossClues = puzzleEntry.container.querySelectorAll(".crossword-clues.across li");
+        var acrossClueIndex = 0;
+        var downClues = puzzleEntry.container.querySelectorAll(".crossword-clues.down li");
+        var downClueIndex = 0;
+    
+        if (!textLines) { textLines = solution; }
+    
+        this.screenreaderSupported = !this.options["data-no-screenreader"];
+        if (this.topClueDepth > 0 || this.bottomClueDepth > 0 || this.leftClueDepth > 0 || this.rightClueDepth > 0) { this.screenreaderSupported = false; }
+        if (this.puzzleEntry.container.classList.contains("puzzle-box")) { this.screenreaderSupported = false; }
+    
+        var allowInput = !this.options["data-no-input"];
+        if (!allowInput) {
+            this.container.classList.add("no-input");
+        }
+    
+        if (!textLines) return;
+    
+        var table = document.createElement("table");
+        table.classList.add("puzzle-grid-content");
+        table.puzzleGrid = this;
+        var clueNum = 0;
+        var extractNum = 0;
+        var linkNum = 0;
+    
+        var regularRowBorder = 0;
+        var regularColBorder = 0;
+    
+        var savedState = localStorage.getItem(this.puzzleId);
+        if (savedState) { savedState = savedState.split("|"); }
+    
+        if (textLines.length == 1 && /^\d+x\d+$/.test(textLines[0])) {
+            var dim = textLines[0].split("x");
+            textLines = [];
+            for (r = 0; r < dim[1]; r++) {
+                textLines[r] = [];
+                for (c = 0; c < dim[0]; c++) { textLines[r][c] = "."; }
+            }
+        }
+    
+        if (edges && edges.length == 1 && /^\d+x\d+$/.test(edges[0])) {
+            var dim = edges[0].split("x");
+            edges = null;
+            regularColBorder = dim[0];
+            regularRowBorder = dim[1];
+        }
+
+        var edgesAreHex = (edges && edges.length > 0 && /^[0-9a-fA-F|.]+$/.test(edges[0]));
+        var pathsAreHex = (paths && paths.length > 0 && /^[0-9a-fA-F|.]+$/.test(paths[0]));
+    
+        for (var i = 0; i < this.topClueDepth; i++) {
+            var tr = document.createElement("tr");
+            if (this.screenreaderSupported) { tr.role="row"; tr.ariaRowIndex = i + 1; }
+            for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
+            for (var j = 0; j < topClues.length; j++) { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + topClues[j].length, this.leftClueDepth + j + 1, "top"); }
+            for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + topClues.length + j + 1); }
+    
+            table.appendChild(tr);
+        }
+    
+        this.numRows = textLines.length;
+        this.numCols = 0;
+    
+        var stateIndex = 0;
+    
+        for (var r = 0; r < textLines.length; r++) {
+            var tr = document.createElement("tr");
+            if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = this.topClueDepth + r + 1; }
+    
+            for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + (leftClues[r] ? leftClues[r].length : 0), j + 1, "left"); }
+    
+            this.numCols = Math.max(this.numCols, textLines[r].length);
+            for (var c = 0; c < textLines[r].length; c++) {
+                var cellSavedState = null;
+                if (savedState) { cellSavedState = savedState[stateIndex++]; }
+    
+                var td = document.createElement("td");
+                if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = this.leftClueDepth + c + 1; }
+                td.classList.add("cell");
+                td.classList.add("inner-cell");
+                let avoid = this.options["data-text-avoid-position"];
+                if (avoid) { td.classList.add("pos-avoid-" + avoid); }
+                td.id = "cell-" + r + "-" + c;
+                this.lookup[td.id] = td;
+                var ch = textLines[r][c];
+                
+                var textwrapper = document.createElement("div");
+                textwrapper.setAttribute("aria-hidden", true);
+                textwrapper.classList.add("text");
+    
+                var text = document.createElement("span");
+                textwrapper.appendChild(text);
+    
+                if (ch == '.') {
+                    if (solution && solution.length > r && solution[r] && solution[r].length > c) { text.innerText = this.translate(solution[r][c], textReplacements); }
+                    else if (allowInput && this.options["data-text-characters"]) { td.contentEditable = true; td.autocapitalize="off"; }
+                }
+                else if (ch == '#') {
+                    td.classList.add("extract");
+                    if (solution) { text.innerText = this.translate(solution[r][c], textReplacements); }
+                    else if (allowInput && this.options["data-text-characters"]) { td.contentEditable = true; td.autocapitalize="off"; }
+    
+                    if (extracts) {
+                        this.createLabels(td, "extract", extracts[extractNum++], extractpos);
+                    }
+                }
+                else if (ch == '@') {
+                    td.classList.add("black-cell");
+                    td.classList.add("unselectable");
+                }
+                else {
+                    text.innerText = this.translate(ch, textReplacements);
+                    td.classList.add("given-text");
+                    if (unselectableGivens) { td.classList.add("unselectable"); }
+                }
+    
+                if (cellSavedState && cellSavedState.indexOf(",") >= 0) {
+                    if ((cellSavedState.indexOf("!") >= 0) && (cellSavedState.indexOf("!") < cellSavedState.indexOf(","))) { td.classList.add("interesting"); }
+                    var savedText = cellSavedState.substring(cellSavedState.indexOf(",") + 1).trim();
+                    text.innerText = savedText;
+                    if (savedText && savedText.length > 1) { td.classList.add("small-text"); }
+                }
+                else if (cellSavedState && cellSavedState.indexOf("!") >= 0) { td.classList.add("interesting"); }
+    
+                if (!td.classList.contains("unselectable")) {
+                    if (allowInput) {
+                        td.tabIndex = (this.puzzleEntry.firstCenterFocus && this.tabstopGrid) ? -1 : 0;
+                        if (!this.puzzleEntry.firstCenterFocus) { this.puzzleEntry.firstCenterFocus = td; }
+                        if (!this.tabstopGrid) { this.tabstopGrid = td; }
+                        td.addEventListener("keydown",  e => { this.puzzleEntry.keyDown(e); });
+                        td.addEventListener("beforeinput", e => { this.puzzleEntry.beforeInput(e); });
+                        td.addEventListener("pointerdown",  e => { this.puzzleEntry.pointerDown(e); });
+                        td.addEventListener("pointermove",  e => { this.puzzleEntry.pointerMove(e); });
+                        td.addEventListener("pointercancel",  e => { this.puzzleEntry.pointerCancel(e); });
+                        td.addEventListener("contextmenu",  e => { e.preventDefault(); });
+                        td.addEventListener("focus",  e => { this.puzzleEntry.setActiveGrid(this); });
+                        if (this.options["data-clue-locations"] === "crossword") {
+                            td.addEventListener("focus",  e => { this.puzzleEntry.mark(e.target); });
+                            td.addEventListener("blur",  e => { this.puzzleEntry.unmark(e.target); });
+                        }
+                    }
+                }
+    
+                td.appendChild(textwrapper);
+    
+                var edgeCode = 0;
+                if (edges || regularRowBorder || regularColBorder) {
+                    if (regularRowBorder) {
+                        if ((r % regularRowBorder) == 0) { edgeCode |= 1; }
+                        if (r == textLines.length - 1) { edgeCode |= 2; }
+                    }
+                    if (regularColBorder) {
+                        if ((c % regularColBorder) == 0) { edgeCode |= 4; }
+                        if (c == textLines[r].length - 1) { edgeCode |= 8; }
+                    }
+        
+                    if (edges) {
+                        if (edgesAreHex) {
+                            edgeCode |=  (r < edges.length) ? parseInt(edges[r][c], 16) : 0;
+                        }
+                        else {
+                            var topRow = edges[r * 2] ?? [];
+                            var midRow = edges[r * 2 + 1] ?? [];
+                            var botRow = edges[r * 2 + 2] ?? [];
+                            var chTop = topRow[c * 2 + 1];
+                            var chLeft = midRow[c * 2];
+                            var chRight = midRow[c * 2 + 2];
+                            var chBottom = botRow[c * 2 + 1];
+                            if (chTop && chTop != " " && chTop != ".") { edgeCode |= 1; }
+                            if (chBottom && chBottom != " " && chBottom != ".") { edgeCode |= 2; }
+                            if (chLeft && chLeft != " " && chLeft != ".") { edgeCode |= 4; }
+                            if (chRight && chRight != " " && chRight != ".") { edgeCode |= 8; }
+                        }
+                    }
+        
+                    if (edgeCode) { td.setAttribute("data-given-edge-code", edgeCode); }
+                }
+                if (cellSavedState) { edgeCode ^= parseInt(cellSavedState[1], 16); }
+                if (edgeCode) { td.setAttribute("data-edge-code", edgeCode); }
+    
+                var pathCode = 0;
+                if (paths) {
+                    if (pathsAreHex) {
+                        pathCode |= (r < paths.length) ? parseInt(paths[r][c], 16) : 0;
+                    }
+                    else {
+                        var topRow = paths[r * 2] ?? [];
+                        var midRow = paths[r * 2 + 1] ?? [];
+                        var botRow = paths[r * 2 + 2] ?? [];
+                        var chTop = (topRow.length == textLines[r].length) ? topRow[c] : topRow[c * 2 + 1];
+                        var chLeft = (midRow.length == textLines[r].length + 1) ? midRow[c] : midRow[c * 2];
+                        var chRight = (midRow.length == textLines[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
+                        var chBottom = (botRow.length == textLines[r].length) ? botRow[c] : botRow[c * 2 + 1];
+                        if (chTop && chTop != " " && chTop != ".") { pathCode |= 1; }
+                        if (chBottom && chBottom != " " && chBottom != ".") { pathCode |= 2; }
+                        if (chLeft && chLeft != " " && chLeft != ".") { pathCode |= 4; }
+                        if (chRight && chRight != " " && chRight != ".") { pathCode |= 8; }
+                    }
+    
+                    if (pathCode) { td.setAttribute("data-path-code", pathCode); td.setAttribute("data-given-path-code", pathCode); }
+                }
+                if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
+                if (pathCode) { td.setAttribute("data-path-code", pathCode); }
+    
+                for (var l = 1; l < maxSpokeLevels; l++) {
+                    var spokeCode = 0;
+                    if (spokes[l]) {
+                        var spoke = spokes[l];
+                        var topRow = spoke[r * 2] ?? [];
+                        var midRow = spoke[r * 2 + 1] ?? [];
+                        var botRow = spoke[r * 2 + 2] ?? [];
+                        var chN = topRow[c * 2 + 1];
+                        var chNE = topRow[c * 2 + 2];
+                        var chE = midRow[c * 2 + 2];
+                        var chSE = botRow[c * 2 + 2];
+                        var chS = botRow[c * 2 + 1];
+                        var chSW = botRow[c * 2];
+                        var chW = midRow[c * 2];
+                        var chNW = topRow[c * 2];
+                        if (chN && chN != " " && chN != ".") { spokeCode |= 1; }
+                        if (chNE && chNE == "/" || chNE == "'" || chNE == "X" || chNE == "x") { spokeCode |= 2; }
+                        if (chE && chE != " " && chE != ".") { spokeCode |= 4; }
+                        if (chSE && chSE == "\\" || chSE == "`" || chSE == "X" || chSE == "x") { spokeCode |= 8; }
+                        if (chS && chS != " " && chS != ".") { spokeCode |= 16; }
+                        if (chSW && chSW == "/" || chSW == "'" || chSW == "X" || chSW == "x") { spokeCode |= 32; }
+                        if (chW && chW != " " && chW != ".") { spokeCode |= 64; }
+                        if (chNW && chNW == "\\" || chNW == "`" || chNW == "X" || chNW == "x") { spokeCode |= 128; }
+    
+                        if (spokeCode) { 
+                            if (l > 1) { td.setAttribute("data-spoke-" + l.toString() + "-code", spokeCode); td.setAttribute("data-given-spoke-" + l.toString() + "-code", spokeCode); }
+                            else { td.setAttribute("data-spoke-code", spokeCode); td.setAttribute("data-given-spoke-code", spokeCode); }
+                         }
+                    }
+                    if (cellSavedState) { spokeCode ^= (parseInt(cellSavedState[l * 2 + 1], 16) * 16 + parseInt(cellSavedState[l * 2 + 2], 16)); }
+                    if (spokeCode) { 
+                        if (l > 1) { td.setAttribute("data-spoke-" + l.toString() + "-code", spokeCode); }
+                        else { td.setAttribute("data-spoke-code", spokeCode); }
+                    }
+                }
+    
+                if (this.options["data-clue-locations"] && textLines[r][c] != '@') {
+                    var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
+                    var downClue = (r == 0 || textLines[r-1][c] == '@' || (edgeCode & 1)) && r < textLines.length - 1 && textLines[r+1][c] != '@' && !(edgeCode & 2); // block/edge above, letter below
+                    
+                    if (acrossClue || downClue || this.options["data-clue-locations"] == "all") {
+                        var clueIndicator = (!clueIndicators) ? ++clueNum : clueIndicators[clueNum++];
+                        const clueId = this.createLabels(td, "clue", clueIndicator, cluepos);
+    
+                        if (this.options["data-clue-locations"] == "crossword" && clueId) {
+                            if (acrossClue) { td.setAttribute("data-across-cluenumber", clueId); }
+                            if (downClue) { td.setAttribute("data-down-cluenumber", clueId); }
+                            if (acrossClue && acrossClues[acrossClueIndex]) {
+                              acrossClues[acrossClueIndex].setAttribute("data-across-cluenumber", clueId);
+                              acrossClues[acrossClueIndex].setAttribute("value", clueId);
+                              acrossClueIndex++;
+                            }
+                            if (downClue && downClues[downClueIndex]) {
+                              downClues[downClueIndex].setAttribute("data-down-cluenumber", clueId);
+                              downClues[downClueIndex].setAttribute("value", clueId);
+                              downClueIndex++;
+                            }
+                        }
+                    }
+    
+                    if (this.options["data-clue-locations"] == "crossword") {
+                        if (!acrossClue && c > 0 && textLines[r][c-1] != '@' && !(edgeCode & 4)) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
+                        if (!downClue && r > 0 && textLines[r-1][c] != '@' && !(edgeCode & 1)) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
+                    }
+                }
+    
+                if (this.options["data-links"] && textLines[r][c] != '@') {
+                    var link = links[linkNum++];
+                    this.createLabels(td, "link", link, linkpos);
+                }
+    
+                if (this.fillClasses) {
+                    var fillIndex = 0;
+                    if (fills && r < fills.length && fills[r] && c < fills[r].length && fills[r][c] != '.') {
+                        fillIndex = parseInt(fills[r][c], 36);
+                        td.classList.add("given-fill");
+                    } else {
+                        fillIndex = cellSavedState ? parseInt(cellSavedState[0], 36) : 0;
+                    }
+                    td.classList.add(this.fillClasses[fillIndex]);
+                }
+    
+                if (this.extraStyleClasses && extraStyles && r < extraStyles.length && extraStyles[r] && c < extraStyles[r].length && extraStyles[r][c] != '.') {
+                    td.classList.add(this.extraStyleClasses[parseInt(extraStyles[r][c], 36)]);
+                }
+    
+                this.updateSvg(td);
+                tr.appendChild(td);
+            }
+    
+            for (var j = 0; j < this.rightClueDepth; j++) { this.addOuterClue(tr, rightClues[r], j, this.leftClueDepth + textLines[r].length + j + 1, "right"); }
+    
+            table.appendChild(tr);
+        }
+    
+        for (var i = 0; i < this.bottomClueDepth; i++) {
+            var tr = document.createElement("tr");
+            if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = this.topClueDepth + textLines.length + i + 1; }
+            for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
+            for (var j = 0; j < bottomClues.length; j++) { this.addOuterClue(tr, bottomClues[j], i, this.leftClueDepth + j + 1, "bottom"); }
+            for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + bottomClues.length + j + 1); }
+    
+            table.appendChild(tr);
+        }
+    
+        table.querySelectorAll(".cell.inner-cell").forEach(c => { this.updateLabel(c); });
+    
+        if (!this.puzzleEntry.container.classList.contains("puzzle-box")) {
+            var label = `A ${this.numRows} row by ${this.numCols} column puzzle grid`;
+            if (this.screenreaderSupported) {
+                table.role = "grid";
+                table.ariaRowCount = this.topClueDepth + this.bottomClueDepth + this.numRows;
+                table.ariaColCount = this.leftClueDepth + this.rightClueDepth + this.numCols;
+        
+                label += `${this.options["data-no-input"] ? "" : ", with interactive elements. For a better interactive experience using a screenreader, turn off scan mode"}.`
+            }
+            else { label += ". Unfortunately, this specific puzzle is not compatible with a screen reader."}
+            table.ariaLabel = label;
+        }
+    
+        this.container.insertBefore(table, this.container.firstChild);
+        this.grid = table;
+    
+        // Copyjack support: initialize a copyjack version of the table.
+        // This table will be modified as the user takes actions.
+    
+        // Put the table inside this.container to ensure that styling works.
+        if (this.puzzleEntry.isUsingCopyjack) {
+            // Set no-copy on this table.
+            table.classList.add('no-copy');
+            // Create a copy-only table and insert it.
+            this.copyjackVersion = document.createElement('table');
+            this.copyjackVersion.setAttribute("aria-hidden", true);
+            this.copyjackVersion.classList.add('copy-only');
+            this.copyjackVersion.style.userSelect = 'auto'; // Needed for Firefox compatibility.
+            this.container.insertBefore(this.copyjackVersion, table);
+            // Populate the copy-only table.
+            for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
+                if (tr.classList.contains('no-copy')) continue;
+                const copyTr = document.createElement('tr');
+                copyTr.style.userSelect = 'auto';
+                this.copyjackVersion.appendChild(copyTr);
+                for (const [j, td] of Array.from(tr.getElementsByTagName('td')).entries()) {
+                    if (td.classList.contains('no-copy')) continue;
+                    td.dataset.coord = [i, j];
+                    const copyTd = document.createElement('td');
+                    copyTd.style.userSelect = 'auto';
+                    copyTr.appendChild(copyTd);
+                    this.processTdForCopyjack(td);
+                }
+            }
+        }
+
+        if (this.isRootGrid) {
+            this.toggleState = localStorage.getItem(this.puzzleId + "-toggles");
+            this.toggleState = this.toggleState ? JSON.parse(this.toggleState) : {};
+        
+            this.container.querySelectorAll(".puzzle-toggle-item").forEach((ti) => {
+                if (this.toggleState[ti.id]) { ti.classList.add("toggled"); }
+                else { ti.classList.remove("toggled"); }
+            });
+        }
+    }
+
+    if (this.isRootGrid) {
         this.wireToggleInteractivity = function(toggleItem, id) {
             toggleItem.id = id;
-            this.lookup[id] = toggleItem;
-            if (this.toggleState[id]) { toggleItem.classList.add("toggled"); }
             toggleItem.addEventListener("pointerdown", e => { this.puzzleEntry.toggleClass(e.target, "toggled"); });
         }
     
@@ -1918,395 +2370,5 @@ function PuzzleGrid(puzzleEntry, options, container, puzzleId, doGrid, doToggles
                 this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? (tlBase + "-" + i));
             }
         });
-    }
-
-    if (!doGrid) return;
-
-    var textLines = puzzleEntry.getOptionArray(this.options, "data-text", "|");
-    var textReplacements = puzzleEntry.getOptionDict(this.options, "data-text-replacements");
-    var fills = puzzleEntry.getOptionArray(this.options, "data-fills", "|");
-    var extraStyles = puzzleEntry.getOptionArray(this.options, "data-extra-styles", "|");
-    var solution = puzzleEntry.getOptionArray(this.options, "data-text-solution", "|");
-    var edges = puzzleEntry.getOptionArray(this.options, "data-edges", "|");
-    var paths = puzzleEntry.getOptionArray(this.options, "data-paths", "|");
-    var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
-    var spokes = new Array(maxSpokeLevels);
-    for (var l = 1; l < maxSpokeLevels; l++) {
-        var spoke;
-        if (l > 1) { spoke = puzzleEntry.getOptionArray(this.options, "data-spokes-" + l.toString(), "|"); }
-        else { spoke = puzzleEntry.getOptionArray(this.options, "data-spokes", "|"); }
-        if (!spoke) { spoke = ""; }
-        spokes[l] = spoke;
-    }
-    var clueIndicators = puzzleEntry.getOptionArray(this.options, "data-clue-indicators", " ", "auto");
-    var cluepos = puzzleEntry.getOptionPosArray(this.options, "data-clue-position", "|");
-    var extracts = puzzleEntry.getOptionArray(this.options, "data-extracts", " ");
-    var extractpos = puzzleEntry.getOptionPosArray(this.options, "data-extract-position", "|");
-    var links = puzzleEntry.getOptionArray(this.options, "data-links", " ");
-    var linkpos = puzzleEntry.getOptionPosArray(this.options, "data-link-position", "|");
-    var topClues = puzzleEntry.getOptionArray(this.options, "data-top-clues", "|");
-    var bottomClues = puzzleEntry.getOptionArray(this.options, "data-bottom-clues", "|");
-    var leftClues = puzzleEntry.getOptionArray(this.options, "data-left-clues", "|");
-    var rightClues = puzzleEntry.getOptionArray(this.options, "data-right-clues", "|");
-
-    var unselectableGivens = this.options["data-unselectable-givens"];
-
-    this.topClueDepth = this.parseOuterClues(topClues);
-    this.bottomClueDepth = this.parseOuterClues(bottomClues);
-    this.leftClueDepth = this.parseOuterClues(leftClues);
-    this.rightClueDepth = this.parseOuterClues(rightClues);
-
-    var acrossClues = puzzleEntry.container.querySelectorAll(".crossword-clues.across li");
-    var acrossClueIndex = 0;
-    var downClues = puzzleEntry.container.querySelectorAll(".crossword-clues.down li");
-    var downClueIndex = 0;
-
-    if (!textLines) { textLines = solution; }
-
-    this.screenreaderSupported = !this.options["data-no-screenreader"];
-    if (this.topClueDepth > 0 || this.bottomClueDepth > 0 || this.leftClueDepth > 0 || this.rightClueDepth > 0) { this.screenreaderSupported = false; }
-    if (this.puzzleEntry.container.classList.contains("puzzle-box")) { this.screenreaderSupported = false; }
-
-    var allowInput = !this.options["data-no-input"];
-    if (!allowInput) {
-        this.container.classList.add("no-input");
-    }
-
-    if (!textLines) return;
-
-    var table = document.createElement("table");
-    table.classList.add("puzzle-grid-content");
-    table.puzzleGrid = this;
-    var clueNum = 0;
-    var extractNum = 0;
-    var linkNum = 0;
-
-    var regularRowBorder = 0;
-    var regularColBorder = 0;
-
-    var savedState = localStorage.getItem(this.puzzleId);
-    if (savedState) { savedState = savedState.split("|"); }
-
-    if (textLines.length == 1 && /^\d+x\d+$/.test(textLines[0])) {
-        var dim = textLines[0].split("x");
-        textLines = [];
-        for (r = 0; r < dim[1]; r++) {
-            textLines[r] = [];
-            for (c = 0; c < dim[0]; c++) { textLines[r][c] = "."; }
-        }
-    }
-
-    if (edges && edges.length == 1 && /^\d+x\d+$/.test(edges[0])) {
-        var dim = edges[0].split("x");
-        edges = null;
-        regularColBorder = dim[0];
-        regularRowBorder = dim[1];
-    }
-
-    for (var i = 0; i < this.topClueDepth; i++) {
-        var tr = document.createElement("tr");
-        if (this.screenreaderSupported) { tr.role="row"; tr.ariaRowIndex = i + 1; }
-        for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
-        for (var j = 0; j < topClues.length; j++) { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + topClues[j].length, this.leftClueDepth + j + 1, "top"); }
-        for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + topClues.length + j + 1); }
-
-        table.appendChild(tr);
-    }
-
-    this.numRows = textLines.length;
-    this.numCols = 0;
-
-    var stateIndex = 0;
-
-    for (var r = 0; r < textLines.length; r++) {
-        var tr = document.createElement("tr");
-        if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = this.topClueDepth + r + 1; }
-
-        for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + leftClues[r].length, j + 1, "left"); }
-
-        this.numCols = Math.max(this.numCols, textLines[r].length);
-        for (var c = 0; c < textLines[r].length; c++) {
-            var cellSavedState = null;
-            if (savedState) { cellSavedState = savedState[stateIndex++]; }
-
-            var td = document.createElement("td");
-            if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = this.leftClueDepth + c + 1; }
-            td.classList.add("cell");
-            td.classList.add("inner-cell");
-            let avoid = this.options["data-text-avoid-position"];
-            if (avoid) { td.classList.add("pos-avoid-" + avoid); }
-            td.id = "cell-" + r + "-" + c;
-            this.lookup[td.id] = td;
-            var ch = textLines[r][c];
-            
-            var textwrapper = document.createElement("div");
-            textwrapper.setAttribute("aria-hidden", true);
-            textwrapper.classList.add("text");
-
-            var text = document.createElement("span");
-            textwrapper.appendChild(text);
-
-            if (ch == '.') {
-                if (solution) { text.innerText = this.translate(solution[r][c], textReplacements); }
-                else if (allowInput && this.options["data-text-characters"]) { td.contentEditable = true; td.autocapitalize="off"; }
-            }
-            else if (ch == '#') {
-                td.classList.add("extract");
-                if (solution) { text.innerText = this.translate(solution[r][c], textReplacements); }
-                else if (allowInput && this.options["data-text-characters"]) { td.contentEditable = true; td.autocapitalize="off"; }
-
-                if (extracts) {
-                    this.createLabels(td, "extract", extracts[extractNum++], extractpos);
-                }
-            }
-            else if (ch == '@') {
-                td.classList.add("black-cell");
-                td.classList.add("unselectable");
-            }
-            else {
-                text.innerText = this.translate(ch, textReplacements);
-                td.classList.add("given-text");
-                if (unselectableGivens) { td.classList.add("unselectable"); }
-            }
-
-            if (cellSavedState && cellSavedState.indexOf(",") >= 0) {
-                if ((cellSavedState.indexOf("!") >= 0) && (cellSavedState.indexOf("!") < cellSavedState.indexOf(","))) { td.classList.add("interesting"); }
-                var savedText = cellSavedState.substring(cellSavedState.indexOf(",") + 1).trim();
-                text.innerText = savedText;
-                if (savedText && savedText.length > 1) { td.classList.add("small-text"); }
-            }
-            else if (cellSavedState && cellSavedState.indexOf("!") >= 0) { td.classList.add("interesting"); }
-
-            if (!td.classList.contains("unselectable")) {
-                if (allowInput) {
-                    td.tabIndex = (this.puzzleEntry.firstCenterFocus && this.tabstopGrid) ? -1 : 0;
-                    if (!this.puzzleEntry.firstCenterFocus) { this.puzzleEntry.firstCenterFocus = td; }
-                    if (!this.tabstopGrid) { this.tabstopGrid = td; }
-                    td.addEventListener("keydown",  e => { this.puzzleEntry.keyDown(e); });
-                    td.addEventListener("beforeinput", e => { this.puzzleEntry.beforeInput(e); });
-                    td.addEventListener("pointerdown",  e => { this.puzzleEntry.pointerDown(e); });
-                    td.addEventListener("pointermove",  e => { this.puzzleEntry.pointerMove(e); });
-                    td.addEventListener("pointercancel",  e => { this.puzzleEntry.pointerCancel(e); });
-                    td.addEventListener("contextmenu",  e => { e.preventDefault(); });
-                    td.addEventListener("focus",  e => { this.puzzleEntry.setActiveGrid(this); });
-                    if (this.options["data-clue-locations"] === "crossword") {
-                        td.addEventListener("focus",  e => { this.puzzleEntry.mark(e.target); });
-                        td.addEventListener("blur",  e => { this.puzzleEntry.unmark(e.target); });
-                    }
-                }
-            }
-
-            td.appendChild(textwrapper);
-
-            var edgeCode = 0;
-            if (edges || regularRowBorder || regularColBorder) {
-                if (regularRowBorder) {
-                    if ((r % regularRowBorder) == 0) { edgeCode |= 1; }
-                    if (r == textLines.length - 1) { edgeCode |= 2; }
-                }
-                if (regularColBorder) {
-                    if ((c % regularColBorder) == 0) { edgeCode |= 4; }
-                    if (c == textLines[r].length - 1) { edgeCode |= 8; }
-                }
-    
-                if (edges) {
-                    if (edges.length == textLines.length) {
-                        edgeCode |= parseInt(edges[r][c], 16);
-                    }
-                    else if (edges.length == textLines.length * 2 + 1) {
-                        var topRow = edges[r * 2];
-                        var midRow = edges[r * 2 + 1];
-                        var botRow = edges[r * 2 + 2];
-                        var chTop = (topRow.length == textLines[r].length) ? topRow[c] : topRow[c * 2 + 1];
-                        var chLeft = (midRow.length == textLines[r].length + 1) ? midRow[c] : midRow[c * 2];
-                        var chRight = (midRow.length == textLines[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
-                        var chBottom = (botRow.length == textLines[r].length) ? botRow[c] : botRow[c * 2 + 1];
-                        if (chTop != " " && chTop != ".") { edgeCode |= 1; }
-                        if (chBottom != " " && chBottom != ".") { edgeCode |= 2; }
-                        if (chLeft != " " && chLeft != ".") { edgeCode |= 4; }
-                        if (chRight != " " && chRight != ".") { edgeCode |= 8; }
-                    }
-                }
-    
-                if (edgeCode) { td.setAttribute("data-given-edge-code", edgeCode); }
-            }
-            if (cellSavedState) { edgeCode ^= parseInt(cellSavedState[1], 16); }
-            if (edgeCode) { td.setAttribute("data-edge-code", edgeCode); }
-
-            var pathCode = 0;
-            if (paths) {
-                if (paths.length == textLines.length) {
-                    pathCode |= parseInt(paths[r][c], 16);
-                }
-                else if (paths.length == textLines.length * 2 + 1) {
-                    var topRow = paths[r * 2];
-                    var midRow = paths[r * 2 + 1];
-                    var botRow = paths[r * 2 + 2];
-                    var chTop = (topRow.length == textLines[r].length) ? topRow[c] : topRow[c * 2 + 1];
-                    var chLeft = (midRow.length == textLines[r].length + 1) ? midRow[c] : midRow[c * 2];
-                    var chRight = (midRow.length == textLines[r].length + 1) ? midRow[c + 1] : midRow[c * 2 + 2];
-                    var chBottom = (botRow.length == textLines[r].length) ? botRow[c] : botRow[c * 2 + 1];
-                    if (chTop != " " && chTop != ".") { pathCode |= 1; }
-                    if (chBottom != " " && chBottom != ".") { pathCode |= 2; }
-                    if (chLeft != " " && chLeft != ".") { pathCode |= 4; }
-                    if (chRight != " " && chRight != ".") { pathCode |= 8; }
-                }
-
-                if (pathCode) { td.setAttribute("data-path-code", pathCode); td.setAttribute("data-given-path-code", pathCode); }
-            }
-            if (cellSavedState) { pathCode ^= parseInt(cellSavedState[2], 16); }
-            if (pathCode) { td.setAttribute("data-path-code", pathCode); }
-
-            for (var l = 1; l < maxSpokeLevels; l++) {
-                var spokeCode = 0;
-                if (spokes[l]) {
-                    var spoke = spokes[l];
-                    var topRow = spoke[r * 2];
-                    var midRow = spoke[r * 2 + 1];
-                    var botRow = spoke[r * 2 + 2];
-                    var chN = topRow[c * 2 + 1];
-                    var chNE = topRow[c * 2 + 2];
-                    var chE = midRow[c * 2 + 2];
-                    var chSE = botRow[c * 2 + 2];
-                    var chS = botRow[c * 2 + 1];
-                    var chSW = botRow[c * 2];
-                    var chW = midRow[c * 2];
-                    var chNW = topRow[c * 2];
-                    if (chN != " " && chN != ".") { spokeCode |= 1; }
-                    if (chNE == "/" || chNE == "'" || chNE == "X" || chNE == "x") { spokeCode |= 2; }
-                    if (chE != " " && chE != ".") { spokeCode |= 4; }
-                    if (chSE == "\\" || chSE == "`" || chSE == "X" || chSE == "x") { spokeCode |= 8; }
-                    if (chS != " " && chS != ".") { spokeCode |= 16; }
-                    if (chSW == "/" || chSW == "'" || chSW == "X" || chSW == "x") { spokeCode |= 32; }
-                    if (chW != " " && chW != ".") { spokeCode |= 64; }
-                    if (chNW == "\\" || chNW == "`" || chNW == "X" || chNW == "x") { spokeCode |= 128; }
-
-                    if (spokeCode) { 
-                        if (l > 1) { td.setAttribute("data-spoke-" + l.toString() + "-code", spokeCode); td.setAttribute("data-given-spoke-" + l.toString() + "-code", spokeCode); }
-                        else { td.setAttribute("data-spoke-code", spokeCode); td.setAttribute("data-given-spoke-code", spokeCode); }
-                     }
-                }
-                if (cellSavedState) { spokeCode ^= (parseInt(cellSavedState[l * 2 + 1], 16) * 16 + parseInt(cellSavedState[l * 2 + 2], 16)); }
-                if (spokeCode) { 
-                    if (l > 1) { td.setAttribute("data-spoke-" + l.toString() + "-code", spokeCode); }
-                    else { td.setAttribute("data-spoke-code", spokeCode); }
-                }
-            }
-
-            if (this.options["data-clue-locations"] && textLines[r][c] != '@') {
-                var acrossClue = (c == 0 || textLines[r][c-1] == '@' || (edgeCode & 4)) && c < textLines[r].length - 1 && textLines[r][c+1] != '@' && !(edgeCode & 8); // block/edge left, letter right
-                var downClue = (r == 0 || textLines[r-1][c] == '@' || (edgeCode & 1)) && r < textLines.length - 1 && textLines[r+1][c] != '@' && !(edgeCode & 2); // block/edge above, letter below
-                
-                if (acrossClue || downClue || this.options["data-clue-locations"] == "all") {
-                    var clueIndicator = (!clueIndicators) ? ++clueNum : clueIndicators[clueNum++];
-                    const clueId = this.createLabels(td, "clue", clueIndicator, cluepos);
-
-                    if (this.options["data-clue-locations"] == "crossword" && clueId) {
-                        if (acrossClue) { td.setAttribute("data-across-cluenumber", clueId); }
-                        if (downClue) { td.setAttribute("data-down-cluenumber", clueId); }
-                        if (acrossClue && acrossClues[acrossClueIndex]) {
-                          acrossClues[acrossClueIndex].setAttribute("data-across-cluenumber", clueId);
-                          acrossClues[acrossClueIndex].setAttribute("value", clueId);
-                          acrossClueIndex++;
-                        }
-                        if (downClue && downClues[downClueIndex]) {
-                          downClues[downClueIndex].setAttribute("data-down-cluenumber", clueId);
-                          downClues[downClueIndex].setAttribute("value", clueId);
-                          downClueIndex++;
-                        }
-                    }
-                }
-
-                if (this.options["data-clue-locations"] == "crossword") {
-                    if (!acrossClue && c > 0 && textLines[r][c-1] != '@' && !(edgeCode & 4)) { td.setAttribute("data-across-cluenumber", tr.children[c-1].getAttribute("data-across-cluenumber")); }
-                    if (!downClue && r > 0 && textLines[r-1][c] != '@' && !(edgeCode & 1)) { td.setAttribute("data-down-cluenumber", table.children[r-1].children[c].getAttribute("data-down-cluenumber")); }
-                }
-            }
-
-            if (this.options["data-links"] && textLines[r][c] != '@') {
-                var link = links[linkNum++];
-                this.createLabels(td, "link", link, linkpos);
-            }
-
-            if (this.puzzleEntry.fillClasses) {
-                var fillIndex = 0;
-                if (fills && fills[r][c] != '.') {
-                    fillIndex = parseInt(fills[r][c], 36);
-                    td.classList.add("given-fill");
-                } else {
-                    fillIndex = cellSavedState ? parseInt(cellSavedState[0], 36) : 0;
-                }
-                td.classList.add(this.puzzleEntry.fillClasses[fillIndex]);
-            }
-
-            if (this.puzzleEntry.extraStyleClasses && extraStyles && extraStyles[r][c] != '.') {
-                td.classList.add(this.puzzleEntry.extraStyleClasses[parseInt(extraStyles[r][c], 36)]);
-            }
-
-            this.updateSvg(td);
-            tr.appendChild(td);
-        }
-
-        for (var j = 0; j < this.rightClueDepth; j++) { this.addOuterClue(tr, rightClues[r], j, this.leftClueDepth + textLines[r].length + j + 1, "right"); }
-
-        table.appendChild(tr);
-    }
-
-    for (var i = 0; i < this.bottomClueDepth; i++) {
-        var tr = document.createElement("tr");
-        if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = this.topClueDepth + textLines.length + i + 1; }
-        for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
-        for (var j = 0; j < bottomClues.length; j++) { this.addOuterClue(tr, bottomClues[j], i, this.leftClueDepth + j + 1, "bottom"); }
-        for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + bottomClues.length + j + 1); }
-
-        table.appendChild(tr);
-    }
-
-    table.querySelectorAll(".cell.inner-cell").forEach(c => { this.updateLabel(c); });
-
-    if (!this.puzzleEntry.container.classList.contains("puzzle-box")) {
-        var label = `A ${this.numRows} row by ${this.numCols} column puzzle grid`;
-        if (this.screenreaderSupported) {
-            table.role = "grid";
-            table.ariaRowCount = this.topClueDepth + this.bottomClueDepth + this.numRows;
-            table.ariaColCount = this.leftClueDepth + this.rightClueDepth + this.numCols;
-    
-            label += `${this.options["data-no-input"] ? "" : ", with interactive elements. For a better interactive experience using a screenreader, turn off scan mode"}.`
-        }
-        else { label += ". Unfortunately, this specific puzzle is not compatible with a screen reader."}
-        table.ariaLabel = label;
-    }
-
-    this.container.insertBefore(table, this.container.firstChild);
-    this.grid = table;
-
-    // Copyjack support: initialize a copyjack version of the table.
-    // This table will be modified as the user takes actions.
-
-    // Put the table inside this.container to ensure that styling works.
-    if (this.puzzleEntry.isUsingCopyjack) {
-        // Set no-copy on this table.
-        table.classList.add('no-copy');
-        // Create a copy-only table and insert it.
-        this.copyjackVersion = document.createElement('table');
-        this.copyjackVersion.setAttribute("aria-hidden", true);
-        this.copyjackVersion.classList.add('copy-only');
-        this.copyjackVersion.style.userSelect = 'auto'; // Needed for Firefox compatibility.
-        this.container.insertBefore(this.copyjackVersion, table);
-        // Populate the copy-only table.
-        for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
-            if (tr.classList.contains('no-copy')) continue;
-            const copyTr = document.createElement('tr');
-            copyTr.style.userSelect = 'auto';
-            this.copyjackVersion.appendChild(copyTr);
-            for (const [j, td] of Array.from(tr.getElementsByTagName('td')).entries()) {
-                if (td.classList.contains('no-copy')) continue;
-                td.dataset.coord = [i, j];
-                const copyTd = document.createElement('td');
-                copyTd.style.userSelect = 'auto';
-                copyTr.appendChild(copyTd);
-                this.processTdForCopyjack(td);
-            }
-        }
     }
 }

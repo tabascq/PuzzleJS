@@ -1,0 +1,57 @@
+<!-- (c) 2024 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<html>
+    <head>
+        <title>Puzzle.js Designer</title>
+        <link rel="stylesheet" href="../puzzlejs/puzzle.css"/>
+        <link rel="stylesheet" href="../puzzlejs/puzzle-box.css"/>
+        <link rel="stylesheet" href="../puzzlejs/puzzle-basic-colors.css"/>
+        <script type="text/javascript" src="../puzzlejs/puzzle.js"></script>
+        <script type="text/javascript" src="../puzzlejs/puzzle-box.js"></script>
+        <script type="text/javascript" src="puzzle-designer.js"></script>
+        <link rel="stylesheet" href="puzzle-designer.css"/>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+            });
+        </script>
+        <style>
+            body {
+                padding: 1rem;
+            }
+
+            h1, h2, p, li {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            code {
+                background-color: #ddf;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Puzzle.js Designer</h1>
+        <div class="puzzle-designer-site">
+            <div class="puzzle-entry" data-text="5x5"></div>
+        </div>
+        <h2>Getting Started</h2>
+        <p>There are four ways to get started:</p>
+        <ul>
+            <li>Work with the blank sample puzzle provided on this page by default.</li><br/>
+            <li>Click the &ldquo;Open in Designer&rdquo; button, which can be found on any example on the homepage or in the documentation.</li><br/>
+            <li>Select the blank sample puzzle, and then copy the source code for any existing puzzle.js puzzle and paste it into the text area in the &ldquo;Import/Export&rdquo; category. If the puzzle needs custom CSS to render properly, use the same technique to paste that CSS into the &ldquo;Simulated Page CSS&rdquo; category.</li><br/>
+            <li>Add the following two lines to your puzzle page itself (anywhere below the inclusion of puzzle.js and/or puzzle-box.js), and remove them once done editing:<br/>
+                <br/>
+                <div style="padding-left: 4em">
+                    <code>&lt;script type="text/javascript" src="designer/puzzle-designer.js"&gt;&lt;/script&gt;</code><br/>
+                    <code>&lt;link rel="stylesheet" href="designer/puzzle-designer.css"&gt;</code>
+                </div>
+            </li>
+        </ul>
+        <h2>Editing and Exporting</h2>
+        <p><i>This designer is a work in progress! Over time, it will gain better property editors and the ability to edit certain properties directly in the puzzle.</i></p>
+        <p>Once you have chosen one of the four ways of getting started, edit the properties of your puzzle using the categories and properties on the right. The name of each property is a hyperlink to the documentation for that property.</p>
+        <p>When done editing, go to the &ldquo;Import/Export&rdquo; category, copy the HTML out of the text area, and paste that into your own web page.</p>
+    </body>
+</html>
