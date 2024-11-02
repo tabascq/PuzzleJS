@@ -1,0 +1,164 @@
+<!-- (c) 2024 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<html>
+    <head>
+        <title>Puzzle.js Reference: Toggles</title>
+        <link rel="stylesheet" href="reference-example.css"/>
+        <script type="text/javascript" src="reference-example.js"></script>
+        <link rel="stylesheet" href="../puzzlejs/puzzle.css"/>
+        <link rel="stylesheet" href="../puzzlejs/puzzle-basic-colors.css"/>
+        <script type="text/javascript" src="../puzzlejs/puzzle.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+            });
+        </script>
+        <style>
+            body {
+                padding: 1rem;
+            }
+
+            h1, h2, p, li {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            h3 {
+                font-family: monospace;
+            }
+
+            code {
+                background-color: #ddf;
+            }
+
+            .freeform-example .puzzle-dot-zone { width: 300px; height: 300px; }
+            .list-example .puzzle-dot-list-center { height: 300px; width: 300px; }
+            .list-position-example .puzzle-dot-list-center { height: 300px; width: 300px; background: gray; }
+            .list-position-example .puzzle-dot-list-center::after { content:""; display: block; margin-top: 100px; height: 100px; width: 300px; background: lightgray; }
+            .styling-example { --puzzle-dot-size: 10px; }
+            .styling-example .puzzle-dot-zone { width: 300px; height: 300px; }
+            .styling-example .puzzle-dot { background: yellow; border-color: red; }
+            .styling-example .puzzle-dot:hover { background: blue; border-color: red; }
+            .styling-example .puzzle-dot::after { font-size: 30px; font-weight: bold; font-style: italic; font-family: monospace; color: green; }
+        </style>
+    </head>
+    <body>
+        <h1>Puzzle.js Reference: Dots</h1>
+        <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
+        <h2>Overview</h2>
+        <p>Some puzzles have dots that must be connected to draw shapes, mark items, etc. These puzzles may or may not have accompanying grids. With puzzle.js, you can designate non-grid areas as &ldquo;dot zones&rdquo; and ask your solvers to draw the lines. These lines are fully integrated with undo, saved state, and co-op functionality.</p>
+        <p>There are two highly related flavors of dot-to-dot support: freeform and list-based.</p>
+        <h2>Freeform dot-to-dot</h2>
+        <ul>
+            <li>Mark any div in your <code>puzzle-entry</code> with the class <code>puzzle-dot-zone</code>, and it can support dots.</li>
+            <li>Add a <code>data-dots</code> attribute to the div to specify dot positions. Each dot is specified with either <code>x|y</code> or <code>x|y|label</code>, and spaces go between the dot specifications.</code></li>
+            <li>You can add content to the <code>puzzle-dot-zone</code>, or simply give it a CSS <code>background</code> that is any image or SVG file.</li>
+        </ul>
+        <div class="example">
+            <div class="puzzle-entry freeform-example" data-show-commands="true">
+    <div class="puzzle-dot-zone" data-dots="100|100|A 200|100 100|200 200|200|D"></div>
+</div>
+        </div>
+
+        <p>Dot coordinates are scaled to the <code>data-dots-view-box</code> attribute if it exists, or the size of the <code>puzzle-dot-zone</code> div if it does not.</p>
+        <div class="example">
+            <div class="puzzle-entry freeform-example" data-show-commands="true">
+    <div class="puzzle-dot-zone" data-dots="0|0 25|25 50|50 75|75 100|100" data-dots-view-box="100|100"></div>
+</div>
+        </div>
+
+        <div class="example">
+            <div class="puzzle-entry freeform-example" data-show-commands="true">
+    <div class="puzzle-dot-zone" data-dots="0|0 25|25 50|50 75|75 100|100"></div>
+</div>
+        </div>
+
+        <p>You can specify that each dot can have at most one line by setting the <code>data-dots-exclusive</code> attribute.</p>
+        <div class="example">
+            <div class="puzzle-entry freeform-example" data-show-commands="true">
+    <div class="puzzle-dot-zone" data-dots="100|100 200|100 100|200 200|200" data-dots-exclusive="false"></div>
+</div>
+        </div>
+        
+        <div class="example">
+            <div class="puzzle-entry freeform-example" data-show-commands="true">
+    <div class="puzzle-dot-zone" data-dots="100|100 200|100 100|200 200|200" data-dots-exclusive="true"></div>
+</div>
+        </div>
+        
+        <h2>List-based dot-to-dot</h2>
+        <ul>
+            <li>Mark any div in your <code>puzzle-entry</code> with the class <code>puzzle-dot-zone</code>, mark a child with the class <code>puzzle-dot-list-center</code>, and then place elements on either side of that with the class <code>puzzle-dot-list</code>.</li>
+            <li>The <code>puzzle-dot-list-center</code> child will be the area where dots are placed.</li>
+            <li>The <code>puzzle-dot-list</code> elements will have their children spaced out to span the height of the center element, and each will be centered.</li>
+            <li>You can add content to the <code>puzzle-dot-list-center</code>, or simply give it a CSS <code>background</code> that is any image or SVG file.</li>
+            <li>Overall positioning will look like this example:</li>
+        </ul>
+        <div class="example">
+            <div class="puzzle-entry list-position-example" data-show-commands="true">
+    <div class="puzzle-dot-zone">
+        <div class="puzzle-dot-list">
+            <div>A</div>
+            <div>B</div>
+            <div>C</div>
+        </div>
+        <div class="puzzle-dot-list-center"></div>
+        <div class="puzzle-dot-list">
+            <div>1</div>
+            <div>2</div>
+            <div>3</div>
+        </div>
+    </div>
+</div>
+        </div>
+        
+        <p>You can specify that each dot can have at most one line by setting the <code>data-dot-exclusive</code> attribute.</p>
+        <div class="example">
+            <div class="puzzle-entry list-example" data-show-commands="true">
+    <div class="puzzle-dot-zone" data-dots-exclusive="false">
+        <div class="puzzle-dot-list">
+            <div>A</div>
+            <div>B</div>
+            <div>C</div>
+        </div>
+        <div class="puzzle-dot-list-center"></div>
+        <div class="puzzle-dot-list">
+            <div>1</div>
+            <div>2</div>
+            <div>3</div>
+        </div>
+    </div>
+</div>
+        </div>
+        
+        <div class="example">
+            <div class="puzzle-entry list-example" data-show-commands="true">
+    <div class="puzzle-dot-zone" data-dots-exclusive="true">
+        <div class="puzzle-dot-list">
+            <div>A</div>
+            <div>B</div>
+            <div>C</div>
+        </div>
+        <div class="puzzle-dot-list-center"></div>
+        <div class="puzzle-dot-list">
+            <div>1</div>
+            <div>2</div>
+            <div>3</div>
+        </div>
+    </div>
+</div>
+        </div>
+        
+        <h2>Styling</h2>
+        <ul>
+            <li>Dot size can be changed with the <code>--puzzle-dot-size</code> CSS variable.</li>
+            <li>Other dot properties can be changed with a <code>.puzzle-dot</code> CSS rule.</li>
+            <li>Dot labels can be changed with a <code>.puzzle-dot::after</code> CSS rule.</li>
+        </ul>
+        <div class="example">
+            <div class="puzzle-entry styling-example" data-show-commands="true">
+    <div class="puzzle-dot-zone" data-dots="100|100|A 200|100|B 100|200|C 200|200|D"></div>
+</div>
+        </div>        
+</body>
+</html>

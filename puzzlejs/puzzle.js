@@ -1452,6 +1452,248 @@ function PuzzleEntry(p, index) {
     }
 
     this.container.classList.add("loaded");
+
+    this.puzzleGrids.forEach(p => { p.afterLoaded(); });
+}
+
+function PuzzleDotZone(container, puzzleGrid, index) {
+    this.container = container;
+    this.puzzleGrid = puzzleGrid;
+    this.inhibitSave = false;
+    container.puzzleDotZone = this;
+    this.anchorDot = null;
+    this.provisionalLine = null;
+    this.lineLayer = null;
+    this.inDotDrag = false;
+
+    this.getDotCenter = function(dot) {
+        var dotRect = dot.getBoundingClientRect();
+        var lineLayerRect = this.lineLayer.getBoundingClientRect();
+        return { x: dotRect.x + (dotRect.width / 2) - lineLayerRect.x, y: dotRect.y + (dotRect.height / 2) - lineLayerRect.y };
+    }
+
+    this.createProvisionalLine = function(dot) {
+        var c = this.getDotCenter(dot);
+        this.lineLayer.insertAdjacentHTML("beforeend", `<line class="provisional" x1="${c.x}" y1="${c.y}" x2="${c.x}" y2="${c.y}"/>`);
+        this.provisionalLine = this.lineLayer.lastChild;
+        this.anchorDot = dot;
+        dot.classList.add("anchor-dot");
+    }
+
+    this.updateProvisionalLineEndpoint = function(dot) {
+        var center = this.getDotCenter(dot);
+        this.provisionalLine.setAttributeNS(null, "x2", center.x);
+        this.provisionalLine.setAttributeNS(null, "y2", center.y);
+    }
+
+    this.finishProvisionalLine = function(dot) {
+        this.updateProvisionalLineEndpoint(dot);
+        if (dot === this.anchorDot) { return; }
+        this.provisionalLine.classList.remove("provisional");
+        this.provisionalLine = null;
+
+        var id0 = this.anchorDot.getAttribute("puzzle-dot-id");
+        var id1 = dot.getAttribute("puzzle-dot-id");
+        if (id0 < id1) { var t = id0; id0 = id1; id1 = t; }
+        var lineId = `${id0}|${id1}`;
+        var lineExists = !!this.lineData[lineId];
+
+        this.puzzleGrid.puzzleEntry.undoManager.startAction(this);
+        this.puzzleGrid.puzzleEntry.undoManager.addUnit(this, this.container, lineId, lineExists, !lineExists);
+        if (parseFalseStrings(this.container.getAttribute("data-dots-exclusive"))) {
+            var parts = lineId.split("|");
+            if (this.linesPerDot[parts[0]]) {
+                for (const key of this.linesPerDot[parts[0]]) { this.puzzleGrid.puzzleEntry.undoManager.addUnit(this, this.container, key, true, false) }
+            }
+            if (this.linesPerDot[parts[1]]) {
+                for (const key of this.linesPerDot[parts[1]]) { this.puzzleGrid.puzzleEntry.undoManager.addUnit(this, this.container, key, true, false) }
+            }
+        }
+        this.puzzleGrid.puzzleEntry.undoManager.endAction();
+
+        this.anchorDot.classList.remove("anchor-dot");
+        this.anchorDot = null;
+    }
+
+    this.cancelProvisionalLine = function() {
+        this.provisionalLine.remove();
+        this.provisionalLine = null;
+        this.anchorDot.classList.remove("anchor-dot");
+        this.anchorDot = null;
+    }
+
+    this.handleDotClick = function(dot) {
+        if (this.inDotDrag) return;
+        if (this.provisionalLine) { this.finishProvisionalLine(dot); } else { this.createProvisionalLine(dot); }
+    }
+
+    this.handleDotFocus = function(dot) {
+        if (!this.provisionalLine) return;
+        this.updateProvisionalLineEndpoint(dot);
+    }
+
+    this.handleZoneKey = function(e) {
+        if (this.provisionalLine && e.key === "Escape") { this.cancelProvisionalLine(); return; }
+
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || (e.key === "ArrowDown")) {
+            var dot = document.activeElement;
+            if (!dot.classList.contains("puzzle-dot")) return;
+            var dotRect = dot.getBoundingClientRect();
+            var bestDot = null;
+            var bestDistanceSq = Infinity;
+
+            this.dotZone.querySelectorAll(".puzzle-dot").forEach(d => {
+                if (d === dot) return;
+
+                var dRect = d.getBoundingClientRect();
+                var dx = dRect.left - dotRect.left;
+                var dy = dRect.top - dotRect.top;
+                var distanceSq = dx * dx + dy * dy;
+                var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                if (e.key === "ArrowLeft" && Math.abs(angle) < 135) return;
+                if (e.key === "ArrowRight" && Math.abs(angle) > 45) return;
+                if (e.key === "ArrowUp" && (angle > -45 || angle < -135)) return;
+                if (e.key === "ArrowDown" && (angle < 45 || angle > 135)) return;
+                if (distanceSq >= bestDistanceSq) return;
+
+                bestDistanceSq = distanceSq;
+                bestDot = d;
+            });
+
+            if (bestDot) { bestDot.focus(); }
+        }
+    }
+
+    this.handleZoneDown = function(e) {
+        if (this.provisionalLine && !e.target.classList.contains("puzzle-dot")) { this.cancelProvisionalLine(); }
+        else if (!this.provisionalLine && e.target.classList.contains("puzzle-dot")) {
+            this.inDotDrag = true;
+            this.createProvisionalLine(e.target);
+        }
+    }
+
+    this.handleZoneUp = function(e) {
+        if (this.inDotDrag && this.provisionalLine) {
+            if (e.target.classList.contains("puzzle-dot")) { this.finishProvisionalLine(e.target); }
+            else { this.cancelProvisionalLine(); }
+        } 
+        this.inDotDrag = false;
+    }
+
+    this.handleZoneMove = function(e) {
+        if (!this.provisionalLine) return;
+
+        if (e.target.classList.contains("puzzle-dot")) { this.updateProvisionalLineEndpoint(e.target); }
+        else {
+            this.provisionalLine.setAttributeNS(null, "x2", e.layerX);
+            this.provisionalLine.setAttributeNS(null, "y2", e.layerY);
+        }
+    }
+
+    this.addDotList = function(list, x) {
+        if (!list || !list.classList.contains("puzzle-dot-list")) return;
+
+        const listLength = list.children.length;
+        for (var i = 0; i < listLength; i++) {
+            this.dotZone.insertAdjacentHTML("beforeend", `<button class='puzzle-dot' tabindex='0' style='left: ${x}px; top: ${this.dotZone.offsetHeight * (listLength ? ((2 * i + 1) / (2 * listLength)): 0)}px'></button>`);
+        }
+
+        list.style.justifyItems = (x === 0) ? "end" : "begin";
+    }
+
+    this.changeWithoutUndo = function(changes) {
+        changes.forEach(c => {
+            if (c.value) { this.lineData[c.propertyKey] = c.value; } else { delete this.lineData[c.propertyKey]; }
+        });
+
+        if (!this.inhibitSave) { localStorage.setItem(this.puzzleId, JSON.stringify(this.lineData)); }
+        this.rebuildLinesFromData();
+    }
+
+    this.prepareToReset = function() {
+        localStorage.removeItem(this.puzzleId);
+        this.inhibitSave = true;
+        this.lineData = {};
+        this.rebuildLinesFromData();
+    }
+
+    this.rebuildLinesFromData = function() {
+        this.lineLayer.innerHTML = "";
+        this.linesPerDot = {};
+
+        for (const[key, value] of Object.entries(this.lineData)) {
+            if (!value) continue;
+
+            var parts = key.split("|");
+            if (!this.linesPerDot[parts[0]]) { this.linesPerDot[parts[0]] = []; }
+            this.linesPerDot[parts[0]].push(key);
+            if (!this.linesPerDot[parts[1]]) { this.linesPerDot[parts[1]] = []; }
+            this.linesPerDot[parts[1]].push(key);
+
+            var c1 = this.getDotCenter(this.lookup[parts[0]]);
+            var c2 = this.getDotCenter(this.lookup[parts[1]]);
+            this.lineLayer.insertAdjacentHTML("beforeend", `<line x1="${c1.x}" y1="${c1.y}" x2="${c2.x}" y2="${c2.y}"/>`);
+        }
+    }
+
+    this.afterLoaded = function() {
+        this.puzzleId = `${this.puzzleGrid.puzzleId}-dot-zone-${this.index}`;
+        this.dotZone.insertAdjacentHTML("beforeend", "<svg xmlns='http://www.w3.org/2000/svg' class='puzzle-dot-line-layer'></svg");
+        this.lineLayer = this.dotZone.lastChild;
+        this.lineLayer.setAttribute("viewBox", `0 0 ${this.dotZone.offsetWidth} ${this.dotZone.offsetHeight}`);
+        this.dotZone.addEventListener("pointermove", e => { this.handleZoneMove(e); });
+        this.dotZone.addEventListener("pointerdown", e => { this.handleZoneDown(e); });
+        this.dotZone.addEventListener("pointerup", e => { this.handleZoneUp(e); });
+        this.dotZone.addEventListener("keydown", e => { this.handleZoneKey(e); });
+    
+        this.lookup = {};
+        this.lineData = {};
+        this.linesPerDot = {};
+    
+        var xScale = 1;
+        var yScale = 1;
+        var viewBox = this.container.getAttribute("data-dots-view-box");
+        if (viewBox) {
+            viewBox = viewBox.split("|");
+            xScale = this.dotZone.offsetWidth/Number(viewBox[0]);
+            yScale = this.dotZone.offsetHeight/Number(viewBox[1]);
+        }
+
+        var dotsText = this.container.getAttribute("data-dots");
+        if (dotsText) {
+            dotsText.split(" ").forEach(part => {
+                var coords = part.split("|");
+                if (coords.length >= 2) {
+                    this.dotZone.insertAdjacentHTML("beforeend", `<button class='puzzle-dot' tabindex='0' style='left: ${Number(coords[0]) * xScale}px; top: ${Number(coords[1]) * yScale}px'></button>`);
+                    if (coords[2]) { this.dotZone.lastChild.setAttribute("data-dot-label", coords[2]); }
+                }
+            });
+        }
+    
+        if (this.dotZone.classList.contains("puzzle-dot-list-center")) {
+            this.addDotList(this.dotZone.previousElementSibling, 0);
+            this.addDotList(this.dotZone.nextElementSibling, this.dotZone.offsetWidth);
+        }
+    
+        this.dotZone.querySelectorAll(".puzzle-dot").forEach((d, index) => {
+            d.setAttribute("tabindex", 0);
+            d.addEventListener("click", e => { this.handleDotClick(d); });
+            d.addEventListener("focus", e => { this.handleDotFocus(d); });
+    
+            if (!d.getAttribute("puzzle-dot-id")) { d.setAttribute("puzzle-dot-id", index); }
+            this.lookup[d.getAttribute("puzzle-dot-id")] = d;
+        });
+
+        var savedState = localStorage.getItem(this.puzzleId);
+        if (savedState) {
+            try { this.lineData = JSON.parse(savedState); this.rebuildLinesFromData(); }
+            catch {}
+        }
+    }
+
+    this.dotZone = this.container.querySelector(".puzzle-dot-list-center") ?? this.container;
+    this.index = index;
 }
 
 function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
@@ -1466,6 +1708,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     this.doGrid = doGrid;
     this.isRootGrid = isRootGrid;
     this.jsonOptions = this.puzzleEntry.extractJsonOptions(this.container);
+    this.dotZones = [];
 
     this.parseOuterClues = function(clues) {
         var clueDepth = 0;
@@ -1537,6 +1780,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         });
 
         changedGrids.forEach(g => { g.stateDirty = true; g.saveState(); });
+        this.dotZones.forEach(dz => { dz.prepareToReset(); });
     }
 
     this.saveState = function() {
@@ -1915,6 +2159,10 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
     }
 
+    this.afterLoaded = function() {
+        this.dotZones.forEach(dz => { dz.afterLoaded(); });
+    }
+
     this.rebuildContents = function() {
         if (this.grid) {
             this.container.removeChild(this.container.firstChild);
@@ -1939,17 +2187,24 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             if (this.puzzleId == this.puzzleEntry.options["data-puzzle-id"]) { this.puzzleId = this.puzzleEntry.puzzleId + "|" + this.index; }
         }
 
-        this.fillClasses = puzzleEntry.getOptionArray(this.options, "data-fill-classes", " ");
-        this.extraStyleClasses = puzzleEntry.getOptionArray(this.options, "data-extra-style-classes", " ");
-    
         this.lookup = {};
 
         if (this.isRootGrid) {
-            this.container.querySelectorAll(".puzzle-toggle-item").forEach((ti) => { this.lookup[ti.id] = ti; });
+            this.toggleState = localStorage.getItem(this.puzzleId + "-toggles");
+            this.toggleState = this.toggleState ? JSON.parse(this.toggleState) : {};
+        
+            this.container.querySelectorAll(".puzzle-toggle-item").forEach((ti) => {
+                this.lookup[ti.id] = ti;
+                if (this.toggleState[ti.id]) { ti.classList.add("toggled"); }
+                else { ti.classList.remove("toggled"); }
+            });
         }
 
         if (!this.doGrid) return;
 
+        this.fillClasses = puzzleEntry.getOptionArray(this.options, "data-fill-classes", " ");
+        this.extraStyleClasses = puzzleEntry.getOptionArray(this.options, "data-extra-style-classes", " ");
+    
         var textLines = puzzleEntry.getOptionArray(this.options, "data-text", "|");
         var textReplacements = puzzleEntry.getOptionDict(this.options, "data-text-replacements");
         var fills = puzzleEntry.getOptionArray(this.options, "data-fills", "|");
@@ -2340,16 +2595,6 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 }
             }
         }
-
-        if (this.isRootGrid) {
-            this.toggleState = localStorage.getItem(this.puzzleId + "-toggles");
-            this.toggleState = this.toggleState ? JSON.parse(this.toggleState) : {};
-        
-            this.container.querySelectorAll(".puzzle-toggle-item").forEach((ti) => {
-                if (this.toggleState[ti.id]) { ti.classList.add("toggled"); }
-                else { ti.classList.remove("toggled"); }
-            });
-        }
     }
 
     if (this.isRootGrid) {
@@ -2370,5 +2615,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? (tlBase + "-" + i));
             }
         });
+
+        this.container.querySelectorAll(".puzzle-dot-zone").forEach((dz, index) => { this.dotZones.push(new PuzzleDotZone(dz, this, index)); });
     }
 }
