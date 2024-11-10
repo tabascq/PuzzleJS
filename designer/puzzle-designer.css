@@ -19,7 +19,7 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
 
- .puzzle-designer input {
+ .puzzle-designer input, .puzzle-designer select, .puzzle-designer textarea {
     margin-bottom: 10px;
     font-family: 'Courier New', Courier, monospace;
  }
@@ -27,6 +27,11 @@
  .puzzle-designer input, .puzzle-designer textarea {
     width: 240px;
     font-family: 'Courier New', Courier, monospace;
+ }
+
+ .puzzle-designer .multi-select {
+    display: flex;
+    flex-direction: column;
  }
 
  .puzzle-designer .no-selection-message {

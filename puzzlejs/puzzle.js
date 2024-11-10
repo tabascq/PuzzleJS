@@ -946,7 +946,7 @@ function PuzzleEntry(p, index) {
         var apos = this.getOptionArray(options, option, splitchar);
         if (!apos)
             return [];
-        return apos.map((pos) => { return pos ? "pos-" + pos : ""; });
+        return apos.map((pos) => { return (pos && pos != "none") ? "pos-" + pos : ""; });
     }
 
     this.cluePointerEnter = function(e) {

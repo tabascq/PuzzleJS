@@ -4,58 +4,136 @@
  */
 
 function PuzzleDesigner() {
+    this.updateCategoryContentHeight = function(content) {
+        content.style.maxHeight = content.previousSibling.classList.contains("open") ? content.scrollHeight + "px" : null;
+    }
+
     this.createCategory = function(catName) {
         this.pane.insertAdjacentHTML("beforeEnd", `<div class="category-header">${catName}</div>`);
-        this.pane.lastElementChild.addEventListener("click", function() {
-            this.classList.toggle("open");
-            var content = this.nextElementSibling;
-            content.style.maxHeight = content.style.maxHeight ? null : content.scrollHeight + "px";
+        this.pane.lastElementChild.addEventListener("click", e => {
+            e.target.classList.toggle("open");
+            var content = e.target.nextElementSibling;
+            this.updateCategoryContentHeight(content);
         });
         
         this.pane.insertAdjacentHTML("beforeEnd", `<div class="category-contents"></div>`);
         return this.pane.lastElementChild;
     }
 
-    this.updateProperty = function(property) {
+    this.getPropertyValueFromDesigner = function(property) {
+        if (this.properties[property].classList.contains("multi-select")) {
+            var parts = [];
+            for (const child of this.properties[property].children) {
+                if (child.value) { parts.push(child.value); }
+            }
+            return parts.join(this.getSeparatorCharacter(property));
+        }
+        return this.properties[property].value;
+    }
+
+    this.updatePropertyOnEdit = function(property) {
         if (!this.puzzleGrid) return;
+
+        var value = this.getPropertyValueFromDesigner(property);
         if (this.puzzleGrid.isRootGrid) {
-            this.puzzleGrid.puzzleEntry.container.setAttribute(property, this.properties[property].value);
+            this.puzzleGrid.puzzleEntry.container.setAttribute(property, value);
             delete this.puzzleGrid.puzzleEntry.jsonOptions[property];
             this.puzzleGrid.puzzleEntry.rebuildContents();
         }
         else {
-            this.puzzleGrid.container.setAttribute(property, this.properties[property].value);
+            this.puzzleGrid.container.setAttribute(property, value);
             delete this.puzzleGrid.jsonOptions[property];
             this.puzzleGrid.rebuildContents();
         }
+
+        if (this.properties[property].classList.contains("multi-select")) {
+            this.updateProperty(property);
+        }
+
         this.updateExport();
     }
     
-    this.createProperty = function(category, property) {
+    this.createProperty = function(category, property, type) {
         category.insertAdjacentHTML("beforeEnd", `<div><a href="../reference/reference-options.html#${property}" target="_blank">${property}</a></div>`);
-        category.insertAdjacentHTML("beforeEnd", `<input/>`);
+
+        switch(type) {
+            default:
+                category.insertAdjacentHTML("beforeEnd", `<input/>`);
+                break;
+            case "bool":
+                //category.insertAdjacentHTML("beforeEnd", `<input type="checkbox"/>`);
+                //break;
+            case "select":
+            case "datalist":
+                category.insertAdjacentHTML("beforeEnd", type === "datalist" ? `<input list="${property}-defined-options"/><datalist id="${property}-defined-options"></datalist>` : `<select></select>`);
+                this.propertyValues[property].sort();
+                this.propertyValues[property].forEach(v => {
+                    category.lastElementChild.insertAdjacentHTML("beforeEnd", `<option value="${v}">${v}</option>`);
+                });
+                break;
+            case "multi-select":
+                category.insertAdjacentHTML("beforeEnd", `<div class="multi-select"></div>`);
+                break;
+        }
         var input = category.lastElementChild;
+        if (type === "datalist") { input = input.previousSibling; }
+
         this.properties[property] = input;
 
-        input.addEventListener("change", e => { this.updateProperty(property); });
-        input.addEventListener("keyup", e => { this.updateProperty(property); });
-        input.addEventListener("paste", e => { this.updateProperty(property); });
+        input.addEventListener("change", e => { this.updatePropertyOnEdit(property); });
+        input.addEventListener("keyup", e => { this.updatePropertyOnEdit(property); });
+        input.addEventListener("paste", e => { this.updatePropertyOnEdit(property); });
+    }
+
+    this.insertOptionList = function(property, parent, value) {
+        parent.insertAdjacentHTML("beforeEnd", `<select></select>`);
+        this.propertyValues[property].sort();
+        this.propertyValues[property].forEach(v => {
+            parent.lastElementChild.insertAdjacentHTML("beforeEnd", `<option value="${v}">${v}</option>`);
+        });
+        parent.lastElementChild.value = value;
+    }
+
+    this.getPropertyValue = function(property) {
+        if (property === "data-mode") {
+            if (this.puzzleGrid.isRootGrid) {
+                return this.puzzleGrid.puzzleEntry.container.getAttribute("data-mode");
+            }
+            else {
+                return this.puzzleGrid.container.getAttribute("data-mode");
+            }        
+        }
+
+        return this.puzzleGrid.options[property];
+    }
+
+    this.getSeparatorCharacter = function(property) {
+        return (property === "data-mode") ? " " : "|";
+    }
+
+    this.updateProperty = function(property) {
+        var value = this.getPropertyValue(property);
+
+        if (typeof value === 'object' && value !== null) value = JSON.stringify(value);
+        if (value === null || value === undefined) value = "";
+
+        if (this.properties[property].classList.contains("multi-select")) {
+            this.properties[property].innerHTML = "";
+            var parts = value.split(this.getSeparatorCharacter(property));
+            parts.forEach(p => {
+                if (p) { this.insertOptionList(property, this.properties[property], p); }
+            });
+            this.insertOptionList(property, this.properties[property], "");
+            this.updateCategoryContentHeight(this.properties[property].parentElement);
+        } else {
+            this.properties[property].value = value;
+        }
     }
 
     this.updateAllProperties = function() {
-        Object.keys(this.properties).forEach(k => {
-            var value = puzzleGrid.options[k];
-            if (typeof value === 'object' && value !== null) value = JSON.stringify(value);
-            if (value === null || value === undefined) value = "";
-            this.properties[k].value = value;
+        Object.keys(this.properties).forEach(property => {
+            this.updateProperty(property);
         });
-
-        if (this.puzzleGrid.isRootGrid) {
-            this.properties["data-mode"].value = this.puzzleGrid.puzzleEntry.container.getAttribute("data-mode");
-        }
-        else {
-            this.properties["data-mode"].value = this.puzzleGrid.container.getAttribute("data-mode");
-        }
 
         const commandDisplay = (this.puzzleGrid.isRootGrid) ? "block" : "none";
         this.properties["data-show-commands"].style.display = commandDisplay;
@@ -111,26 +189,86 @@ function PuzzleDesigner() {
         catch {}
     }
 
+    this.registerValue = function(property, value) {
+        if (value === false) value = "false";
+        if (value === true) value = "true";
+        if (value === null) value = "";
+        if (value && !/^[a-zA-Z]/.test(value)) {
+            delete this.propertyValues[property];
+        }
+        if (this.propertyValues[property] && !this.propertyValues[property].includes(value)) {
+            this.propertyValues[property].push(value);
+        }
+
+        if (value === "false" && !this.propertyValues[property].includes("true")) { this.registerValue(property, "true"); }
+        if (value === "true" && !this.propertyValues[property].includes("false")) { this.registerValue(property, "false"); }
+    }
+
+    this.registerLabelPositions = function(property) {
+        this.propertyValues[property] = [];
+        this.registerValue(property, "");
+        this.registerValue(property, "top-left");
+        this.registerValue(property, "top-right");
+        this.registerValue(property, "bottom-left");
+        this.registerValue(property, "bottom-right");
+        this.registerValue(property, "top");
+        this.registerValue(property, "bottom");
+        this.registerValue(property, "none");
+    }
+
     document.body.classList.add("designer-mode");
     document.body.insertAdjacentHTML("beforeEnd", "<div class='puzzle-designer'><div class='no-selection-message'>Select a puzzle (by clicking on it) to see puzzle properties.</div></div>");
 
     this.pane = document.body.lastElementChild;
     this.properties = {};
+    this.propertyValues = {};
 
-    var generalCategory = createCategory("General");
-    var textCategory = createCategory("Text");
-    var clueCategory = createCategory("Clue");
-    var linkCategory = createCategory("Link/Extract");
-    var fillCategory = createCategory("Fill");
-    var edgeCategory = createCategory("Edge");
-    var pathCategory = createCategory("Path");
-    var spokeCategory = createCategory("Spoke");
+    var generalCategory = this.createCategory("General");
+    var textCategory = this.createCategory("Text");
+    var clueCategory = this.createCategory("Clue");
+    var linkCategory = this.createCategory("Link/Extract");
+    var fillCategory = this.createCategory("Fill");
+    var edgeCategory = this.createCategory("Edge");
+    var pathCategory = this.createCategory("Path");
+    var spokeCategory = this.createCategory("Spoke");
 
-    createProperty(generalCategory, "data-mode", null);
+    this.createProperty(generalCategory, "data-mode", "multi-select");
+
+    for (const [key, value] of Object.entries(puzzleModes["default"])) {
+        this.propertyValues[key] = [];
+    }
+
+    this.propertyValues["data-mode"] = [""];
+    for (const [modeName, mode] of Object.entries(puzzleModes)) {
+        if (modeName !== "default") { this.registerValue("data-mode", modeName); }
+        for (const [key, value] of Object.entries(mode)) {
+            this.registerValue(key, value);
+        }
+    }
+
+    // register a few extras that modes don't catch
+    this.registerValue("data-reset-prompt", null);
+    this.registerValue("data-text-avoid-position", "bottom");
+    this.registerValue("data-clue-locations", "all");
+    this.registerLabelPositions("data-clue-position");
+    this.registerLabelPositions("data-link-position");
+    this.registerLabelPositions("data-extract-position");
+    this.registerValue("data-edge-style", "dash");
+    this.registerValue("data-edge-style", "none");
+    this.registerValue("data-spoke-style", "dash");
 
     for (const [key, value] of Object.entries(puzzleModes["default"])) {
         if (key == "data-player-id" || key == "data-team-id") continue;
 
+        var type = "text";
+        var values = this.propertyValues[key];
+        if (values && values.length > 1 && key != "data-reset-prompt") {
+            if (values.includes("true") || values.includes("false")) { type = "bool"; }
+            else if (key == "data-link-position" || key == "data-extract-position" || key == "data-clue-position") { type = "multi-select"; }
+            else if (key == "data-edge-style" || key == "data-path-style" || key == "data-spoke-style") { type = "select"; } // TODO - use datalist here if there's a good way to show all options instead of filtering
+            else { type = "select"; }
+        }
+    
         var category = generalCategory;
 
         if (key.includes("text") || key.includes("unselectable")) category = textCategory;
@@ -140,10 +278,10 @@ function PuzzleDesigner() {
         else if (key.includes("edge")) category = edgeCategory;
         else if (key.includes("path")) category = pathCategory;
         else if (key.includes("spoke")) category = spokeCategory;
-        createProperty(category, key);
+        this.createProperty(category, key, type);
     }
 
-    var importExportCategory = createCategory("Import/Export");
+    var importExportCategory = this.createCategory("Import/Export");
     importExportCategory.insertAdjacentHTML("beforeEnd", "<div><span>Copy to export, paste to import</span><textarea rows='5'></textarea></div>");
     this.importExportText = importExportCategory.lastElementChild.lastElementChild;
 
@@ -155,7 +293,7 @@ function PuzzleDesigner() {
 
     this.pane.insertAdjacentHTML("beforeEnd", "<hr/>");
 
-    var cssCategory = createCategory("Simulated Page CSS");
+    var cssCategory = this.createCategory("Simulated Page CSS");
 
     var userStyles = new CSSStyleSheet();
     document.adoptedStyleSheets.push(userStyles);
@@ -199,7 +337,7 @@ function PuzzleDesigner() {
 }
 
 function showPuzzleDesigner() {
-    PuzzleDesigner();
+    new PuzzleDesigner();
 }
 
 document.addEventListener('DOMContentLoaded', function() { showPuzzleDesigner(); });
