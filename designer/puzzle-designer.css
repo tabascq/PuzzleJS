@@ -53,33 +53,48 @@
     outline: none;
     font-size: 15px;
     display: none;
-  }
+}
 
-  .puzzle-designer.has-selection .category-header, .puzzle-designer .category-header.always-visible {
+.puzzle-designer.has-selection .category-header, .puzzle-designer .category-header.always-visible {
     display: block;
-  }
+}
   
-  .puzzle-designer .category-header.open, .puzzle-designer .category-header:hover {
+.puzzle-designer .category-header.open, .puzzle-designer .category-header:hover {
     background-color: #555;
-  }
+}
   
-  .puzzle-designer .category-header:after {
-    content: '\002B';
-    color: white;
-    font-weight: bold;
-    float: right;
-    margin-left: 5px;
-  }
-  
-  .puzzle-designer .category-header.open:after {
-    content: "\2212";
-  }
-  
-  .puzzle-designer .category-contents {
+.puzzle-designer .category-header:after {
+   content: '\002B';
+   color: white;
+   font-weight: bold;
+   float: right;
+   margin-left: 5px;
+ }
+ 
+ .puzzle-designer .category-header.open:after {
+   content: "\2212";
+ }
+ 
+ .puzzle-designer .category-contents {
     padding: 0 18px;
     width: 244px;
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.2s ease-out;
     background-color: #f1f1f1;
-  }
+}
+
+.puzzle-designer .property-header.recordable:after {
+   content: '⭕';
+   font-weight: bold;
+   float: right;
+   margin-left: 5px;
+   alt: 'not recording';
+   cursor: pointer;
+}
+ 
+.puzzle-designer .property-header.recordable.recording:after {
+   content: "🔴";
+   alt: 'recording';
+   cursor: pointer;
+}

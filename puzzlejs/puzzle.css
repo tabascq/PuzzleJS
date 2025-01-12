@@ -356,12 +356,12 @@
     left: 0px;
     width: 100%;
     height: 100%;
-    pointer-events: none;
 }
 
 .puzzle-dot-line-layer line {
     stroke: black;
     stroke-width: 2;
+    cursor: pointer;
 }
 
 .puzzle-dot-line-layer line.provisional {

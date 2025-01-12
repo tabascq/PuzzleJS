@@ -256,6 +256,8 @@ function UndoManager() {
 
 function PuzzleEntry(p, index) {
     this.container = p;
+    this.recordingProperties = {};
+
     p.puzzleEntry = this;
 
     // Assign all options by applying all properties from all modes. Modes specified earliest in data-mode get precedence.
@@ -359,9 +361,8 @@ function PuzzleEntry(p, index) {
         }
         this.setDxDy(dx, dy);
 
-        this.canDrawOnEdges = grid.options["data-drag-draw-edge"] && !grid.options["data-no-input"];
-        this.canHaveCenterFocus = grid.options["data-text-characters"] || (grid.fillClasses && grid.options["data-fill-cycle"]) || grid.options["data-drag-draw-path"] || grid.options["data-drag-draw-spoke"];
-        this.canHaveCornerFocus = this.canDrawOnEdges;
+        this.canHaveCenterFocus = grid.canHaveText || (grid.fillClasses && grid.options["data-fill-cycle"]) || grid.canDrawPaths || grid.canDrawSpokes;
+        this.canHaveCornerFocus = grid.canDrawEdges;
         this.keyboardFocusModel = grid.options["data-no-input"] ? "none" : (this.canHaveCornerFocus ? "corner" : "center");
     
         this.activeGrid = grid;
@@ -383,7 +384,7 @@ function PuzzleEntry(p, index) {
         var row = drow + parseInt(parts[1]);
         var col = dcol + parseInt(parts[2]);
 
-        if (this.fShift && (this.activeGrid.options["data-drag-draw-path"] || this.activeGrid.options["data-drag-draw-spoke"])) {
+        if (this.fShift && (this.activeGrid.canDrawPaths || this.activeGrid.canDrawSpokes)) {
             var tdTo;
             if (td.cellLinks && td.cellLinks[dirCode]) {
                 tdTo = td.cellLinks[dirCode];
@@ -541,7 +542,7 @@ function PuzzleEntry(p, index) {
     }
 
     this.handleEventChar = function(e, ch) {
-        if (this.activeGrid.options["data-text-shift-key"] != "none" && (e.shiftKey || this.activeGrid.options["data-text-shift-lock"])) {
+        if (!this.activeGrid.canHaveAllChars && this.activeGrid.options["data-text-shift-key"] != "none" && (e.shiftKey || this.activeGrid.options["data-text-shift-lock"])) {
             var val = this.getText(e.target).replace("\xa0", " ");
             if (this.activeGrid.options["data-text-shift-key"] == "rebus" || !val.includes(ch)) { val = val + ch; }
             else { val = val.replace(ch, ""); }
@@ -593,7 +594,7 @@ function PuzzleEntry(p, index) {
         if (e.keyCode == 9) return;
 
         e.preventDefault();
-        if (this.activeGrid.options["data-text-solution"] || this.activeGrid.options["data-no-input"]) { return; }
+        if (!this.activeGrid.canHaveAllChars && (this.activeGrid.options["data-text-solution"] || this.activeGrid.options["data-no-input"])) { return; }
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
@@ -601,15 +602,15 @@ function PuzzleEntry(p, index) {
         else if (e.keyCode == 38) { this.move(e.target, -1, 0); } // up
         else if (e.keyCode == 39) { this.move(e.target, 0, 1); } // right
         else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
-        else if (e.keyCode == 191 && this.activeGrid.options["data-drag-draw-spoke"]) { this.setTilt(e, 1); } // /
-        else if (e.keyCode == 220 && this.activeGrid.options["data-drag-draw-spoke"]) { this.setTilt(e, -1); } // \
-        else if (e.keyCode == 187 && this.fShift && this.activeGrid.options["data-drag-draw-spoke"]) { this.toggleReticle(e); } // +
-        else if (e.keyCode == 88 && this.activeGrid.options["data-drag-draw-spoke"] && !this.activeGrid.options["data-text-characters"].includes("X")) { this.toggleReticle(e); } // x
+        else if (e.keyCode == 191 && this.activeGrid.canDrawSpokes) { this.setTilt(e, 1); } // /
+        else if (e.keyCode == 220 && this.activeGrid.canDrawSpokes) { this.setTilt(e, -1); } // \
+        else if (e.keyCode == 187 && this.fShift && this.activeGrid.canDrawSpokes) { this.toggleReticle(e); } // +
+        else if (e.keyCode == 88 && this.activeGrid.canDrawSpokes && !this.activeGrid.options["data-text-characters"].includes("X")) { this.toggleReticle(e); } // x
         else if (e.keyCode == 190 && this.canHaveCornerFocus) { this.setCornerFocusMode(); } // period
         else if (e.keyCode == 32) { // space
             if (e.ctrlKey) {
                 this.toggleClass(e.currentTarget, "interesting");
-            } else if (this.activeGrid.options["data-text-characters"].includes(" ")) {
+            } else if (this.activeGrid.canHaveAllChars || this.activeGrid.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
                 if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.setDxDy(1 - this.dx, 1 - this.dy); }
@@ -628,7 +629,10 @@ function PuzzleEntry(p, index) {
 
             if (this.activeGrid.options["data-text-shift-key"] == "none" && e.key.length == 1) { ch = e.key.toUpperCase(); }
 
-            if (this.activeGrid.options["data-text-characters"].includes(ch)) {
+            if (this.activeGrid.canHaveAllChars && e.key.length == 1) {
+                this.handleEventChar(e, e.key.toUpperCase());
+            }
+            else if (this.activeGrid.options["data-text-characters"].includes(ch)) {
                 this.handleEventChar(e, ch);
             }
         }
@@ -833,7 +837,7 @@ function PuzzleEntry(p, index) {
             return;
         }
 
-        if (this.canDrawOnEdges) {
+        if (this.activeGrid.canDrawEdges) {
             var edgeState = this.getEventEdgeState(e.currentTarget, e.clientX, e.clientY);
             this.lastEdgeState = null;
             this.setEdgeState(edgeState, (e.button > 0 || e.shiftKey) ? "cycle-back" : "cycle-front");
@@ -872,7 +876,7 @@ function PuzzleEntry(p, index) {
 
         if (dragBetweenCells) { this.dragBetweenCells(e.currentTarget, e.buttons > 1); }
 
-        if (this.canDrawOnEdges && !this.currentFill) {
+        if (this.activeGrid.canDrawEdges && !this.currentFill) {
             var edgeState = this.getEventEdgeState(e.currentTarget, e.clientX, e.clientY);
             this.setEdgeState(edgeState, (e.button > 0 || e.shiftKey) ? "cycle-back" : "cycle-front");
         }
@@ -890,18 +894,18 @@ function PuzzleEntry(p, index) {
 
         this.undoManager.startAction(this);
 
-        if (wantPaint && (this.activeGrid.options["data-drag-draw-path"] || this.activeGrid.options["data-drag-draw-spoke"])) {
+        if (wantPaint && (this.activeGrid.canDrawPaths || this.activeGrid.canDrawSpokes)) {
             var targetFill = this.findClassInList(to, this.activeGrid.fillClasses);
             var setLast = false; 
             if (wantPaint && this.currentFill == this.activeGrid.fillClasses[0]) { this.currentFill = targetFill; setLast = true; }
             if (wantPaint && targetFill != this.activeGrid.fillClasses[0] && targetFill != this.currentFill) { canPaint = false; }
         }
 
-        if (this.activeGrid.options["data-drag-draw-spoke"] && (!wantPaint || canPaint)) {
+        if (this.activeGrid.canDrawSpokes && (!wantPaint || canPaint)) {
             canPaint &= this.LinkCellsSpoke(this.lastCell, to, rightMouse);
         }
 
-        if (this.activeGrid.options["data-drag-draw-path"] && (!wantPaint || canPaint)) {
+        if (this.activeGrid.canDrawPaths && (!wantPaint || canPaint)) {
             canPaint &= this.LinkCellsPath(this.lastCell, to);
         }
 
@@ -1247,7 +1251,7 @@ function PuzzleEntry(p, index) {
         const edgeCode = cell.getAttribute("data-edge-code");
         const givenEdgeCode = cell.getAttribute("data-given-edge-code");
         const xEdgeCode = cell.getAttribute("data-x-edge-code");
-        const edgeEditable = this.activeGrid.options["data-drag-draw-edge"];
+        const edgeEditable = this.activeGrid.canDrawEdges;
         if ((edgeCode & dirCode) || (xEdgeCode & dirCode)) { return `Corner has ${dirName} edge${(xEdgeCode & dirCode) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & dirCode) == 0) ? "editable" : "not editable"}. `; }
         return "";
     }
@@ -1300,7 +1304,7 @@ function PuzzleEntry(p, index) {
         this.currentCenterFocus = center;
         this.currentCenterFocus.focus();
 
-        if (this.activeGrid.options["data-drag-draw-spoke"]) {
+        if (this.activeGrid.canDrawSpokes) {
             if (oldCenter) this.updateSvg(oldCenter);
             if (center) this.updateSvg(center);
         }
@@ -1323,7 +1327,7 @@ function PuzzleEntry(p, index) {
         lines.push("<tr><th>Function</th><th>Keyboard</th><th>Mouse/Touch</th></tr>");
         lines.push("<tr><td>Reset saved state</td><td>N/A</td><td>Reset Button</td></tr>");
         lines.push("<tr><td>Undo/Redo</td><td>Ctrl+Z/Y</td><td>Undo/Redo Buttons</td></tr>");
-        if (this.activeGrid.options["data-text-characters"]) {
+        if (this.activeGrid.canHaveText) {
             if (this.activeGrid.options["data-text-shift-lock"]) {
                 lines.push("<tr><td>Multiple-character text entry</td><td>Type to append; Backspace to remove, Del to clear</td><td>N/A</td></tr>");
             } else {
@@ -1336,7 +1340,7 @@ function PuzzleEntry(p, index) {
             }
         }
         if (this.canHaveCenterFocus) {
-            if (this.activeGrid.options["data-drag-draw-spoke"]) {
+            if (this.activeGrid.canDrawSpokes) {
                 lines.push("<tr><td>Navigate between cells (8 directions)</td><td>Arrow keys, plus / or \\ to toggle axis tilt</td><td>Click a cell</td></tr>");
             } else {
                 lines.push("<tr><td>Navigate between cells (4 directions)</td><td>Arrow keys</td><td>Click a cell</td></tr>");
@@ -1345,13 +1349,13 @@ function PuzzleEntry(p, index) {
         if (this.activeGrid.fillClasses && this.activeGrid.fillClasses.length > 0 && this.activeGrid.options["data-fill-cycle"]) {
             lines.push("<tr><td>Change cell background (forwards or backwards)</td><td>Space or Shift-Space</td><td>Click/Left-Click or Right/Shift-Click</td></tr>");
         }
-        if (this.activeGrid.options["data-drag-draw-path"]) {
+        if (this.activeGrid.canDrawPaths) {
             lines.push("<tr><td>Draw lines between cells (4 directions)</td><td>Shift-arrow keys</td><td>Click one cell, drag to others</td></tr>");
         }
-        if (this.activeGrid.options["data-drag-draw-spoke"]) {
+        if (this.activeGrid.canDrawSpokes) {
             lines.push("<tr><td>Draw lines between cells (8 directions)</td><td>Shift-arrow keys, plus / or \\ to toggle axis tilt</td><td>Click one cell, drag to others</td></tr>");
         }
-        if (this.activeGrid.options["data-drag-draw-edge"]) {
+        if (this.activeGrid.canDrawEdges) {
             if (this.canHaveCenterFocus) {
                 lines.push("<tr><td>Draw an edge between cells</td><td>'.' to enter/exit corner mode, then Shift-arrow keys</td><td>Click one corner or edge, drag to others</td></tr>");
             } else {
@@ -1500,7 +1504,8 @@ function PuzzleDotZone(container, puzzleGrid, index) {
 
         this.puzzleGrid.puzzleEntry.undoManager.startAction(this);
         this.puzzleGrid.puzzleEntry.undoManager.addUnit(this, this.container, lineId, lineExists, !lineExists);
-        if (parseFalseStrings(this.container.getAttribute("data-dots-exclusive"))) {
+        var exclusive = this.container.getAttribute("data-dots-exclusive");
+        if (exclusive && parseFalseStrings(exclusive)) {
             var parts = lineId.split("|");
             if (this.linesPerDot[parts[0]]) {
                 for (const key of this.linesPerDot[parts[0]]) { this.puzzleGrid.puzzleEntry.undoManager.addUnit(this, this.container, key, true, false) }
@@ -1520,6 +1525,12 @@ function PuzzleDotZone(container, puzzleGrid, index) {
         this.provisionalLine = null;
         this.anchorDot.classList.remove("anchor-dot");
         this.anchorDot = null;
+    }
+
+    this.handleLineClick = function(line) {
+        this.puzzleGrid.puzzleEntry.undoManager.startAction(this);
+        this.puzzleGrid.puzzleEntry.undoManager.addUnit(this, this.container, line.id, true, false);
+        this.puzzleGrid.puzzleEntry.undoManager.endAction();
     }
 
     this.handleDotClick = function(dot) {
@@ -1633,7 +1644,8 @@ function PuzzleDotZone(container, puzzleGrid, index) {
 
             var c1 = this.getDotCenter(this.lookup[parts[0]]);
             var c2 = this.getDotCenter(this.lookup[parts[1]]);
-            this.lineLayer.insertAdjacentHTML("beforeend", `<line x1="${c1.x}" y1="${c1.y}" x2="${c2.x}" y2="${c2.y}"/>`);
+            this.lineLayer.insertAdjacentHTML("beforeend", `<line x1="${c1.x}" y1="${c1.y}" x2="${c2.x}" y2="${c2.y}" id="${key}"/>`);
+            this.lineLayer.lastChild.addEventListener("click", e => { this.handleLineClick(e.target); });
         }
     }
 
@@ -1938,7 +1950,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             svg.setAttribute("aria-hidden", true);
             svg.setAttribute("viewBox", "-15 -15 30 30");
-            if (!this.canDrawOnEdges) { svg.classList.add("nopointer"); }
+            if (!this.canDrawEdges) { svg.classList.add("nopointer"); }
             td.appendChild(svg);
         }
 
@@ -1978,7 +1990,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         for (var l = 2; l < maxSpokeLevels; l++) {
             this.addSpokesToSvg(svg, td.getAttribute("data-spoke-" + l.toString() + "-code"), "", "-" + l.toString());
         }
-        if (this.options["data-drag-draw-spoke"] && td === this.puzzleEntry.currentCenterFocus) {
+        if (this.canDrawSpokes && td === this.puzzleEntry.currentCenterFocus) {
             this.addReticleLayer(svg, "reticle-back");
             this.addReticleLayer(svg, "reticle-front");
         }
@@ -1999,7 +2011,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         const edgeCode = cell.getAttribute("data-edge-code");
         const givenEdgeCode = cell.getAttribute("data-given-edge-code");
         const xEdgeCode = cell.getAttribute("data-x-edge-code");
-        const edgeEditable = this.options["data-drag-draw-edge"];
+        const edgeEditable = this.canDrawEdges;
         if ((edgeCode & dirCode) || (xEdgeCode & dirCode)) { return `Cell has a ${dirName} edge${(xEdgeCode & dirCode) ? " blocker" : ""}, which is ${(edgeEditable && (givenEdgeCode & dirCode) == 0) ? "editable" : "not editable"}. `; }
         return "";
     }
@@ -2010,7 +2022,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         // content
         var cellContent = "blank";
         const text = td.querySelector('.text span');
-        const editable = !td.classList.contains("given-text") && this.options["data-text-characters"] != "";
+        const editable = !td.classList.contains("given-text") && this.canHaveText;
         if (text && text.innerText && text.innerText != " ") { cellContent = text.innerText; }
         label += `Cell text is ${cellContent} and is ${editable ? "editable" : "not editable"}. `;
 
@@ -2060,14 +2072,14 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         // path
         const pathCode = td.getAttribute("data-path-code");
         const givenPathCode = td.getAttribute("data-given-path-code");
-        const pathEditable = this.options["data-drag-draw-path"];
+        const pathEditable = this.canDrawPaths;
         if (pathCode & 1) { label += `Cell has a North path, which is ${(pathEditable && ((givenPathCode & 1) == 0)) ? "editable" : "not editable"}. `}
         if (pathCode & 2) { label += `Cell has a South path, which is ${(pathEditable && ((givenPathCode & 2) == 0)) ? "editable" : "not editable"}. `}
         if (pathCode & 4) { label += `Cell has a West path, which is ${(pathEditable && ((givenPathCode & 4) == 0)) ? "editable" : "not editable"}. `}
         if (pathCode & 8) { label += `Cell has a East path, which is ${(pathEditable && ((givenPathCode & 8) == 0)) ? "editable" : "not editable"}. `}
 
         // spoke
-        const spokeEditable = this.options["data-drag-draw-spoke"];
+        const spokeEditable = this.canDrawSpokes;
         var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]);
         for (var spokeLevel = 1; spokeLevel <= maxSpokeLevels; spokeLevel++) {
             const spokeCode = td.getAttribute(`data-spoke${spokeLevel == 1 ? "" : ("-" + spokeLevel)}-code`);
@@ -2186,6 +2198,12 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             this.puzzleId = this.options["data-puzzle-id"];
             if (this.puzzleId == this.puzzleEntry.options["data-puzzle-id"]) { this.puzzleId = this.puzzleEntry.puzzleId + "|" + this.index; }
         }
+
+        this.canHaveText = this.puzzleEntry.recordingProperties["data-text"] || this.puzzleEntry.recordingProperties["data-text-solution"] || this.options["data-text-characters"];
+        this.canHaveAllChars = this.puzzleEntry.recordingProperties["data-text"] || this.puzzleEntry.recordingProperties["data-text-solution"];
+        this.canDrawEdges = this.puzzleEntry.recordingProperties["data-edges"] || (this.options["data-drag-draw-edge"] && !this.options["data-no-input"]);
+        this.canDrawPaths = this.puzzleEntry.recordingProperties["data-paths"] || (this.options["data-drag-draw-path"] && !this.options["data-no-input"]);
+        this.canDrawSpokes = this.puzzleEntry.recordingProperties["data-spokes"] || (this.options["data-drag-draw-spoke"] && !this.options["data-no-input"]);
 
         this.lookup = {};
 
@@ -2306,6 +2324,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     
         for (var r = 0; r < textLines.length; r++) {
             var tr = document.createElement("tr");
+            tr.classList.add("row");
             if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = this.topClueDepth + r + 1; }
     
             for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + (leftClues[r] ? leftClues[r].length : 0), j + 1, "left"); }
@@ -2332,14 +2351,39 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 var text = document.createElement("span");
                 textwrapper.appendChild(text);
     
-                if (ch == '.') {
+                if (this.canHaveAllChars) {
+                    if (this.puzzleEntry.recordingProperties["data-text-solution"]) {
+                        var chSolution = (solution && solution.length > r && solution[r] && solution[r].length > c) ? solution[r][c] : " ";
+                        if (ch == '.') { text.innerText = chSolution; td.contentEditable = true; td.autocapitalize="off"; }
+                        else if (ch == '#') {
+                            td.classList.add("extract");
+
+                            text.innerText = chSolution; td.contentEditable = true; td.autocapitalize="off"; 
+            
+                            if (extracts) {
+                                this.createLabels(td, "extract", extracts[extractNum++], extractpos);
+                            }
+                        }
+                        else if (ch == '@') {
+                            td.classList.add("black-cell");
+                            td.classList.add("unselectable");
+                        }
+                        else {
+                            text.innerText = this.translate(ch, textReplacements);
+                            td.classList.add("given-text");
+                            if (unselectableGivens) { td.classList.add("unselectable"); }
+                        }
+                    }
+                    else { text.innerText = ch; td.contentEditable = true; td.autocapitalize="off"; }
+                }
+                else if (ch == '.') {
                     if (solution && solution.length > r && solution[r] && solution[r].length > c) { text.innerText = this.translate(solution[r][c], textReplacements); }
-                    else if (allowInput && this.options["data-text-characters"]) { td.contentEditable = true; td.autocapitalize="off"; }
+                    else if (allowInput && this.canHaveText) { td.contentEditable = true; td.autocapitalize="off"; }
                 }
                 else if (ch == '#') {
                     td.classList.add("extract");
-                    if (solution) { text.innerText = this.translate(solution[r][c], textReplacements); }
-                    else if (allowInput && this.options["data-text-characters"]) { td.contentEditable = true; td.autocapitalize="off"; }
+                    if (solution && solution.length > r && solution[r] && solution[r].length > c) { text.innerText = this.translate(solution[r][c], textReplacements); }
+                    else if (allowInput && this.canHaveText) { td.contentEditable = true; td.autocapitalize="off"; }
     
                     if (extracts) {
                         this.createLabels(td, "extract", extracts[extractNum++], extractpos);

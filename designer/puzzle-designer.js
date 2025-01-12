@@ -54,7 +54,29 @@ function PuzzleDesigner() {
     }
     
     this.createProperty = function(category, property, type) {
-        category.insertAdjacentHTML("beforeEnd", `<div><a href="../reference/reference-options.html#${property}" target="_blank">${property}</a></div>`);
+        category.insertAdjacentHTML("beforeEnd", `<div class="property-header"><a href="../reference/reference-options.html#${property}" target="_blank">${property}</a></div>`);
+
+        if (property == "data-text" || property == "data-text-solution" || property == "data-edges" || property == "data-paths" || property == "data-spokes") {
+            category.lastElementChild.classList.add("recordable");
+            category.lastElementChild.title = "not recording";
+            category.lastElementChild.addEventListener("click", e => {
+                e.target.classList.toggle("recording");
+                e.target.title = (e.target.classList.contains("recording") ? "recording" : "not recording");
+                this.puzzleGrid.puzzleEntry.recordingProperties[property] = e.target.classList.contains("recording");
+
+                if (!e.target.classList.contains("recording")) {
+                    switch (property) {
+                        case "data-text": this.recordTextProperty(property); break;
+                        case "data-text-solution": this.recordTextProperty(property); break;
+                        case "data-edges": this.record4DirProperty(property, "data-edge-code"); break;
+                        case "data-paths": this.record4DirProperty(property, "data-path-code"); break;
+                        case "data-spokes": this.record8DirProperty(property, "data-spoke-code"); break;
+                    }
+                }
+
+                if (this.puzzleGrid.isRootGrid) { this.puzzleGrid.puzzleEntry.rebuildContents(); } else { this.puzzleGrid.rebuildContents(); }
+            });
+        }
 
         switch(type) {
             default:
@@ -109,6 +131,66 @@ function PuzzleDesigner() {
 
     this.getSeparatorCharacter = function(property) {
         return (property === "data-mode") ? " " : "|";
+    }
+
+    this.recordTextProperty = function(property) {
+        var lines = [];
+        this.puzzleGrid.container.querySelectorAll(".puzzle-grid-content .row").forEach(r => {
+            var line = "";
+            r.querySelectorAll(".inner-cell").forEach(c => {
+                var cellText = c.querySelector(".text").innerText;
+                if (!cellText) { cellText = c.classList.contains("given-text") ? " " : "."; }
+                if (property === "data-text-solution" && (cellText == "." || cellText == "#" || cellText == "@")) { cellText = " "; }
+                line += cellText;
+            });
+            lines.push(line);
+        });
+        this.properties[property].value = lines.join("|");
+        this.updatePropertyOnEdit(property);
+    }
+
+    this.record4DirProperty = function(property, codeName) {
+        var codes = [];
+        this.puzzleGrid.container.querySelectorAll(".puzzle-grid-content .row").forEach(r => {
+            var codeRow = "";
+            r.querySelectorAll(".inner-cell").forEach(c => {
+                var code = c.getAttribute(codeName);
+                codeRow += (code ? parseInt(code).toString(16) : "0");
+            });
+            codes.push(codeRow);
+        });
+        this.properties[property].value = codes.join("|");
+        this.updatePropertyOnEdit(property);
+    }
+
+    this.record8DirProperty = function(property, codeName) {
+        var codes = [];
+        this.puzzleGrid.container.querySelectorAll(".puzzle-grid-content .row").forEach((r, rIndex) => {
+            var topCodeRow = "";
+            var middleCodeRow = "";
+            var bottomCodeRow = "";
+            var prevCode = 0;
+            r.querySelectorAll(".inner-cell").forEach(c => {
+                var code = c.getAttribute(codeName);
+                code = (code ? parseInt(code) : "0");
+
+                if (code & 128) { topCodeRow += (prevCode & 2) ? "X" : "\\"; } else { topCodeRow += (prevCode & 2) ? "/" : " "; }
+                topCodeRow += (code & 1) ? "I" : " ";
+                middleCodeRow += (code & 64) ? "- " : " .";
+                if (code & 32) { bottomCodeRow += (prevCode & 8) ? "X" : "/"; } else { bottomCodeRow += (prevCode & 8) ? "\\" : " "; }
+                bottomCodeRow += (code & 16) ? "I" : " ";
+                prevCode = code;
+            });
+            topCodeRow += (prevCode & 2) ? "/" : " ";
+            middleCodeRow += (prevCode & 4) ? "-" : " ";
+            bottomCodeRow += (prevCode & 8) ? "\\" : " ";
+
+            if (rIndex == 0) { codes.push(topCodeRow); }
+            codes.push(middleCodeRow);
+            codes.push(bottomCodeRow);
+        });
+        this.properties[property].value = codes.join("|");
+        this.updatePropertyOnEdit(property);
     }
 
     this.updateProperty = function(property) {
