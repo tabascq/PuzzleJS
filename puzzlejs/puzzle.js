@@ -2663,3 +2663,20 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.container.querySelectorAll(".puzzle-dot-zone").forEach((dz, index) => { this.dotZones.push(new PuzzleDotZone(dz, this, index)); });
     }
 }
+
+document.addEventListener("keydown", e => {
+    if (!e.shiftKey || !e.ctrlKey || !e.altKey || e.key != "F12") return;
+
+    var designercss = document.createElement("link");
+    designercss.setAttribute("rel", "stylesheet");
+    designercss.setAttribute("type", "text/css");
+    designercss.setAttribute("href", `${puzzleJsFolderPath}../designer/puzzle-designer.css`);
+    document.head.appendChild(designercss);
+    
+    var designerjs = document.createElement('script');
+    designerjs.setAttribute("type", "text/javascript");
+    designerjs.setAttribute("src", `${puzzleJsFolderPath}../designer/puzzle-designer.js`);
+    document.head.appendChild(designerjs);
+
+    e.preventDefault();
+});

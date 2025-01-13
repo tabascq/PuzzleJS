@@ -403,7 +403,12 @@ function PuzzleDesigner() {
         document.querySelectorAll(".puzzle-entry.puzzle-box").forEach((pb) => { new PuzzleBox(pb); });
     }
 
-    document.querySelectorAll(".puzzle-grid").forEach(p => { p.addEventListener("focusin", e => { this.selectPuzzle(p); }) });
+    document.querySelectorAll(".puzzle-grid-content").forEach(p => {
+        if (p.contains(document.activeElement)) { this.selectPuzzle(p); }
+    });
+    document.querySelectorAll(".puzzle-grid").forEach(p => {
+        p.addEventListener("focusin", e => { this.selectPuzzle(p); })
+    });
     document.querySelectorAll(".puzzle-entry").forEach(p => {
         p.addEventListener("focusin", e => {
             var ancestor = e.target;
@@ -418,8 +423,11 @@ function PuzzleDesigner() {
     //document.querySelectorAll(".puzzle-entry").forEach(p => { p.addEventListener("focusout", e => { this.deselectPuzzle(p); }) });
 }
 
+var puzzleDesigner = null;
+
 function showPuzzleDesigner() {
-    new PuzzleDesigner();
+    if (!puzzleDesigner) { puzzleDesigner = new PuzzleDesigner(); }
 }
 
+if (document.readyState === "complete") { showPuzzleDesigner(); }
 document.addEventListener('DOMContentLoaded', function() { showPuzzleDesigner(); });
