@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let code = document.createElement("div");
         code.insertAdjacentHTML("afterbegin", "<div class='example-title'><button type='button' class='designer-button'>Open in designer</button></div>");
         code.querySelector(".designer-button").addEventListener("click", e => {
-            window.open(`${puzzleJsFolderPath}/../../designer/puzzle-designer.html?puzzle=${encodeURIComponent(source)}&css=${encodeURIComponent(classes)}`);
+            window.open(`${puzzleJsFolderPath}designer/puzzle-designer.html?puzzle=${encodeURIComponent(source)}&css=${encodeURIComponent(classes)}`);
         });
         let pre = document.createElement("pre");
         pre.innerText = classes ? `${classes}\n${source}` : source;

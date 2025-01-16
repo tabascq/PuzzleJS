@@ -2670,12 +2670,12 @@ document.addEventListener("keydown", e => {
     var designercss = document.createElement("link");
     designercss.setAttribute("rel", "stylesheet");
     designercss.setAttribute("type", "text/css");
-    designercss.setAttribute("href", `${puzzleJsFolderPath}../designer/puzzle-designer.css`);
+    designercss.setAttribute("href", `${puzzleJsFolderPath}designer/puzzle-designer.css`);
     document.head.appendChild(designercss);
     
     var designerjs = document.createElement('script');
     designerjs.setAttribute("type", "text/javascript");
-    designerjs.setAttribute("src", `${puzzleJsFolderPath}../designer/puzzle-designer.js`);
+    designerjs.setAttribute("src", `${puzzleJsFolderPath}designer/puzzle-designer.js`);
     document.head.appendChild(designerjs);
 
     e.preventDefault();
