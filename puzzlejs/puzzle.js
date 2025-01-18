@@ -574,8 +574,20 @@ function PuzzleEntry(p, index) {
     }
 
     this.beforeInput = function(e) {
-        e.target.dispatchEvent(new KeyboardEvent("keydown", { keyCode: (e.data ? e.data.toUpperCase().charCodeAt(0) : 46) }));
+        this.beforeInputOrKeyDown({ target: e.target, keyCode: (e.data ? e.data.toUpperCase().charCodeAt(0) : 46) });
         e.preventDefault();
+    }
+
+    this.input = function(e) {
+        // beforeInput asked to cancel, but Samsung Galaxy doesn't appear to listen
+        var text = e.target.querySelector(".text");
+        if (text.firstChild.nodeType === Node.TEXT_NODE) {
+            text.firstChild.remove();
+        }
+        else {
+            // TODO build a clone of our span's innerText and replace it here?
+            text.firstChild.innerText = text.firstChild.innerText.substring(1);
+        }
     }
 
     this.setTilt = function(e, tilt) {
@@ -590,10 +602,12 @@ function PuzzleEntry(p, index) {
 
     this.keyDown = function(e) {
         this.fShift = e.shiftKey;
-
         if (e.keyCode == 9) return;
-
+        this.beforeInputOrKeyDown(e);
         e.preventDefault();
+    }
+
+    this.beforeInputOrKeyDown = function(e) {
         if (!this.activeGrid.canHaveAllChars && (this.activeGrid.options["data-text-solution"] || this.activeGrid.options["data-no-input"])) { return; }
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
@@ -2414,6 +2428,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                         if (!this.tabstopGrid) { this.tabstopGrid = td; }
                         td.addEventListener("keydown",  e => { this.puzzleEntry.keyDown(e); });
                         td.addEventListener("beforeinput", e => { this.puzzleEntry.beforeInput(e); });
+                        td.addEventListener("input", e => { this.puzzleEntry.input(e); });
                         td.addEventListener("pointerdown",  e => { this.puzzleEntry.pointerDown(e); });
                         td.addEventListener("pointermove",  e => { this.puzzleEntry.pointerMove(e); });
                         td.addEventListener("pointercancel",  e => { this.puzzleEntry.pointerCancel(e); });
