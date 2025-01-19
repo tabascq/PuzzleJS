@@ -18,6 +18,7 @@ puzzleModes["default"] = {
     "data-text-solution": null,
     "data-text-advance-on-type": false,
     "data-text-advance-style": "crossword",
+    "data-text-advance-skip-filled" : false,
     "data-text-avoid-position": null,
 
     // fills
@@ -370,7 +371,7 @@ function PuzzleEntry(p, index) {
 
     // --- Functions to update state ---
     // keyboard support
-    this.move = function(td, drow, dcol) {
+    this.move = function(td, drow, dcol, skipFilled=false) {
         var puzzleGrid = this.puzzleGridFromCell(td);
         var puzzleGridOrig = puzzleGrid;
 
@@ -401,6 +402,7 @@ function PuzzleEntry(p, index) {
         }
 
         var usedLink = false;
+        var tdSav = null;
         while (true) {
             if (td.cellLinks && td.cellLinks[dirCode]) {
                 usedLink = true;
@@ -413,34 +415,42 @@ function PuzzleEntry(p, index) {
             }
 
             if (!td) {
-                if (this.activeGrid.options["data-text-advance-style"] != "wrap")
-                    return false;
-                if (dcol == 1 && col == puzzleGrid.numCols && row+1 < puzzleGrid.numRows) {
-                    row += 1;
-                    col = 0;
-                    td = puzzleGrid.lookup["cell-" + row + "-0"];
+                if (this.activeGrid.options["data-text-advance-style"] == "wrap") {
+                    if (dcol == 1 && col == puzzleGrid.numCols && row+1 < puzzleGrid.numRows) {
+                        row += 1;
+                        col = 0;
+                        td = puzzleGrid.lookup["cell-" + row + "-0"];
+                    }
+                    else if (dcol == -1 && col == -1 && row > 0) {
+                        row -= 1;
+                        col = puzzleGrid.numCols - 1;
+                        td = puzzleGrid.lookup["cell-" + row + "-" + col];
+                    }
                 }
-                else if (dcol == -1 && col == -1 && row > 0) {
-                    row -= 1;
-                    col = puzzleGrid.numCols - 1;
-                    td = puzzleGrid.lookup["cell-" + row + "-" + col];
+                if (!td) {
+                    if (!tdSav)
+                        return false;
+                    td = tdSav; // no empty cells; just do original move
+                    skipFilled = false;
                 }
-                if (!td)
-                    return false;
             }
 
             var text = td.querySelector(".text span");
 
             if (text && !td.classList.contains("unselectable")) {
-                if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap") {
-                    this.setDxDy(Math.abs(dcol), Math.abs(drow));
+                if (!skipFilled || !text.innerText) {
+                    if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap") {
+                        this.setDxDy(Math.abs(dcol), Math.abs(drow));
+                    }
+                    this.updateCenterFocus(td);
+                    if (puzzleGrid != puzzleGridOrig) {
+                        var detail = { oldGridId: puzzleGridOrig.puzzleId, newGridId: puzzleGrid.puzzleId };
+                        this.container.dispatchEvent(new CustomEvent("puzzlegridnavigate", { detail: detail, bubbles: true }));
+                    }
+                    return true;
                 }
-                this.updateCenterFocus(td);
-                if (puzzleGrid != puzzleGridOrig) {
-                    var detail = { oldGridId: puzzleGridOrig.puzzleId, newGridId: puzzleGrid.puzzleId };
-                    this.container.dispatchEvent(new CustomEvent("puzzlegridnavigate", { detail: detail, bubbles: true }));
-                }
-                return true;
+                if (tdSav == null)
+                    tdSav = td;  // remember cell would have used if not skipping (in case all are filled)
             }
 
             if (usedLink) { return false; } // max 1 step after link
@@ -550,7 +560,7 @@ function PuzzleEntry(p, index) {
             this.setText(e.target, val, true);
         } else {
             this.setText(e.target, ch, false);
-            if (this.activeGrid.options["data-text-advance-on-type"]) { this.move(e.target, this.dy, this.dx); }
+            if (this.activeGrid.options["data-text-advance-on-type"]) { this.move(e.target, this.dy, this.dx, this.activeGrid.options["data-text-advance-skip-filled"]); }
         }
     }
 
@@ -824,6 +834,38 @@ function PuzzleEntry(p, index) {
         this.undoManager.endAction();
     }
 
+    this.canAdvanceHoriz = function(td) {
+        var edgeCode = td.getAttribute("data-edge-code");
+        if (edgeCode & 0x0c == 0x0c)
+            return false;
+        var parts = td.id.split("-");
+        var row = parseInt(parts[1]);
+        var col = parseInt(parts[2]);
+        var puzzleGrid = this.puzzleGridFromCell(td);
+        tdT = puzzleGrid.lookup["cell-" + row + "-" + (col - 1)];
+        if (tdT && !tdT.classList.contains("unselectable"))
+            return true;
+        tdT = puzzleGrid.lookup["cell-" + row + "-" + (col + 1)];
+        if (tdT && !tdT.classList.contains("unselectable"))
+            return true;
+    }
+
+    this.canAdvanceVert = function(td) {
+        var edgeCode = td.getAttribute("data-edge-code");
+        if (edgeCode & 0x03 == 0x03)
+            return false;
+        var parts = td.id.split("-");
+        var row = parseInt(parts[1]);
+        var col = parseInt(parts[2]);
+        var puzzleGrid = this.puzzleGridFromCell(td);
+        tdT = puzzleGrid.lookup["cell-" + (row - 1) + "-" + col];
+        if (tdT && !tdT.classList.contains("unselectable"))
+            return true;
+        tdT = puzzleGrid.lookup["cell-" + (row + 1) + "-" + col];
+        if (tdT && !tdT.classList.contains("unselectable"))
+            return true;
+    }
+
     this.endPointerIsDown = function() {
         if (!this.pointerIsDown) return;
 
@@ -838,9 +880,20 @@ function PuzzleEntry(p, index) {
 
         if (e.target.hasPointerCapture(e.pointerId)) { e.target.releasePointerCapture(e.pointerId); }
 
-        if ((document.activeElement == e.currentTarget) && this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) {
-            this.setDxDy(1 - this.dx, 1 - this.dy);
-            e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
+        //review: shouldn't do this if ctrl-click to set interesting?
+        if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) {
+            if (document.activeElement == e.currentTarget) {
+                this.setDxDy(1 - this.dx, 1 - this.dy);
+                e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
+            } else {
+                if (this.dx) {
+                    if (!this.canAdvanceHoriz(e.target) && this.canAdvanceVert(e.target))
+                        this.setDxDy(0, 1);
+                } else if (this.dy) {
+                    if (!this.canAdvanceVert(e.target) && this.canAdvanceHoriz(e.target))
+                        this.setDxDy(1, 0);
+                }
+            }
         }
         this.lastCell = e.currentTarget;
         this.currentFill = null;
