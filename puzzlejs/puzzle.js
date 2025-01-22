@@ -518,7 +518,7 @@ function PuzzleEntry(p, index) {
 
     this.findClassInList = function(td, classes) {
         var cls = "";
-        if (classes) { classes.forEach(c => { if (td.classList.contains(c)) cls = c; }) }
+        if (classes) { classes.forEach(c => { if (td.classList.contains(c)) cls = c; }); if (cls === "") cls = classes[0]; }
         return cls;
     }
 
@@ -629,7 +629,7 @@ function PuzzleEntry(p, index) {
             } else {
                 if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.setDxDy(1 - this.dx, 1 - this.dy); }
                 if (this.activeGrid.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
-                if (e.currentTarget.classList.contains("given-fill")) return;
+                if (e.currentTarget.classList.contains("given-fill") && !this.activeGrid.canChangeGivenFills) return;
                 if (this.activeGrid.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.activeGrid.fillClasses, e.shiftKey); }
             }
         } else if (e.keyCode == 8) { // backspace
@@ -861,7 +861,7 @@ function PuzzleEntry(p, index) {
             }
         }
         
-        if (this.activeGrid.options["data-fill-cycle"] && !e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.currentTarget, "class-fill", this.activeGrid.fillClasses, e.button > 0 || e.shiftKey); }
+        if (this.activeGrid.options["data-fill-cycle"] && (!e.currentTarget.classList.contains("given-fill") || this.activeGrid.canChangeGivenFills)) { this.currentFill = this.cycleClasses(e.currentTarget, "class-fill", this.activeGrid.fillClasses, e.button > 0 || e.shiftKey); }
         else { this.currentFill = this.findClassInList(e.currentTarget, this.activeGrid.fillClasses); }
         
         if (this.canHaveCenterFocus) {
@@ -923,7 +923,7 @@ function PuzzleEntry(p, index) {
             canPaint &= this.LinkCellsPath(this.lastCell, to);
         }
 
-        if (canPaint && !to.classList.contains("given-fill")) {
+        if (canPaint && (!to.classList.contains("given-fill") || this.activeGrid.canChangeGivenFills)) {
             this.setClassInCycle(to, "class-fill", this.activeGrid.fillClasses, this.currentFill);
         }
 
@@ -1141,10 +1141,10 @@ function PuzzleEntry(p, index) {
                 }
 
                 if (this.activeGrid.options["data-drag-paint-fill"]) {
-                    if ((codeFrom & ~directionFrom) == 0 && !attributeNameBase.startsWith("x-") && !cellFrom.classList.contains("given-fill")) {
+                    if ((codeFrom & ~directionFrom) == 0 && !attributeNameBase.startsWith("x-") && (!cellFrom.classList.contains("given-fill") || this.activeGrid.canChangeGivenFills)) {
                         this.setClassInCycle(cellFrom, "class-fill", this.activeGrid.fillClasses, this.activeGrid.fillClasses ? this.activeGrid.fillClasses[0] : null);
                     }
-                    if ((codeTo & ~directionTo) == 0 && !attributeNameBase.startsWith("x-") && !cellTo.classList.contains("given-fill")) {
+                    if ((codeTo & ~directionTo) == 0 && !attributeNameBase.startsWith("x-") && (!cellTo.classList.contains("given-fill") || this.activeGrid.canChangeGivenFills)) {
                         this.setClassInCycle(cellTo, "class-fill", this.activeGrid.fillClasses, this.activeGrid.fillClasses ? this.activeGrid.fillClasses[0] : null);
                     }
                 }
@@ -2215,6 +2215,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
         this.canHaveText = this.puzzleEntry.recordingProperties["data-text"] || this.puzzleEntry.recordingProperties["data-text-solution"] || this.options["data-text-characters"];
         this.canHaveAllChars = this.puzzleEntry.recordingProperties["data-text"] || this.puzzleEntry.recordingProperties["data-text-solution"];
+        this.canChangeGivenFills = this.puzzleEntry.recordingProperties["data-fills"] || this.puzzleEntry.recordingProperties["data-extra-styles"];
         this.canDrawEdges = this.puzzleEntry.recordingProperties["data-edges"] || (this.options["data-drag-draw-edge"] && !this.options["data-no-input"]);
         this.canDrawPaths = this.puzzleEntry.recordingProperties["data-paths"] || (this.options["data-drag-draw-path"] && !this.options["data-no-input"]);
         this.canDrawSpokes = this.puzzleEntry.recordingProperties["data-spokes"] || (this.options["data-drag-draw-spoke"] && !this.options["data-no-input"]);
@@ -2624,6 +2625,12 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     
         this.container.insertBefore(table, this.container.firstChild);
         this.grid = table;
+
+        if (this.puzzleEntry.recordingProperties["data-extra-styles"]) {
+            var swap = this.fillClasses;
+            this.fillClasses = this.extraStyleClasses;
+            this.extraStyleClasses = swap;
+        }
     
         // Copyjack support: initialize a copyjack version of the table.
         // This table will be modified as the user takes actions.
