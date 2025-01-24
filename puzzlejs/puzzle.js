@@ -727,7 +727,7 @@ function PuzzleEntry(p, index) {
                 if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.setDxDy(1 - this.dx, 1 - this.dy); dirToggled = true; }
                 if (this.activeGrid.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
-                if (this.activeGrid.options["data-fill-cycle"] && this.activeGrid.fillClasses.length > 1) {
+                if (this.activeGrid.options["data-fill-cycle"] && this.activeGrid.fillClasses && this.activeGrid.fillClasses.length > 1) {
                     if (!e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.activeGrid.fillClasses, e.shiftKey); }
                 } else if (!dirToggled) {
                     this.setText(e.target, "", e.target.classList.contains("small-text"));
