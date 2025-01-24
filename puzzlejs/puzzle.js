@@ -18,6 +18,7 @@ puzzleModes["default"] = {
     "data-text-solution": null,
     "data-text-advance-on-type": false,
     "data-text-advance-style": "crossword",
+    "data-text-advance-skip-filled" : false,
     "data-text-avoid-position": null,
 
     // fills
@@ -75,17 +76,20 @@ puzzleModes["default"] = {
 
 puzzleModes["linear"] = {
     "data-text-advance-on-type": true,
+    "data-text-advance-skip-filled" : true,
     "data-unselectable-givens": true
 }
 
 puzzleModes["crossword"] = {
     "data-text-advance-on-type": true,
+    "data-text-advance-skip-filled" : true,
     "data-clue-locations": "crossword"
 };
 
 puzzleModes["crostic-grid"] = {
     "data-text-advance-on-type": true,
     "data-text-advance-style": "wrap",
+    "data-text-advance-skip-filled" : true,
     "data-text-avoid-position": "top",
     "data-link-position": "top-left|top-right"
 }
@@ -93,6 +97,7 @@ puzzleModes["crostic-grid"] = {
 puzzleModes["crostic-clue"] = {
     "data-text-advance-on-type": true,
     "data-text-advance-style": "wrap",
+    "data-text-advance-skip-filled" : true,
     "data-text-avoid-position": "top",
     "data-link-position": "top-left"
 }
@@ -370,9 +375,12 @@ function PuzzleEntry(p, index) {
 
     // --- Functions to update state ---
     // keyboard support
-    this.move = function(td, drow, dcol) {
+    this.move = function(td, drow, dcol, jumpFromGrid=false, skipFilled=false) {
         var puzzleGrid = this.puzzleGridFromCell(td);
         var puzzleGridOrig = puzzleGrid;
+        var tdOrig = td;
+        var drowOrig = drow;
+        var dcolOrig = dcol;
 
         var dirCode = this.dirCodeFromDxDy(dcol, drow);
         dirCode = this.rotateDirCode(dirCode, puzzleGrid.tilt + this.tilt);
@@ -413,25 +421,30 @@ function PuzzleEntry(p, index) {
             }
 
             if (!td) {
-                if (this.activeGrid.options["data-text-advance-style"] != "wrap")
-                    return false;
-                if (dcol == 1 && col == puzzleGrid.numCols && row+1 < puzzleGrid.numRows) {
-                    row += 1;
-                    col = 0;
-                    td = puzzleGrid.lookup["cell-" + row + "-0"];
+                if (this.activeGrid.options["data-text-advance-style"] == "wrap") {
+                    if (dcol == 1 && col == puzzleGrid.numCols && row+1 < puzzleGrid.numRows) {
+                        row += 1;
+                        col = 0;
+                        td = puzzleGrid.lookup["cell-" + row + "-0"];
+                    }
+                    else if (dcol == -1 && col == -1 && row > 0) {
+                        row -= 1;
+                        col = puzzleGrid.numCols - 1;
+                        td = puzzleGrid.lookup["cell-" + row + "-" + col];
+                    }
                 }
-                else if (dcol == -1 && col == -1 && row > 0) {
-                    row -= 1;
-                    col = puzzleGrid.numCols - 1;
-                    td = puzzleGrid.lookup["cell-" + row + "-" + col];
-                }
-                if (!td)
+                if (!td) {
+                    if (skipFilled)
+                        return this.move(tdOrig, drowOrig, dcolOrig);
+                    if (jumpFromGrid && !this.fShift)
+                        return this.jumpToNearGrid(tdOrig, drowOrig, dcolOrig);
                     return false;
+                }
             }
 
             var text = td.querySelector(".text span");
 
-            if (text && !td.classList.contains("unselectable")) {
+            if (text && !td.classList.contains("unselectable") && (!skipFilled || !text.innerText)) {
                 if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap") {
                     this.setDxDy(Math.abs(dcol), Math.abs(drow));
                 }
@@ -448,6 +461,88 @@ function PuzzleEntry(p, index) {
             col += dcol;
             row += drow;
         }
+    }
+
+    this.jumpToNearGrid = function(td, drow, dcol) {
+        let rcActive = this.activeGrid.grid.getBoundingClientRect();
+        let igridBest = -1;
+        let dzBest = 99999;
+        let puzzleGrid;
+
+        for (let igrid = 0; igrid < this.puzzleGrids.length; ++igrid) {
+            let grid, rc;
+            if ((puzzleGrid = this.puzzleGrids[igrid]) && (grid = puzzleGrid.grid) && (rc = grid.getBoundingClientRect())) {
+                let dz = this.dzDistanceToRect(rcActive, rc, drow, dcol);
+                if (dz >= 0 && dz < dzBest) { dzBest = dz; igridBest = igrid; }
+            }
+        }
+        if (igridBest == -1)
+            return false;
+
+        rcActive = td.getBoundingClientRect(); // look relative to current cell
+        let xActive = (rcActive.left + rcActive.right) / 2;
+        let yActive = (rcActive.top + rcActive.bottom) / 2;
+        puzzleGrid = this.puzzleGrids[igridBest];
+        dzBest = 9999999;
+        let tdBest = null;
+        for (let cell in puzzleGrid.lookup) {
+            let td, rc;
+            if ((td = puzzleGrid.lookup[cell]) && (rc = td.getBoundingClientRect())) {
+                let x = (rc.left + rc.right) / 2;
+                let y = (rc.top + rc.bottom) / 2;
+                let dz = Math.abs(x - xActive) ** 2 + Math.abs(y - yActive) ** 2;
+                if (dz >= 0 && dz < dzBest) { dzBest = dz; tdBest = td; }
+            }
+        }
+        if (!tdBest)
+            return false;
+
+        let detail = { oldGridId: this.activeGrid.puzzleId, newGridId: puzzleGrid.puzzleId };
+        this.setActiveGrid(puzzleGrid);
+        this.updateCenterFocus(tdBest);
+        this.container.dispatchEvent(new CustomEvent("puzzlegridnavigate", { detail: detail, bubbles: true }));
+        return true;
+    }
+
+    // returns distance from rcActive to rc in direction indicated by drow/dcol
+    // return will be negative if rc not in indicated direction
+    this.dzDistanceToRect = function(rcActive, rc, drow, dcol) {
+        if (drow) { // moving up/down
+            if (rc.left < rcActive.right && rc.right > rcActive.left)
+                return drow > 0 ? rc.top - rcActive.bottom : rcActive.top - rc.bottom;
+        } else if (dcol) {
+            if (rc.top < rcActive.bottom && rc.bottom > rcActive.top)
+                return dcol > 0 ? rc.left - rcActive.right : rcActive.left - rc.right;
+        }
+        return -1;
+    }
+
+    this.moveToEdge = function(e) {
+        let td = e.target;
+        let puzzleGrid = this.puzzleGridFromCell(td);
+        let parts = td.id.split("-");
+        let row = parseInt(parts[1]);
+        let col = parseInt(parts[2]);
+        switch (e.keyCode)
+        {
+        case 33: // PgUp
+            row = 0;
+            break;
+        case 34: // PgDn
+            row = puzzleGrid.numRows - 1;
+            break;
+        case 35: // End
+            col = puzzleGrid.numCols - 1;
+            break;
+        case 36: // Home
+            col = 0;
+            break;
+        default:
+            return;
+        }
+        td = puzzleGrid.lookup["cell-" + row + "-" + col];
+        if (td)
+            this.updateCenterFocus(td);
     }
 
     this.moveCorner = function(dy, dx) {
@@ -550,7 +645,7 @@ function PuzzleEntry(p, index) {
             this.setText(e.target, val, true);
         } else {
             this.setText(e.target, ch, false);
-            if (this.activeGrid.options["data-text-advance-on-type"]) { this.move(e.target, this.dy, this.dx); }
+            if (this.activeGrid.options["data-text-advance-on-type"]) { this.move(e.target, this.dy, this.dx, false, this.activeGrid.options["data-text-advance-skip-filled"]); }
         }
     }
 
@@ -612,10 +707,11 @@ function PuzzleEntry(p, index) {
         
         if (e.ctrlKey && e.keyCode == 90) { this.undoManager.undo(); } // Ctrl-Z
         else if (e.ctrlKey && e.keyCode == 89) { this.undoManager.redo(); } // Ctrl-Y
-        else if (e.keyCode == 37) { this.move(e.target, 0, -1); } // left
-        else if (e.keyCode == 38) { this.move(e.target, -1, 0); } // up
-        else if (e.keyCode == 39) { this.move(e.target, 0, 1); } // right
-        else if (e.keyCode == 40) { this.move(e.target, 1, 0); } // down
+        else if (e.keyCode == 37) { this.move(e.target, 0, -1, true); } // left
+        else if (e.keyCode == 38) { this.move(e.target, -1, 0, true); } // up
+        else if (e.keyCode == 39) { this.move(e.target, 0, 1, true); } // right
+        else if (e.keyCode == 40) { this.move(e.target, 1, 0, true); } // down
+        else if (e.keyCode >= 33 && e.keyCode <= 36) { this.moveToEdge(e); } // pgup/dn, end, home
         else if (e.keyCode == 191 && this.activeGrid.canDrawSpokes) { this.setTilt(e, 1); } // /
         else if (e.keyCode == 220 && this.activeGrid.canDrawSpokes) { this.setTilt(e, -1); } // \
         else if (e.keyCode == 187 && this.fShift && this.activeGrid.canDrawSpokes) { this.toggleReticle(e); } // +
@@ -627,10 +723,16 @@ function PuzzleEntry(p, index) {
             } else if (this.activeGrid.canHaveAllChars || this.activeGrid.options["data-text-characters"].includes(" ")) {
                 this.handleEventChar(e, "\xa0");
             } else {
-                if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.setDxDy(1 - this.dx, 1 - this.dy); }
+                let dirToggled = false;
+                if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.setDxDy(1 - this.dx, 1 - this.dy); dirToggled = true; }
                 if (this.activeGrid.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
                 if (this.activeGrid.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.activeGrid.fillClasses, e.shiftKey); }
+                if (!dirToggled && !this.currentFill) {
+                    this.setText(e.target, "", e.target.classList.contains("small-text"));
+                    if (this.activeGrid.options["data-text-advance-on-type"])
+                        this.move(e.target, this.dy, this.dx);
+                }
             }
         } else if (e.keyCode == 8) { // backspace
             this.handleBackspaceChar(e);
@@ -824,6 +926,23 @@ function PuzzleEntry(p, index) {
         this.undoManager.endAction();
     }
 
+    this.canAdvanceHoriz = function(td) { return this.canAdvance(td, 0, 1, 0x0c); }
+    this.canAdvanceVert = function(td) { return this.canAdvance(td, 1, 0, 0x03); }
+    this.canAdvance = function(td, drow, dcol, codeMask) {
+        let edgeCode = td.getAttribute("data-edge-code");
+        if (edgeCode & codeMask == codeMask)
+            return false;
+        let parts = td.id.split("-");
+        let row = parseInt(parts[1]);
+        let col = parseInt(parts[2]);
+        let puzzleGrid = this.puzzleGridFromCell(td);
+        let tdT = puzzleGrid.lookup["cell-" + (row - drow) + "-" + (col - dcol)];
+        if (tdT && !tdT.classList.contains("unselectable"))
+            return true;
+        tdT = puzzleGrid.lookup["cell-" + (row + drow) + "-" + (col + dcol)];
+        return tdT && !tdT.classList.contains("unselectable");
+    }
+
     this.endPointerIsDown = function() {
         if (!this.pointerIsDown) return;
 
@@ -838,9 +957,19 @@ function PuzzleEntry(p, index) {
 
         if (e.target.hasPointerCapture(e.pointerId)) { e.target.releasePointerCapture(e.pointerId); }
 
-        if ((document.activeElement == e.currentTarget) && this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) {
-            this.setDxDy(1 - this.dx, 1 - this.dy);
-            e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
+        if (!e.ctrlKey && this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) {
+            if (document.activeElement == e.currentTarget) {
+                this.setDxDy(1 - this.dx, 1 - this.dy);
+                e.currentTarget.blur(); e.currentTarget.focus(); // Re-render the highlighting direction.
+            } else {
+                if (this.dx) {
+                    if (!this.canAdvanceHoriz(e.target) && this.canAdvanceVert(e.target))
+                        this.setDxDy(0, 1);
+                } else if (this.dy) {
+                    if (!this.canAdvanceVert(e.target) && this.canAdvanceHoriz(e.target))
+                        this.setDxDy(1, 0);
+                }
+            }
         }
         this.lastCell = e.currentTarget;
         this.currentFill = null;
