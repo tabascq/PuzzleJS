@@ -466,7 +466,7 @@ function PuzzleEntry(p, index) {
     this.jumpToNearGrid = function(td, drow, dcol) {
         let rcActive = this.activeGrid.grid.getBoundingClientRect();
         let igridBest = -1;
-        let dzBest = 99999;
+        let dzBest = Infinity;
         let puzzleGrid;
 
         for (let igrid = 0; igrid < this.puzzleGrids.length; ++igrid) {
@@ -483,17 +483,17 @@ function PuzzleEntry(p, index) {
         let xActive = (rcActive.left + rcActive.right) / 2;
         let yActive = (rcActive.top + rcActive.bottom) / 2;
         puzzleGrid = this.puzzleGrids[igridBest];
-        dzBest = 9999999;
+        dzBest = Infinity;
         let tdBest = null;
-        for (let cell in puzzleGrid.lookup) {
-            let td, rc;
-            if ((td = puzzleGrid.lookup[cell]) && (rc = td.getBoundingClientRect())) {
+        puzzleGrid.container.querySelectorAll(".inner-cell").forEach(td => {
+            let rc;
+            if (td && (rc = td.getBoundingClientRect())) {
                 let x = (rc.left + rc.right) / 2;
                 let y = (rc.top + rc.bottom) / 2;
                 let dz = Math.abs(x - xActive) ** 2 + Math.abs(y - yActive) ** 2;
                 if (dz >= 0 && dz < dzBest) { dzBest = dz; tdBest = td; }
             }
-        }
+        });
         if (!tdBest)
             return false;
 
@@ -727,8 +727,9 @@ function PuzzleEntry(p, index) {
                 if (this.activeGrid.options["data-text-advance-on-type"] && this.activeGrid.options["data-text-advance-style"] != "wrap" && this.activeGrid.numCols > 1 && this.activeGrid.numRows > 1) { this.setDxDy(1 - this.dx, 1 - this.dy); dirToggled = true; }
                 if (this.activeGrid.options["data-clue-locations"]) { this.unmark(e.target); this.mark(e.target); }
                 if (e.currentTarget.classList.contains("given-fill")) return;
-                if (this.activeGrid.options["data-fill-cycle"]) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.activeGrid.fillClasses, e.shiftKey); }
-                if (!dirToggled && !this.currentFill) {
+                if (this.activeGrid.options["data-fill-cycle"] && this.activeGrid.fillClasses.length > 1) {
+                    if (!e.currentTarget.classList.contains("given-fill")) { this.currentFill = this.cycleClasses(e.target, "class-fill", this.activeGrid.fillClasses, e.shiftKey); }
+                } else if (!dirToggled) {
                     this.setText(e.target, "", e.target.classList.contains("small-text"));
                     if (this.activeGrid.options["data-text-advance-on-type"])
                         this.move(e.target, this.dy, this.dx);
