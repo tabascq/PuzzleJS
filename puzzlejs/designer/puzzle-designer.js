@@ -74,9 +74,12 @@ function PuzzleDesigner() {
                         case "data-paths": this.record4DirProperty(property, "data-path-code"); break;
                         case "data-spokes": this.record8DirProperty(property, "data-spoke-code"); break;
                     }
+                    this.puzzleGrid.prepareToReset();
                 }
 
                 if (this.puzzleGrid.isRootGrid) { this.puzzleGrid.puzzleEntry.rebuildContents(); } else { this.puzzleGrid.rebuildContents(); }
+
+                if (!e.target.classList.contains("recording")) { this.puzzleGrid.inhibitSave = false; }
             });
         }
 

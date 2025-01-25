@@ -798,6 +798,9 @@ function PuzzleEntry(p, index) {
         if (edgeState.edgeCode == 0) return;
         if (this.lastEdgeState != null && this.lastEdgeState.cell === edgeState.cell && this.lastEdgeState.edgeCode === edgeState.edgeCode) return;
 
+        var givenEdgeCode = edgeState.cell.getAttribute("data-given-edge-code");
+        if ((givenEdgeCode & edgeState.edgeCode) && !this.recordingProperties["data-edges"]) return;
+        
         var curEdgeCode = edgeState.cell.getAttribute("data-edge-code");
         var curXEdgeCode = edgeState.cell.getAttribute("data-x-edge-code");
         var curEdgeVal = (curEdgeCode & edgeState.edgeCode) ? 1 : ((curXEdgeCode & edgeState.edgeCode) ? -1 : 0);
@@ -1122,10 +1125,11 @@ function PuzzleEntry(p, index) {
         }
         else if ((codeFrom & directionFrom) && (codeTo & directionTo)) {
             var givenAttributeName = "data-given-" + attributeNameBase + "-code";
+            var recording = (this.recordingProperties[`data-${attributeNameBase}s`])
             var givenCodeFrom = cellFrom.getAttribute(givenAttributeName);
             var givenCodeTo = cellTo.getAttribute(givenAttributeName);
-            if (!givenCodeFrom) { givenCodeFrom = 0; } else { givenCodeFrom = parseInt(givenCodeFrom); }
-            if (!givenCodeTo) { givenCodeTo = 0; } else { givenCodeTo = parseInt(givenCodeTo); }
+            if (!givenCodeFrom || recording) { givenCodeFrom = 0; } else { givenCodeFrom = parseInt(givenCodeFrom); }
+            if (!givenCodeTo || recording) { givenCodeTo = 0; } else { givenCodeTo = parseInt(givenCodeTo); }
             if (!(givenCodeFrom & directionFrom) && !(givenCodeTo & directionTo)) {
                 this.undoManager.addUnit(fromGrid, cellFrom, attributeName, codeFrom, codeFrom & ~directionFrom);
                 this.undoManager.addUnit(toGrid, cellTo, attributeName, codeTo, codeTo & ~directionTo);
