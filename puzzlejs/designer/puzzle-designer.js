@@ -54,7 +54,7 @@ function PuzzleDesigner() {
     }
     
     this.createProperty = function(category, property, type) {
-        category.insertAdjacentHTML("beforeEnd", `<div class="property-header"><a href="../reference/reference-options.html#${property}" target="_blank">${property}</a></div>`);
+        category.insertAdjacentHTML("beforeEnd", `<div class="property-header"><a href="${puzzleJsFolderPath}reference/reference-options.html#${property}" target="_blank">${property}</a></div>`);
 
         if (property == "data-text" || property == "data-text-solution" || property == "data-fills" || property == "data-extra-styles" || property == "data-edges" || property == "data-paths" || property == "data-spokes") {
             category.lastElementChild.classList.add("recordable");
