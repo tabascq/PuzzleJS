@@ -56,7 +56,7 @@ function PuzzleDesigner() {
     this.createProperty = function(category, property, type) {
         category.insertAdjacentHTML("beforeEnd", `<div class="property-header"><a href="../reference/reference-options.html#${property}" target="_blank">${property}</a></div>`);
 
-        if (property == "data-text" || property == "data-text-solution" || property == "data-edges" || property == "data-paths" || property == "data-spokes") {
+        if (property == "data-text" || property == "data-text-solution" || property == "data-fills" || property == "data-extra-styles" || property == "data-edges" || property == "data-paths" || property == "data-spokes") {
             category.lastElementChild.classList.add("recordable");
             category.lastElementChild.title = "not recording";
             category.lastElementChild.addEventListener("click", e => {
@@ -68,13 +68,18 @@ function PuzzleDesigner() {
                     switch (property) {
                         case "data-text": this.recordTextProperty(property); break;
                         case "data-text-solution": this.recordTextProperty(property); break;
+                        case "data-fills": this.recordClassProperty(property, this.puzzleGrid.fillClasses); break;
+                        case "data-extra-styles": this.recordClassProperty(property, this.puzzleGrid.fillClasses); break; // puzzle swaps arrays, so this is right
                         case "data-edges": this.record4DirProperty(property, "data-edge-code"); break;
                         case "data-paths": this.record4DirProperty(property, "data-path-code"); break;
                         case "data-spokes": this.record8DirProperty(property, "data-spoke-code"); break;
                     }
+                    this.puzzleGrid.prepareToReset();
                 }
 
                 if (this.puzzleGrid.isRootGrid) { this.puzzleGrid.puzzleEntry.rebuildContents(); } else { this.puzzleGrid.rebuildContents(); }
+
+                if (!e.target.classList.contains("recording")) { this.puzzleGrid.inhibitSave = false; }
             });
         }
 
@@ -146,6 +151,21 @@ function PuzzleDesigner() {
             lines.push(line);
         });
         this.properties[property].value = lines.join("|");
+        this.updatePropertyOnEdit(property);
+    }
+
+    this.recordClassProperty = function(property, classes) {
+        var codes = [];
+        this.puzzleGrid.container.querySelectorAll(".puzzle-grid-content .row").forEach(r => {
+            var codeRow = "";
+            r.querySelectorAll(".inner-cell").forEach(c => {
+                var cls = this.puzzleGrid.puzzleEntry.findClassInList(c, classes);
+                var index = cls ? classes.indexOf(cls).toString(36) : 0;
+                codeRow += (index != 0 ? index.toString(36) : ".");
+            });
+            codes.push(codeRow);
+        });
+        this.properties[property].value = codes.join("|");
         this.updatePropertyOnEdit(property);
     }
 
