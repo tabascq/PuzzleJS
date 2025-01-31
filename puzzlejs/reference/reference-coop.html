@@ -97,12 +97,15 @@
     // Receive changes from the "server"
     // Just a local call here, replace with your networking infrastructure
     function receiveDemoChanges(changes) {
-        // find the "teammate's" puzzle on the page. Note: The [data-player-id] part of the selector is only required for this demo.
+        // find the "teammate's" puzzle on the page.
+        // Note: The [data-player-id] part of the selector is only required for this demo.
+        // Note: If the puzzle has multiple grids, then query for .puzzle-grid instead of .puzzle-entry
         let otherPlayerId = (changes[0].playerId === "player-0") ? "player-1" : "player-0";
         let otherPuzzle = document.querySelector(`.puzzle-entry[data-puzzle-id=${changes[0].puzzleId}][data-player-id=${otherPlayerId}]`);
 
         // send it the changes we received.
-        otherPuzzle.puzzleEntry.changeWithoutUndo(changes);
+        // Note: If the puzzle has multiple grids, then use otherPuzzle.puzzleGrid instead
+        otherPuzzle.puzzleEntry.puzzleGrids[0].changeWithoutUndo(changes);
     }
 </script>
         </div>
