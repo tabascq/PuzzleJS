@@ -1,0 +1,177 @@
+<!-- (c) 2025 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<html>
+    <head>
+        <title>Puzzle.js Reference: Co-op solving</title>
+        <link rel="stylesheet" href="reference-example.css"/>
+        <script type="text/javascript" src="reference-example.js"></script>
+        <link rel="stylesheet" href="../puzzle.css"/>
+        <link rel="stylesheet" href="../puzzle-basic-colors.css"/>
+        <script type="text/javascript" src="../puzzle.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+            });
+        </script>
+        <style>
+            body {
+                padding: 1rem;
+            }
+
+            body, h1, h2, h3, p, li, td {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            code {
+                background-color: #ddf;
+            }
+
+            .coop-example .cell[data-coop-text-playerId="player-0"] {
+                color: blue;
+            }
+
+            .coop-example .cell[data-coop-text-playerId="player-1"] {
+                color: red;
+            }
+
+            .coop-example .cell[data-coop-text-playerId="player-2"] {
+                color: green;
+            }
+
+            .example.code {
+                background-color: #ffd;
+            }
+
+            .example.second {
+                background-color: #fdd;
+            }
+
+            .example.third {
+                background-color: #dfd;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Puzzle.js Reference: Cooperative Solving (with a solo/co-op toggle)</h1>
+        <p>This demo uses the same sort of fake server as the <a href="reference-coop.html">initial demo</a>, but has extra client code to manage a toggle between solo and co-op modes.</p>
+        <p>Clients in solo mode should not send changes to the server and also should not receive them.</p>
+        <p>Clients that enter co-op mode should ask the server for all state. The server has to make sure that any changes after initial state are sent to this client, including changes that are received during this initial phase of configuration.</p>
+        <h2>Serverless demo with a toggle between solo and co-op</h2>
+        <div class="example code">
+            <script>
+    // representation of the changes the "server" knows about
+    var serverChangeList = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll(".puzzle-entry").forEach((puzzle, index) => {
+            // Simulate co-op by basing the playerId on the index of the puzzle on the page.
+            // Normally the playerId would be the same for all puzzles on the page and shared with a server.
+            puzzle.setAttribute("data-team-id", "my-team");
+            puzzle.setAttribute("data-player-id", "player-" + index);
+
+            // add a solo/co-op picker to the command bar
+            puzzle.querySelector(".puzzle-commands").insertAdjacentHTML("beforeEnd", "<select class='coop-select'><option value='solo'>Solo</option><option value='coop'>Co-op</option></select>");
+
+            // data-player-id only needed here for the contrived multiple-players-per-page scenario faked for this demo
+            setCoopMode(puzzle, localStorage.getItem(`${puzzle.getAttribute("data-puzzle-id")}-${puzzle.getAttribute("data-player-id")}-coopState`) ?? "solo");
+
+            puzzle.querySelector(".coop-select").addEventListener("change", e => { 
+                // don't switch to co-op without a warning, since the user might lose data
+                if (e.currentTarget.value == "coop") {
+                    if (!window.confirm("Are you sure you want to switch to co-op mode? You will lose your local changes and sync up with the group.")) {
+                        e.currentTarget.value = "solo";
+                        return;
+                    }
+                }
+
+                setCoopMode(puzzle, e.currentTarget.value);
+            });
+        });
+
+        // This is the notification that changes have been made to the local instance.
+        document.addEventListener("puzzlechanged", e => {
+            let changes = e.detail;
+
+            // skip logging etc if the current mode is solo
+            let puzzle = e.target.puzzleGrid.puzzleEntry.container;
+            if (puzzle.getAttribute("data-coop-mode") == "solo") return;
+
+            // a real server should keep at most one record for each composite key, but this sample will skip that optimization in order to keep the code shorter.
+            changes.forEach(c => { serverChangeList.push(c); });
+
+            // Log the changes for the demo
+            let log = document.getElementById("log");
+            log.value += JSON.stringify(changes) + '\n';
+            log.scrollTop = log.scrollHeight;
+
+            // Send the changes to the "server"
+            // Just a local call here, replace with your networking infrastructure
+            sendChanges(changes[0].puzzle, changes);
+        });
+    });
+
+    // Set a co-op mode, either on first load or by user change
+    function setCoopMode(puzzle, mode) {
+        puzzle.setAttribute("data-coop-mode", mode);
+        // data-player-id only needed here for the contrived multiple-players-per-page scenario faked for this demo
+        localStorage.setItem(`${puzzle.getAttribute("data-puzzle-id")}-${puzzle.getAttribute("data-player-id")}-coopState`, mode);
+        puzzle.querySelector(".coop-select").value = mode;
+
+        if (mode == "coop") {
+            // clear puzzle entirely, stop saving state as well
+            puzzle.puzzleEntry.prepareToReset();
+            puzzle.puzzleEntry.puzzleGrids.forEach(grid => { grid.rebuildContents(); });
+
+            // ask the "server" what the current set of changes is
+            requestAllChanges(puzzle);
+        }
+
+        if (mode == "solo") {
+            // continue saving state
+            puzzle.puzzleEntry.puzzleGrids.forEach(grid => { grid.inhibitSave = false; });
+        }
+    }
+
+    // Send changes to the "server"
+    // Just a local call here, replace with your networking infrastructure
+    function sendChanges(puzzle, changes) {
+        // find the "teammates'" puzzles on the page.
+        // Note: The [data-player-id] part of the selector is only required for this demo.
+        // Note: If the puzzle has multiple grids, then query for .puzzle-grid instead of .puzzle-entry
+        let myPlayerId = changes[0].playerId;
+        document.querySelectorAll(`.puzzle-entry[data-puzzle-id=${changes[0].puzzleId}]`).forEach(otherPuzzle => {
+            if (otherPuzzle.getAttribute("data-player-id") != myPlayerId && otherPuzzle.getAttribute("data-coop-mode") != "solo") {
+                // send it the changes we received.
+                receiveChanges(otherPuzzle, changes);
+            }
+        });
+    }
+
+    // Receive changes from the "server"
+    // Just a local call here, replace with your networking infrastructure
+    function receiveChanges(puzzle, changes) {
+        // Note: If the puzzle has multiple grids, then use otherPuzzle.puzzleGrid instead
+        puzzle.puzzleEntry.puzzleGrids[0].changeWithoutUndo(changes);
+    }
+
+    // Get all changes from the "server"
+    // Used when co-op initializes
+    function requestAllChanges(puzzle) {
+        receiveChanges(puzzle, serverChangeList);
+    }
+</script>
+        </div>
+        <div class="example first">
+            <div class="puzzle-entry coop-example" data-edges="2x2" data-text=".Y.A|..Y.|.P..|L.P." data-extracts="1 2 3 4" data-show-commands="true" data-puzzle-id="coop-demo"></div>
+        </div>
+        <div class="example second">
+            <div class="puzzle-entry coop-example" data-edges="2x2" data-text=".Y.A|..Y.|.P..|L.P." data-extracts="1 2 3 4" data-show-commands="true" data-puzzle-id="coop-demo"></div>
+        </div>
+        <div class="example third">
+            <div class="puzzle-entry coop-example" data-edges="2x2" data-text=".Y.A|..Y.|.P..|L.P." data-extracts="1 2 3 4" data-show-commands="true" data-puzzle-id="coop-demo"></div>
+        </div>
+        <h3>Demo changes log</h3>
+        <textarea id="log" title="Log" style="width: 100%; height: 100px;"></textarea>
+    </body>
+</html>
