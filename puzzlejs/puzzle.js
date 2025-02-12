@@ -774,12 +774,12 @@ function PuzzleEntry(p, index) {
 
     this.setText = function(target, text, smalltext) {
         var textElement = target.querySelector(".text span");
-        if (textElement.innerText != text && !target.classList.contains("given-text")) {
+        var wasSmalltext = target.classList.contains("small-text");
+        if ((textElement.innerText != text || wasSmalltext != smalltext) && !target.classList.contains("given-text")) {
             var grid = this.locateGrid(target);
-            var wasSmalltext = target.classList.contains("small-text");
             this.undoManager.startAction(this);
             if (wasSmalltext != smalltext) { this.undoManager.addUnit(grid, target, "class-small-text", wasSmalltext ? "small-text" : null, smalltext ? "small-text" : null); }
-            this.undoManager.addUnit(grid, target, "text", textElement.innerText, text);
+            if (textElement.innerText != text) { this.undoManager.addUnit(grid, target, "text", textElement.innerText, text); }
             this.undoManager.endAction();
         }
     }
@@ -957,6 +957,9 @@ function PuzzleEntry(p, index) {
         if (this.pointerIsDown) { this.endPointerIsDown(); return; }
 
         this.pointerIsDown = true;
+
+        var grid = this.puzzleGridFromCell(e.currentTarget);
+        if (grid !== this.activeGrid) { this.setActiveGrid(grid); }
 
         if (e.target.hasPointerCapture(e.pointerId)) { e.target.releasePointerCapture(e.pointerId); }
 
