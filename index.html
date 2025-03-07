@@ -26,7 +26,7 @@
             }
         </style>
     </head>
-    <body>
+    <body data-validators-beta-opt-in="true">
         <h1>Puzzle.js: A customizable interactive solver for hunt-style puzzles</h1>
         <p>Puzzle.js can embed interactive puzzle solvers into existing HTML pages! The master repository is located at <a href="https://github.com/tabascq/PuzzleJS" target="_blank">https://github.com/tabascq/PuzzleJS</a>.</p>
         <p>It is constructed with the following goals in mind:</p>
@@ -54,7 +54,7 @@
         <p><b>IMPORTANT NOTE:</b> In order to see paths and edges properly on your local development machine, you need to view your pages via a local webserver. In Visual Studio Code, I am using the &ldquo;Live Server&rdquo; extension with great results.</p>
         <p>From there it's as easy as this!</p>
         <div class="example">
-            <div class="puzzle-entry" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-extracts="1 2 3 4" data-show-commands="true"></div>
+            <div class="puzzle-entry" data-mode="sudoku" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-text-characters="ALPY" data-extracts="1 2 3 4" data-show-commands="true"></div>
         </div>
         <div class="example">
             <div class="puzzle-entry" data-mode="linear" data-text="####" data-extracts="1 2 3 4"></div>

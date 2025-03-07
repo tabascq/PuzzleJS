@@ -55,7 +55,7 @@
             .hidato-example .x-spoke { stroke: red; }
         </style>
     </head>
-    <body>
+    <body data-validators-beta-opt-in="true">
         <div class="clipboard-container">
         <h1>Puzzle.js Mini Demos</h1>
         <p>All demos support undo/redo, even if the command bar is not shown. All puzzles also save their state.</p>
@@ -197,6 +197,11 @@
                 <div class="puzzle-entry" data-show-commands="true" data-mode="sudoku" data-text=".O..|...R|W...|..D." data-edges="2x2" data-text-characters="WORD"></div>
             </div>
 
+            <h2>KenKen</h2>
+            <div class="example">
+                <div class="puzzle-entry" data-show-commands="true" data-mode="kenken" data-text="4x4" data-text-characters="1234" data-edges="5119|551d|451c|667b" data-clue-indicators="10+    24x 7+  2/  4x     1"></div>
+            </div>
+
             <h2>World&rsquo;s Easiest Nurikabe</h2>
             <p>Controls: click or spacebar, right/shift click/space cycles in opposite direction.</p>
             <div class="example">
@@ -265,7 +270,7 @@
 
             <h2>Paint by Numbers</h2>
             <div class="example">
-                <div class="puzzle-entry paint-by-numbers-example" data-show-commands="true" data-text="10x10" data-edges="5x5" data-mode="notext" data-fill-classes="lightgray black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
+                <div class="puzzle-entry paint-by-numbers-example" data-show-commands="true" data-text="10x10" data-edges="5x5" data-mode="nonogram notext" data-fill-classes="lightgray black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
             </div>
 
             <h2>Slitherlink</h2>

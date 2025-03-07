@@ -3,6 +3,7 @@
  * https://github.com/tabascq/PuzzleJS
  */
 var puzzleJsFolderPath = document.currentScript.src.split("puzzle.js")[0];
+var puzzleValidators = {};
 
 // register some puzzle modes; a mode is just a set of options,
 // so the options do not need to all be learned and manually applied to each puzzle.
@@ -50,6 +51,7 @@ puzzleModes["default"] = {
     "data-bottom-clues": null,
     "data-left-clues": null,
     "data-right-clues": null,
+    "data-outer-clue-checks": false,
 
     // linked content
     "data-links": null,
@@ -67,6 +69,7 @@ puzzleModes["default"] = {
     "data-extra-styles": null,
     "data-no-input": false,
     "data-no-screenreader": false,
+    "data-validators": null,
     "data-show-commands": false,
     "data-reset-prompt": "Clear all puzzle content?",
     "data-puzzle-id": null,
@@ -110,8 +113,23 @@ puzzleModes["sudoku"] = {
     "data-text-characters": "123456789",
     "data-edges": "3x3",
     "data-text": "9x9",
-    "data-text-shift-key": "candidates"
+    "data-text-shift-key": "candidates",
+    "data-validators": "text-unique-in-row text-unique-in-column text-unique-in-region"
 };
+
+puzzleModes["kenken"] = {
+    "data-text-characters": "123456789",
+    "data-text-shift-key": "candidates",
+    "data-text-avoid-position": "top",
+    "data-clue-locations": "all",
+    "data-validators": "text-unique-in-row text-unique-in-column text-math-in-region"
+};
+
+puzzleModes["nonogram"] = {
+    "data-edges": "5x5",
+    "data-outer-clue-checks": true,
+    "data-validators": "fill-spans-from-outer-clues"
+}
 
 puzzleModes["pathpaint"] = {
     "data-path-style": "curved",
@@ -278,7 +296,7 @@ function PuzzleEntry(p, index) {
     this.extractJsonOptions = function(element) {
         var jsonOptions = {};
 
-        if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
+        if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE && element.firstChild.textContent.trim().startsWith("{")) {
             try {
                 var json = JSON.parse(element.firstChild.textContent);
                 for (const[key, value] of Object.entries(json)) { jsonOptions[key] = value; }
@@ -1878,11 +1896,12 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         return clueDepth;    
     }
 
-    this.addEmptyOuterCell = function(tr, colIndex) {
+    this.addEmptyOuterCell = function(tr, colIndex, sizeClasses) {
         var td = document.createElement("td");
         if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = colIndex; td.ariaLabel = "An empty cell in the outer clue area"; }
         td.classList.add("cell");
         td.classList.add("outer-cell");
+        if (sizeClasses) { sizeClasses.forEach(s => { td.classList.add(s); }); }
         td.classList.add("unselectable");
         tr.appendChild(td);
     }
@@ -1901,6 +1920,32 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         } else { td.classList.add("unselectable"); if (this.screenreaderSupported) { td.ariaLabel = "An empty clue in the " + zone + " area"; } }
 
         tr.appendChild(td);
+    }
+
+    this.addOuterCheck = function(tr, ariaCol, num, zone, sizeClass) {
+        var td = document.createElement("td");
+        if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = ariaCol; td.ariaLabel = `A correctness checker for clues in the ${zone} area`; }
+        td.classList.add("cell");
+        td.classList.add("outer-cell");
+        td.classList.add("outer-check");
+        td.classList.add(sizeClass);
+        td.id = `check-${zone}-${num}`;
+        this.lookup[td.id] = td;
+
+        tr.appendChild(td);
+    }
+
+    this.buildOuterClueRow = function(table, ariaRow, buildMiddle, sizeClasses) {
+        var tr = document.createElement("tr");
+        if (this.screenreaderSupported) { tr.role="row"; tr.ariaRowIndex = ariaRow; }
+        var ariaCol = 1;
+        for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, ariaCol++, sizeClasses); }
+        if (this.leftClueDepth && this.outerClueChecks) { this.addEmptyOuterCell(tr, ariaCol++, ["outer-check-width"].concat(sizeClasses ?? [])); }
+        for (var j = 0; j < this.numCols; j++) { buildMiddle(tr, j, ariaCol++); }
+        if (this.rightClueDepth && this.outerClueChecks) { this.addEmptyOuterCell(tr, ariaCol++, ["outer-check-width"].concat(sizeClasses ?? [])); }
+        for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, ariaCol++, sizeClasses); }
+
+        table.appendChild(tr);
     }
 
     this.appendElementToLinkExtractSearch = function(elem, queries, result) {
@@ -2056,8 +2101,86 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         svgChangedElems.forEach(el => { this.updateSvg(el); });
         changedElems.forEach(el => { if (el.classList.contains("cell")) { this.processTdForCopyjack(el); this.updateLabel(el); } });
 
-        changedGrids.forEach(g => { g.stateDirty = true; });
+        changedGrids.forEach(g => { g.stateDirty = true; g.validate(); });
         if (!this.puzzleEntry.pointerIsDown) { changedGrids.forEach(g => { g.saveState(); }) }
+    }
+
+    function CellWrapper(puzzleGrid, cell) {
+        this.text = function() { return cell.querySelector(".text").innerText.trim(); }
+        this.hasCandidates = function() { return cell.classList.contains("small-text") && puzzleGrid.options["data-text-shift-key"] == "candidates"; }
+        this.clueLabel = function() { var label = cell.querySelector(".clue-label"); return label ? label.innerText.trim() : ""; }
+        this.fill = function() { return puzzleGrid.puzzleEntry.findClassInList(cell, puzzleGrid.fillClasses); }
+        this.fail = function() { cell.classList.add("validate-fail"); }
+        this.pass = function() { cell.classList.add("validate-pass"); }
+    }
+
+    function OuterCheckWrapper(puzzleGrid, outerCheck) {
+        this.fail = function() { outerCheck.classList.add("validate-fail"); }
+        this.pass = function() { outerCheck.classList.add("validate-pass"); }
+    }
+
+    function PuzzleGridWrapper(puzzleGrid) {
+        this.getColumns = function() {
+            var result = [];
+            for (var c = 0; c < puzzleGrid.numCols; c++) {
+                var column = [];
+                for (var r = 0; r < puzzleGrid.numRows; r++) { column.push(new CellWrapper(puzzleGrid, puzzleGrid.lookup[`cell-${r}-${c}`])); }
+                result.push(column);
+            }
+            return result;
+        }
+
+        this.getRows = function() {
+            var result = [];
+            for (var r = 0; r < puzzleGrid.numRows; r++) {
+                var row = [];
+                for (var c = 0; c < puzzleGrid.numCols; c++) { row.push(new CellWrapper(puzzleGrid, puzzleGrid.lookup[`cell-${r}-${c}`])); }
+                result.push(row);
+            }
+            return result;
+        }
+
+        this.getRegions = function() {
+            var floodAndCollectRegion = function(puzzleGrid, row, col, region) {
+                var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                if (seen.has(cell.id)) return;
+        
+                seen.add(cell.id);
+                region.push(new CellWrapper(puzzleGrid, cell));
+        
+                if (row > 0 && !(cell.getAttribute("data-edge-code") & 1)) { floodAndCollectRegion(puzzleGrid, row - 1, col, region); }
+                if (row < puzzleGrid.numRows - 1 && !(puzzleGrid.lookup[`cell-${row + 1}-${col}`].getAttribute("data-edge-code") & 1)) { floodAndCollectRegion(puzzleGrid, row + 1, col, region); }
+                if (col > 0 && !(cell.getAttribute("data-edge-code") & 4)) { floodAndCollectRegion(puzzleGrid, row, col - 1, region); }
+                if (col < puzzleGrid.numCols - 1 && !(puzzleGrid.lookup[`cell-${row}-${col + 1}`].getAttribute("data-edge-code") & 4)) { floodAndCollectRegion(puzzleGrid, row, col + 1, region); }
+            }
+
+            var result = [];
+            var seen = new Set();
+        
+            for (var row = 0; row < puzzleGrid.numRows; row++) {
+                for (var col = 0; col < puzzleGrid.numCols; col++) {
+                    var region = [];
+                    floodAndCollectRegion(puzzleGrid, row, col, region);
+                    if (region.length != 0) { result.push(region); }
+                }
+            }
+
+            return result;
+        }
+
+        this.getOuterChecks = function(side) {
+            var result = [];
+
+            for (var i = 0; i < ((side == "left" || side == "right") ? puzzleGrid.numRows : puzzleGrid.numCols); i++) {
+                var outerCheck = puzzleGrid.lookup[`check-${side}-${i}`];
+                if (!outerCheck) return null;
+                result.push(new OuterCheckWrapper(puzzleGrid, outerCheck));
+            }
+
+            return result;
+        }
+
+        this.getOption = function(optionName) { return puzzleGrid.options[optionName]; }
     }
 
     this.addEdgeToSvg = function(svg, edgeName) {
@@ -2321,6 +2444,40 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
     }
 
+    this.loadValidators = function() {
+        this.validators = this.puzzleEntry.getOptionArray(this.options, "data-validators", " ");
+        if (!this.validators) return;
+
+        this.validators.forEach(v => {
+            v = v.split("|")[0];
+            var vKey = v.endsWith(".js") ? v.replace(/^.*[\\\/]/, '').replace('.js', '') : v;
+            if (!puzzleValidators[vKey]) {
+                var validatorjs = document.createElement('script');
+                validatorjs.setAttribute("type", "text/javascript");
+                validatorjs.setAttribute("src", v.endsWith(".js") ? v : `${puzzleJsFolderPath}validators/${v}.js`);
+                puzzleValidators[vKey] = validatorjs;
+                document.head.appendChild(validatorjs);            
+            }
+        });
+    }
+
+    this.validate = function() {
+        if (!this.validators) return;
+
+        this.container.querySelectorAll(".validate-fail").forEach(c => { c.classList.remove("validate-fail"); });
+        this.container.querySelectorAll(".validate-pass").forEach(c => { c.classList.remove("validate-pass"); });
+
+        var wrapper = new PuzzleGridWrapper(this);
+
+        this.validators.forEach(v => {
+            var parts = v.split("|");
+            var vKey = parts[0].endsWith(".js") ? parts[0].replace(/^.*[\\\/]/, '').replace('.js', '') : parts[0];
+            var validatorFn = puzzleValidators[vKey];
+            if (validatorFn instanceof Element) { validatorFn.addEventListener("load", e => { this.validate(); }); }
+            else if (validatorFn) { validatorFn(wrapper, parts[1]); }
+        })
+    }
+
     this.afterLoaded = function() {
         this.dotZones.forEach(dz => { dz.afterLoaded(); });
     }
@@ -2347,6 +2504,10 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             this.puzzleEntry.readLocalOptions(this.container, this.jsonOptions, this.options);
             this.puzzleId = this.options["data-puzzle-id"];
             if (this.puzzleId == this.puzzleEntry.options["data-puzzle-id"]) { this.puzzleId = this.puzzleEntry.puzzleId + "|" + this.index; }
+        }
+
+        if (document.body.getAttribute("data-validators-beta-opt-in")) {
+            this.loadValidators();
         }
 
         this.canHaveText = this.puzzleEntry.recordingProperties["data-text"] || this.puzzleEntry.recordingProperties["data-text-solution"] || this.options["data-text-characters"];
@@ -2400,6 +2561,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         var bottomClues = puzzleEntry.getOptionArray(this.options, "data-bottom-clues", "|");
         var leftClues = puzzleEntry.getOptionArray(this.options, "data-left-clues", "|");
         var rightClues = puzzleEntry.getOptionArray(this.options, "data-right-clues", "|");
+        this.outerClueChecks = this.options["data-outer-clue-checks"];
     
         var unselectableGivens = this.options["data-unselectable-givens"];
     
@@ -2458,35 +2620,34 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         var edgesAreHex = (edges && edges.length > 0 && /^[0-9a-fA-F|.]+$/.test(edges[0]));
         var pathsAreHex = (paths && paths.length > 0 && /^[0-9a-fA-F|.]+$/.test(paths[0]));
     
-        for (var i = 0; i < this.topClueDepth; i++) {
-            var tr = document.createElement("tr");
-            if (this.screenreaderSupported) { tr.role="row"; tr.ariaRowIndex = i + 1; }
-            for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
-            for (var j = 0; j < topClues.length; j++) { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + topClues[j].length, this.leftClueDepth + j + 1, "top"); }
-            for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + topClues.length + j + 1); }
-    
-            table.appendChild(tr);
-        }
-    
         this.numRows = textLines.length;
         this.numCols = 0;
+        for (var r = 0; r < textLines.length; r++) { this.numCols = Math.max(this.numCols, textLines[r].length); }
+
+        ariaRow = 1;
+
+        for (var i = 0; i < this.topClueDepth; i++) {
+            this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + (topClues[j] ? topClues[j].length : 0), ariaCol, "top"); });
+        }
+        if (this.topClueDepth && this.outerClueChecks) { this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterCheck(tr, ariaCol, j, "top", "outer-check-height"); }, ["outer-check-height"]); }
     
         var stateIndex = 0;
     
         for (var r = 0; r < textLines.length; r++) {
             var tr = document.createElement("tr");
             tr.classList.add("row");
-            if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = this.topClueDepth + r + 1; }
+            if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = ariaRow++; }
+            var ariaCol = 1;
     
-            for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + (leftClues[r] ? leftClues[r].length : 0), j + 1, "left"); }
+            for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + (leftClues[r] ? leftClues[r].length : 0), ariaCol++, "left"); }
+            if (this.leftClueDepth && this.outerClueChecks) { this.addOuterCheck(tr, ariaCol++, r, "left", "outer-check-width"); }
     
-            this.numCols = Math.max(this.numCols, textLines[r].length);
             for (var c = 0; c < textLines[r].length; c++) {
                 var cellSavedState = null;
                 if (savedState) { cellSavedState = savedState[stateIndex++]; }
     
                 var td = document.createElement("td");
-                if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = this.leftClueDepth + c + 1; }
+                if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = ariaCol++; }
                 td.classList.add("cell");
                 td.classList.add("inner-cell");
                 let avoid = this.options["data-text-avoid-position"];
@@ -2729,19 +2890,15 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 tr.appendChild(td);
             }
     
-            for (var j = 0; j < this.rightClueDepth; j++) { this.addOuterClue(tr, rightClues[r], j, this.leftClueDepth + textLines[r].length + j + 1, "right"); }
+            if (this.rightClueDepth && this.outerClueChecks) { this.addOuterCheck(tr, ariaCol++, r, "right", "outer-check-width"); }
+            for (var j = 0; j < this.rightClueDepth; j++) { this.addOuterClue(tr, rightClues[r], j, ariaCol++, "right"); }
     
             table.appendChild(tr);
         }
     
+        if (this.bottomClueDepth && this.outerClueChecks) { this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterCheck(tr, ariaCol, j, "bottom", "outer-check-height"); }, ["outer-check-height"]); }
         for (var i = 0; i < this.bottomClueDepth; i++) {
-            var tr = document.createElement("tr");
-            if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = this.topClueDepth + textLines.length + i + 1; }
-            for (var j = 0; j < this.leftClueDepth; j++) { this.addEmptyOuterCell(tr, j + 1); }
-            for (var j = 0; j < bottomClues.length; j++) { this.addOuterClue(tr, bottomClues[j], i, this.leftClueDepth + j + 1, "bottom"); }
-            for (var j = 0; j < this.rightClueDepth; j++) { this.addEmptyOuterCell(tr, this.leftClueDepth + bottomClues.length + j + 1); }
-    
-            table.appendChild(tr);
+            this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterClue(tr, bottomClues[j], i, ariaCol, "bottom"); });
         }
     
         table.querySelectorAll(".cell.inner-cell").forEach(c => { this.updateLabel(c); });
@@ -2767,7 +2924,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             this.fillClasses = this.extraStyleClasses;
             this.extraStyleClasses = swap;
         }
-    
+
         // Copyjack support: initialize a copyjack version of the table.
         // This table will be modified as the user takes actions.
     
@@ -2797,6 +2954,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 }
             }
         }
+
+        this.validate();    
     }
 
     if (this.isRootGrid) {

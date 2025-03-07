@@ -85,9 +85,17 @@
     height: 80%;
 }
 
+.puzzle-entry .pos-avoid-top:not(.small-text) .text {
+    font-size: calc(var(--puzzle-cell-size) * 0.65);
+}
+
 .puzzle-entry .pos-avoid-bottom .text {
     padding-bottom: 25%;
     height: 75%;
+}
+
+.puzzle-entry .pos-avoid-bottom:not(.small-text) .text {
+    font-size: calc(var(--puzzle-cell-size) * 0.65);
 }
 
 .puzzle-entry .cell:focus {
@@ -168,6 +176,54 @@
 
 .puzzle-entry td.top-clue, .puzzle-entry td.bottom-clue, .puzzle-entry td.left-clue, .puzzle-entry td.right-clue {
     border: none;
+}
+
+.puzzle-entry td.outer-check {
+    position: relative;
+}
+
+.puzzle-entry td.outer-check::before {
+    font-size: calc(var(--puzzle-cell-size) / 4);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.puzzle-entry td.outer-check.validate-pass {
+    background: lime;
+}
+
+.puzzle-entry td.outer-check.validate-pass::before {
+    content: "\2713";
+    color: black;
+    text-shadow: none;
+}
+
+.puzzle-entry td.outer-check.validate-fail {
+    background: red;
+}
+
+.puzzle-entry td.outer-check.validate-fail::before {
+    content: "x";
+    color: white;
+    text-shadow: none;
+}
+
+.puzzle-entry td.inner-cell.validate-fail {
+    background: #ff8080;
+}
+
+.puzzle-entry td.inner-cell.validate-fail:not(.given-text) {
+    color: #ff0000;
+}
+
+.puzzle-entry td.outer-check-width {
+    width: calc(var(--puzzle-cell-size) / 3);
+}
+
+.puzzle-entry td.outer-check-height {
+    height: calc(var(--puzzle-cell-size) / 3);
 }
 
 .puzzle-entry .link-label, .puzzle-entry .extract-label, .puzzle-entry .clue-label {
