@@ -34,7 +34,8 @@ puzzleValidators["text-math-in-region"] = function(puzzleGrid, param) {
             var clue = cell.clueLabel();
             if (clue) {
                 target = parseInt(clue);
-                if (clue.lastChar == "+" || clue.lastChar == "-" || clue.lastChar == "x" || clue.lastChar == "/") { targetOperator = clue; }
+                var op = clue[clue.length - 1];
+                if (op == "+" || op == "-" || op == "x" || op == "/") { targetOperator = op; }
             }
         });
 
