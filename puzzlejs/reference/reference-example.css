@@ -14,6 +14,11 @@
     page-break-inside: avoid;
 }
 
+.example.vertical {
+    flex-direction: column-reverse;
+    align-items: center;
+}
+
 .example pre {
     margin: 0;
     white-space: pre-wrap;
@@ -39,6 +44,10 @@
 
 .example.non-interactive .example-title::before {
     content: "Example";
+}
+
+.example.with-validation .example-title::before {
+    content: "Interactive Example with Validation";
 }
 
 .example .puzzle-entry {

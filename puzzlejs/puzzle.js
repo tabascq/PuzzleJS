@@ -1569,7 +1569,7 @@ function PuzzleEntry(p, index) {
             this.commands = document.createElement("div");
             this.commands.classList.add("puzzle-commands");
             this.commands.classList.add("no-copy");
-            this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button>";
+            this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button><div class='success-marker'></div>";
             this.commands.querySelector(".puzzle-about-button").addEventListener("click", e => { this.aboutPopup(); });
             this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
             this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
@@ -2469,13 +2469,18 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
         var wrapper = new PuzzleGridWrapper(this);
 
+        var result = 1;
         this.validators.forEach(v => {
             var parts = v.split("|");
             var vKey = parts[0].endsWith(".js") ? parts[0].replace(/^.*[\\\/]/, '').replace('.js', '') : parts[0];
             var validatorFn = puzzleValidators[vKey];
-            if (validatorFn instanceof Element) { validatorFn.addEventListener("load", e => { this.validate(); }); }
-            else if (validatorFn) { validatorFn(wrapper, parts[1]); }
-        })
+            if (validatorFn instanceof Element) { result = Math.min(result, 0); validatorFn.addEventListener("load", e => { this.validate(); }); }
+            else if (validatorFn) { result = Math.min(result, validatorFn(wrapper, parts[1])); }
+        });
+
+        if (this.puzzleEntry.puzzleGrids.length == 1) {
+            if (result == 1) { this.puzzleEntry.container.classList.add("validated"); } else { this.puzzleEntry.container.classList.remove("validated"); }
+        }
     }
 
     this.afterLoaded = function() {
