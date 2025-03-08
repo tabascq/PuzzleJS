@@ -46,8 +46,12 @@
     content: "Example";
 }
 
-.example.with-validation .example-title::before {
-    content: "Interactive Example with Validation";
+.example.non-interactive .example-title::before {
+    content: "Example";
+}
+
+.example.example.non-interactive .designer-button {
+    display: none;
 }
 
 .example .puzzle-entry {

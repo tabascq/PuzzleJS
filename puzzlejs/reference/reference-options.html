@@ -846,6 +846,7 @@
             <p><b>This feature is in beta</b>, and many validator components still need to be written. <b>For now, the use of validators is opt-in</b> until the feature is more mature. You can opt in by setting <code>data-validators-beta-opt-in="true"</code> on your page&rsquo;s <code>body</code> tag.</p>
             <p>The format of this property is a space-delimited set of validator names; these can be built-in validators or custom validators. The <code>validators</code> folder contains the built-in validators; if the name of the validator ends in .js, it will be interpreted as a page-relative path for a custom validator whose name is the filename minus the extension.</p>
             <p>Some validators take an optional parameter, which can be specified after the validator name with a <code>|</code> separator.</p>
+            <p>For more information, see the <a href="reference-validators.html">Validators reference and API</a>.</p>
             <div class="example">
                 <div class="puzzle-entry" data-text="4x4" data-text-characters="1234" data-top-clues="1|2|3|4" data-outer-clue-checks="true" data-validators="text-unique-in-row text-unique-in-column reference-set-all-outer-checks.js|pass"></div>
             </div>

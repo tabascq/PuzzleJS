@@ -1,0 +1,187 @@
+<!-- (c) 2025 Kenny Young -->
+<!-- This code is licensed under the MIT License. -->
+<!-- https://github.com/tabascq/PuzzleJS -->
+<html>
+    <head>
+        <title>Puzzle.js Reference: Validators</title>
+        <link rel="stylesheet" href="reference-example.css"/>
+        <script type="text/javascript" src="reference-example.js"></script>
+        <link rel="stylesheet" href="../puzzle.css"/>
+        <link rel="stylesheet" href="../puzzle-basic-colors.css"/>
+        <script type="text/javascript" src="../puzzle.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".puzzle-entry").forEach((p) => { p.puzzleEntry.prepareToReset(); });
+            });
+        </script>
+        <style>
+            body {
+                padding: 1rem;
+            }
+
+            h1, h2, p, li {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            h3 {
+                font-family: monospace;
+            }
+
+            code {
+                background-color: #ddf;
+            }
+
+            .item {
+                padding-left: 2rem;
+            } 
+
+            .item h3 {
+                margin-left: -2rem;
+            }
+        </style>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll(".item").forEach((item) => {
+                    let itemName = item.getAttribute("data-name");
+                    let ih = document.createElement("h3");
+                    ih.innerText = itemName;
+                    ih.id = itemName;
+                    item.insertBefore(ih, item.firstChild);
+                });
+            });
+        </script>
+    </head>
+    <body data-validators-beta-opt-in="true">
+        <h1>Puzzle.js Reference: Validators</h1>
+        <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
+        <h2>Overview</h2>
+        <p>Many puzzles benefit from some kind of answer verification, or confirmation that the puzzle rules are/are not being followed. In puzzle.js, validators perform this service. Validators are intended to check one aspect of the puzzle rules, and highlight where those rules have been broken. A puzzle can mix and match validators to get the desired effect. Validators can be built-in, or may be provided with the puzzle.</p>
+        <p><b>This feature is in beta</b>, and many validator components still need to be written. <b>For now, the use of validators is opt-in</b> until the feature is more mature. You can opt in by setting <code>data-validators-beta-opt-in="true"</code> on your page&rsquo;s <code>body</code> tag.</p>
+        <p>The format of the <a href="reference-options.html#data-validators"><code>data-validators</code></a> property is a space-delimited set of validator names; these can be built-in validators or custom validators. The <code>validators</code> folder contains the built-in validators; if the name of the validator ends in .js, it will be interpreted as a page-relative path for a custom validator whose name is the filename minus the extension.</p>
+        <p>Some validators take an optional parameter, which can be specified after the validator name with a <code>|</code> separator.</p>
+        <div class="example with-validation">
+            <div class="puzzle-entry" data-text="4x4" data-text-characters="1234" data-top-clues="1|2|3|4" data-outer-clue-checks="true" data-validators="text-unique-in-row text-unique-in-column reference-set-all-outer-checks.js|pass"></div>
+        </div>
+        <h2>Built-in Validators</h2>
+        <p>Many more validators will be written.</p>
+        <div class="item" data-name="text-unique-in-row">
+            <p>Validates whether the text of any cell is repeated in its row, and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
+            <div class="example with-validation">
+                <div class="puzzle-entry" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-row"></div>
+            </div>
+        </div>
+
+        <div class="item" data-name="text-unique-in-column">
+            <p>Validates whether the text of any cell is repeated in its column, and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
+            <div class="example with-validation">
+                <div class="puzzle-entry" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-column"></div>
+            </div>
+        </div>
+
+        <div class="item" data-name="text-unique-in-region">
+            <p>Validates whether the text of any cell is repeated in its region (any shape bounded by edges), and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
+            <div class="example with-validation">
+                <div class="puzzle-entry" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-region"></div>
+            </div>
+        </div>
+
+        <div class="item" data-name="text-math-in-region">
+            <p>Validates whether the values in a region (any shape bounded by edges) can be mathematically combined to match a value provided by a clue within the region. If the clue provides an operator (+, -, x, or /), that operator must be used; otherwise, any one of the four operators can be used.</p>
+            <div class="example with-validation">
+                <div class="puzzle-entry" data-text="4x4" data-edges="2x1" data-text-characters="1234" data-text-avoid-position="top" data-clue-locations="all" data-clue-indicators="3+  1-  6x  4/  4  5  1  8" data-validators="text-math-in-region"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="fill-spans-from-outer-clues">
+            <p>Validates whether the outer clues of a puzzle specify the lengths of spans of fills with the same value. Currently, the only fill value checked is the second one ("black"), but this will be extended in the future. If <a href="reference-options.html#data-outer-clue-checks"><code>data-outer-clue-checks</code></a> is set to true, then indicators will be added to the edges of the grid to confirm success or highlight errors.</p>
+            <div class="example with-validation">
+                <div class="puzzle-entry paint-by-numbers-example" data-show-commands="true" data-text="10x10" data-edges="5x5" data-mode="notext" data-outer-clue-checks="true" data-validators="fill-spans-from-outer-clues" data-fill-classes="lightgray black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
+            </div>
+        </div>
+        
+        <h2>Validator Structure</h2>
+        <p>This is an extremely simple validator that marks the outer clue checks to pass or fail. It should be in its own file named <code>reference-set-all-outer-checks.js</code>; the script tag here is just to fit it into the documentation.</p>
+        <div class="example non-interactive">
+            <script> <!-- ignore this tag -->
+    // Trivial validator just to illustrate how things work. See the validators folder for more realistic examples.
+
+    puzzleValidators["reference-set-all-outer-checks"] = function(puzzleGrid, param) {
+        var checkSide = function(sideName, param) {
+            if (puzzleGrid.getOption(`data-${sideName}-clues`)) {
+                puzzleGrid.getOuterChecks(sideName).forEach(check => { if (param == "pass") { check.pass(); } else { check.fail(); } });
+            }
+        }
+
+        checkSide("top", param);
+        checkSide("bottom", param);
+        checkSide("left", param);
+        checkSide("right", param);
+        return param == "pass" ? 1 : -1;
+    }
+</script>
+        </div>
+
+        <p>This validator:</p>
+        <ul>
+            <li>Registers itself with <code>puzzleValidators</code>, using a key that equals the filename minus the trailing <code>.js</code>.</li>
+            <li>Is a function that takes as input a <code>puzzleGrid</code> and an optional <code>param</code>.</li>
+            <li>Calls functions within <code>puzzleGrid</code> to analyze the grid and optionally set success/failure states within.</li>
+            <li>Returns a value indicating the result: <code>1</code> for pass, <code>0</code> for inconclusive, <code>-1</code> for fail.</li>
+        </ul>
+
+        <p>A custom validator such as this can be used by providing its page-relative path, and a value for <code>param</code> can be provided after a <code>|</code> character.</p>
+        <div class="example">
+            <div class="puzzle-entry" data-text="3x3" data-top-clues="1 2||3" data-left-clues="1 2||3" data-outer-clue-checks="true" data-validators="reference-set-all-outer-checks.js|pass"></div>
+        </div>
+        <h2>Validator API: puzzleGrid</h2>
+        <p>Many more functions will be written here, covering the full functionality of PuzzleJS.</p>
+        <div class="item" data-name="getRows">
+            <p>Gets all cells in the grid, grouped into rows.</p>
+        </div>
+        <div class="item" data-name="getColumns">
+            <p>Gets all cells in the grid, grouped into columns.</p>
+        </div>
+        <div class="item" data-name="getRegions">
+            <p>Gets all cells in the grid, grouped into regions (shapes bounded by edges).</p>
+        </div>
+        <div class="item" data-name="getOuterChecks">
+            <p>Gets all outer checks on a specific side of the grid. Does not get the values of the outer clues themselves; <code>getOption</code> can beused for that.</p>
+            <ul>
+                <li>side: Which side of the grid to retrieve outer checks for.</li>
+            </ul>
+        </div>
+        <div class="item" data-name="getOption">
+            <p>Gets the value of a specific option, after all mode/inheritance rules are applied.</p>
+            <ul>
+                <li>optionName: the name of the option.</li>
+            </ul>
+        </div>
+        <h2>Validator API: cell</h2>
+        <p>Many more functions will be written here, covering the full functionality of PuzzleJS.</p>
+        <div class="item" data-name="text">
+            <p>Gets the text in the middle of the cell.</p>
+        </div>
+        <div class="item" data-name="hasCandidates">
+            <p>True if the cell has oneor more candidate values (typed using the Shift key); false otherwise.</p>
+        </div>
+        <div class="item" data-name="clueLabel">
+            <p>The text of the inner clue on the cell, if any.</p>
+        </div>
+        <div class="item" data-name="fill">
+            <p>The name of the class that represents the fill of the cell.</p>
+        </div>
+        <div class="item" data-name="pass">
+            <p>Marks the cell as having passed.</p>
+        </div>
+        <div class="item" data-name="fail">
+            <p>Marks the cell as having failed.</p>
+        </div>
+        <h2>Validator API: outerCheck</h2>
+        <div class="item" data-name="pass">
+            <p>Marks the outer check as having passed.</p>
+        </div>
+        <div class="item" data-name="fail">
+            <p>Marks the outer check as having failed.</p>
+        </div>
+    </body>
+</html>
