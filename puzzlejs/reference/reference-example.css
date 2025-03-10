@@ -42,8 +42,12 @@
     margin-left: -2em;
 }
 
-.example.non-interactive .example-title::before {
-    content: "Example";
+.example.with-validation.logic .example-title::before {
+    content: "Interactive Example with Logic-based Validation";
+}
+
+.example.with-validation.hash .example-title::before {
+    content: "Interactive Example with Hash-based Validation";
 }
 
 .example.non-interactive .example-title::before {
@@ -61,6 +65,10 @@
 
 .example .puzzle-entry[data-show-commands=true] {
     padding: 20px 30px;
+}
+
+.example.with-validation .puzzle-entry[data-show-commands=true] {
+    min-width: 250px;
 }
 
 @media print {

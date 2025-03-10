@@ -98,3 +98,18 @@
    alt: 'recording';
    cursor: pointer;
 }
+
+.puzzle-designer .property-header.hash:after {
+   content: '📸';
+   font-weight: bold;
+   float: right;
+   margin-left: 5px;
+   alt: 'capture this hash';
+   cursor: pointer;
+}
+
+.puzzle-designer .property-header.hash.match:after {
+   content: "❌";
+   alt: 'hash captured';
+   cursor: pointer;
+}

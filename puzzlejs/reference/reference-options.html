@@ -680,15 +680,6 @@
                 <div class="puzzle-entry" data-text="3x3" data-right-clues="1 2||3"></div>
             </div>
         </div>
-        <div class="option" data-name="data-outer-clue-checks">
-            <p>Adds an extra region between outer clues and the grid, which validators can use to display pass or fail results. This region is only added on sides with clues. See <a href="#data-validators"><code>data-validators</code></a> for more information on how to add validators.</p>
-            <div class="example">
-                <div class="puzzle-entry" data-text="3x3" data-top-clues="1 2||3" data-left-clues="1 2||3" data-outer-clue-checks="true" data-validators="reference-set-all-outer-checks.js|pass"></div>
-            </div>
-            <div class="example">
-                <div class="puzzle-entry" data-text="3x3" data-bottom-clues="1 2||3" data-right-clues="1 2||3" data-outer-clue-checks="true" data-validators="reference-set-all-outer-checks.js|fail"></div>
-            </div>
-        </div>
         <div class="option" data-name="data-links">
             <p>Specifies a set of link IDs for all cells not marked with <code>@</code> in the <a href="#data-text"><code>data-text</code></a> field.
             Two cells with the same link ID anywhere on the page will share their values.
@@ -767,6 +758,46 @@
 </div>
             </div>
         </div>
+        <div class="option" data-name="data-validators">
+            <p>Loads a set of functions that can be used to validate whether a logic puzzle's rules are correctly satisfied, and highlight errors.</p>
+            <p><b>This feature is in beta</b>, and many validator components still need to be written. <b>For now, the use of validators is opt-in</b> until the feature is more mature. You can opt in by setting <code>data-validators-beta-opt-in="true"</code> on your page&rsquo;s <code>body</code> tag.</p>
+            <p>The format of this property is a space-delimited set of validator names; these can be built-in validators or custom validators. The <code>validators</code> folder contains the built-in validators; if the name of the validator ends in .js, it will be interpreted as a page-relative path for a custom validator whose name is the filename minus the extension.</p>
+            <p>Some validators take an optional parameter, which can be specified after the validator name with a <code>|</code> separator.</p>
+            <p>For more information, see the <a href="reference-validators.html">Validators reference and API</a>.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="4x4" data-text-characters="1234" data-top-clues="1|2|3|4" data-outer-clue-checks="true" data-validators="text-unique-in-row text-unique-in-column reference-set-all-outer-checks.js|pass"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-outer-clue-checks">
+            <p>Adds an extra region between outer clues and the grid, which validators can use to display pass or fail results. This region is only added on sides with clues. See <a href="#data-validators"><code>data-validators</code></a> for more information on how to add validators.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-top-clues="1 2||3" data-left-clues="1 2||3" data-outer-clue-checks="true" data-validators="reference-set-all-outer-checks.js|pass"></div>
+            </div>
+            <div class="example">
+                <div class="puzzle-entry" data-text="3x3" data-bottom-clues="1 2||3" data-right-clues="1 2||3" data-outer-clue-checks="true" data-validators="reference-set-all-outer-checks.js|fail"></div>
+            </div>
+        </div>
+        <div class="option" data-name="data-text-hashes">
+            <p>Records one or more hashes for the text values of puzzle cells, separated by spaces. If a hash of the puzzle text matches any of these hashes, the puzzle is considered to be solved.</p>
+            <p>For more information, see the <a href="reference-validators.html">Validators reference and API</a>.</p>
+        </div>
+        <div class="option" data-name="data-fill-hashes">
+            <p>Records one or more hashes for the fills of puzzle cells, separated by spaces. If a hash of the puzzle fills matches any of these hashes, the puzzle is considered to be solved.</p>
+            <p>For more information, see the <a href="reference-validators.html">Validators reference and API</a>.</p>
+        </div>
+        <div class="option" data-name="data-edge-hashes">
+            <p>Records one or more hashes for the edges of puzzle cells, separated by spaces. If a hash of the puzzle edges matches any of these hashes, the puzzle is considered to be solved.</p>
+            <p>For more information, see the <a href="reference-validators.html">Validators reference and API</a>.</p>
+        </div>
+        <div class="option" data-name="data-path-hashes">
+            <p>Records one or more hashes for the paths of puzzle cells, separated by spaces. If a hash of the puzzle paths matches any of these hashes, the puzzle is considered to be solved.</p>
+            <p>For more information, see the <a href="reference-validators.html">Validators reference and API</a>.</p>
+        </div>
+        <div class="option" data-name="data-spoke-hashes">
+            <p>Records one or more hashes for the spokes of puzzle cells, separated by spaces. If a hash of the puzzle spokes matches any of these hashes, the puzzle is considered to be solved.</p>
+            <p>If a puzzle has several levels of spokes, all levels are handled by this one property.</p>
+            <p>For more information, see the <a href="reference-validators.html">Validators reference and API</a>.</p>
+        </div>
         <div class="option" data-name="data-drag-paint-fill">
             <p>Specifies whether a dragging operation will continue to paint cells with the fill from the cell that was originally clicked.</p>
             <div class="example">
@@ -839,16 +870,6 @@
             <p>Turns off all screenreader support and leaves a screenreader message saying that this specific puzzle is not suppoerted in a screenreader. Use this option when you are doing something so special that the screenreader will not properly communicate the puzzle. Note that any puzzle options that do not yet have full screenreader support will also cause the puzzle to generate this message.</p>
             <div class="example">
                 <div class="puzzle-entry" data-text="4x4" data-no-screenreader="true"></div>
-            </div>
-        </div>
-        <div class="option" data-name="data-validators">
-            <p>Loads a set of functions that can be used to validate whether a logic puzzle's rules are correctly satisfied, and highlight errors.</p>
-            <p><b>This feature is in beta</b>, and many validator components still need to be written. <b>For now, the use of validators is opt-in</b> until the feature is more mature. You can opt in by setting <code>data-validators-beta-opt-in="true"</code> on your page&rsquo;s <code>body</code> tag.</p>
-            <p>The format of this property is a space-delimited set of validator names; these can be built-in validators or custom validators. The <code>validators</code> folder contains the built-in validators; if the name of the validator ends in .js, it will be interpreted as a page-relative path for a custom validator whose name is the filename minus the extension.</p>
-            <p>Some validators take an optional parameter, which can be specified after the validator name with a <code>|</code> separator.</p>
-            <p>For more information, see the <a href="reference-validators.html">Validators reference and API</a>.</p>
-            <div class="example">
-                <div class="puzzle-entry" data-text="4x4" data-text-characters="1234" data-top-clues="1|2|3|4" data-outer-clue-checks="true" data-validators="text-unique-in-row text-unique-in-column reference-set-all-outer-checks.js|pass"></div>
             </div>
         </div>
         <div class="option" data-name="data-show-commands">

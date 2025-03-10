@@ -51,6 +51,37 @@ function PuzzleDesigner() {
         }
 
         this.updateExport();
+        this.updateHashIcons();
+    }
+
+    this.updateHashIcon = function(property, hash) {
+        var header = this.properties[property].previousSibling;
+        var existingHashes = this.properties[property].value ? this.properties[property].value.split(" "): [];
+        if (existingHashes.includes(hash)) { header.classList.add("match"); } else { header.classList.remove("match"); }
+    }
+
+    this.updateHashIcons = async function() {
+        this.updateHashIcon("data-text-hashes", this.properties["data-text-hashes"].value ? await this.puzzleGrid.getTextHash() : null);
+        this.updateHashIcon("data-fill-hashes", this.properties["data-fill-hashes"].value ? await this.puzzleGrid.getFillHash() : null);
+        this.updateHashIcon("data-edge-hashes", this.properties["data-edge-hashes"].value ? await this.puzzleGrid.getEdgeHash() : null);
+        this.updateHashIcon("data-path-hashes", this.properties["data-path-hashes"].value ? await this.puzzleGrid.getPathHash() : null);
+        this.updateHashIcon("data-spoke-hashes", this.properties["data-spoke-hashes"].value ? await this.puzzleGrid.getSpokeHash() : null);
+    }
+
+    this.toggleHashOnProperty = async function(property) {
+        var hash;
+        switch (property) {
+            case "data-text-hashes": hash = await this.puzzleGrid.getTextHash(); break;
+            case "data-fill-hashes": if (this.puzzleGrid.fillClasses) { hash = await this.puzzleGrid.getFillHash(); } break;
+            case "data-edge-hashes": hash = await this.puzzleGrid.getEdgeHash(); break;
+            case "data-path-hashes": hash = await this.puzzleGrid.getPathHash(); break;
+            case "data-spoke-hashes": hash = await this.puzzleGrid.getSpokeHash(); break;
+        }
+
+        var existingHashes = this.properties[property].value ? this.properties[property].value.split(" "): [];
+        if (existingHashes.includes(hash)) { delete existingHashes[existingHashes.indexOf(hash)]; } else { existingHashes.push(hash); }
+        this.properties[property].value = existingHashes.join(" ");
+        this.updatePropertyOnEdit(property);
     }
     
     this.createProperty = function(category, property, type) {
@@ -80,6 +111,13 @@ function PuzzleDesigner() {
                 if (this.puzzleGrid.isRootGrid) { this.puzzleGrid.puzzleEntry.rebuildContents(); } else { this.puzzleGrid.rebuildContents(); }
 
                 if (!e.target.classList.contains("recording")) { this.puzzleGrid.inhibitSave = false; }
+            });
+        }
+
+        if (property.endsWith("hashes")) {
+            category.lastElementChild.classList.add("hash");
+            category.lastElementChild.addEventListener("click", e => {
+                this.toggleHashOnProperty(property);
             });
         }
 
@@ -249,6 +287,7 @@ function PuzzleDesigner() {
 
         this.updateAllProperties();
         this.updateExport();
+        this.updateHashIcons();
     }
 
     this.deselectPuzzle = function(puzzle) {
@@ -333,6 +372,7 @@ function PuzzleDesigner() {
     var edgeCategory = this.createCategory("Edge");
     var pathCategory = this.createCategory("Path");
     var spokeCategory = this.createCategory("Spoke");
+    var validationCategory = this.createCategory("Validation");
 
     this.createProperty(generalCategory, "data-mode", "multi-select");
 
@@ -373,7 +413,8 @@ function PuzzleDesigner() {
     
         var category = generalCategory;
 
-        if (key.includes("text") || key.includes("unselectable")) category = textCategory;
+        if (key.includes("validator") || key.includes("check") || key.includes("hash")) category = validationCategory;
+        else if (key.includes("text") || key.includes("unselectable")) category = textCategory;
         else if (key.includes("clue")) category = clueCategory;
         else if (key.includes("link") || key.includes("extract")) category = linkCategory;
         else if (key.includes("fill") || key.includes("extra")) category = fillCategory;
@@ -441,6 +482,13 @@ function PuzzleDesigner() {
         });
     });
     //document.querySelectorAll(".puzzle-entry").forEach(p => { p.addEventListener("focusout", e => { this.deselectPuzzle(p); }) });
+
+    document.addEventListener("puzzlechanged", e => {
+        if (e.target.puzzleGrid == this.puzzleGrid) {
+            this.updateHashIcons();
+        }
+    });
+
 }
 
 var puzzleDesigner = null;

@@ -51,13 +51,21 @@ puzzleModes["default"] = {
     "data-bottom-clues": null,
     "data-left-clues": null,
     "data-right-clues": null,
-    "data-outer-clue-checks": false,
 
     // linked content
     "data-links": null,
     "data-link-position": "top-left",
     "data-extracts": null,
     "data-extract-position": "bottom-right",
+
+    // validation
+    "data-validators": null,
+    "data-outer-clue-checks": false,
+    "data-text-hashes" : null,
+    "data-fill-hashes" : null,
+    "data-edge-hashes" : null,
+    "data-path-hashes" : null,
+    "data-spoke-hashes" : null,
 
     // misc
     "data-drag-paint-fill": true,
@@ -69,7 +77,6 @@ puzzleModes["default"] = {
     "data-extra-styles": null,
     "data-no-input": false,
     "data-no-screenreader": false,
-    "data-validators": null,
     "data-show-commands": false,
     "data-reset-prompt": "Clear all puzzle content?",
     "data-puzzle-id": null,
@@ -2461,26 +2468,106 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         });
     }
 
-    this.validate = function() {
-        if (!this.validators) return;
+    this.validate = async function() {
+        var validated = false;
 
-        this.container.querySelectorAll(".validate-fail").forEach(c => { c.classList.remove("validate-fail"); });
-        this.container.querySelectorAll(".validate-pass").forEach(c => { c.classList.remove("validate-pass"); });
+        if (this.validators) {
+            this.container.querySelectorAll(".validate-fail").forEach(c => { c.classList.remove("validate-fail"); });
+            this.container.querySelectorAll(".validate-pass").forEach(c => { c.classList.remove("validate-pass"); });
+    
+            var wrapper = new PuzzleGridWrapper(this);
+    
+            var result = 1;
+            this.validators.forEach(v => {
+                var parts = v.split("|");
+                var vKey = parts[0].endsWith(".js") ? parts[0].replace(/^.*[\\\/]/, '').replace('.js', '') : parts[0];
+                var validatorFn = puzzleValidators[vKey];
+                if (validatorFn instanceof Element) { result = Math.min(result, 0); validatorFn.addEventListener("load", e => { this.validate(); }); }
+                else if (validatorFn) { result = Math.min(result, validatorFn(wrapper, parts[1])); }
+            });
 
-        var wrapper = new PuzzleGridWrapper(this);
+            validated = (result == 1);
+        }
 
-        var result = 1;
-        this.validators.forEach(v => {
-            var parts = v.split("|");
-            var vKey = parts[0].endsWith(".js") ? parts[0].replace(/^.*[\\\/]/, '').replace('.js', '') : parts[0];
-            var validatorFn = puzzleValidators[vKey];
-            if (validatorFn instanceof Element) { result = Math.min(result, 0); validatorFn.addEventListener("load", e => { this.validate(); }); }
-            else if (validatorFn) { result = Math.min(result, validatorFn(wrapper, parts[1])); }
-        });
+        if (this.options["data-text-hashes"]) {
+            var currentHash = await this.getTextHash();
+            if (this.options["data-text-hashes"].split(" ").includes(currentHash)) { validated = true; }
+        }
+
+        if (this.options["data-fill-hashes"]) {
+            var currentHash = await this.getFillHash();
+            if (this.options["data-fill-hashes"].split(" ").includes(currentHash)) { validated = true; }
+        }
+
+        if (this.options["data-edge-hashes"]) {
+            var currentHash = await this.getEdgeHash();
+            if (this.options["data-edge-hashes"].split(" ").includes(currentHash)) { validated = true; }
+        }
+
+        if (this.options["data-path-hashes"]) {
+            var currentHash = await this.getPathHash();
+            if (this.options["data-path-hashes"].split(" ").includes(currentHash)) { validated = true; }
+        }
+
+        if (this.options["data-spoke-hashes"]) {
+            var currentHash = await this.getSpokeHash();
+            if (this.options["data-spoke-hashes"].split(" ").includes(currentHash)) { validated = true; }
+        }
 
         if (this.puzzleEntry.puzzleGrids.length == 1) {
-            if (result == 1) { this.puzzleEntry.container.classList.add("validated"); } else { this.puzzleEntry.container.classList.remove("validated"); }
+            if (validated) {
+                this.puzzleEntry.container.classList.add("validated");
+                this.puzzleEntry.container.dispatchEvent(new CustomEvent("puzzlevalidated", { bubbles: true }));
+            } else { this.puzzleEntry.container.classList.remove("validated"); }
         }
+    }
+
+    this.getSHA256Hash = async function(input, secondary) {
+        if (secondary) { input = input.reverse(); }
+
+        const textAsBuffer = new TextEncoder().encode(input);
+        const hashBuffer = await window.crypto.subtle.digest("SHA-256", textAsBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hash = hashArray
+          .map((item) => item.toString(16).padStart(2, "0"))
+          .join("");
+        return hash;
+    };
+
+    this.getTextHash = async function(secondary) {
+        var data = "";
+        container.querySelectorAll(".inner-cell .text").forEach(t => { data += t.innerText; });
+        return await this.getSHA256Hash(data, secondary);
+    }
+
+    this.getFillHash = async function(secondary) {
+        var data = "";
+        container.querySelectorAll(".inner-cell").forEach(c => { data += this.fillClasses.indexOf(this.puzzleEntry.findClassInList(c, this.fillClasses)); });
+        return await this.getSHA256Hash(data, secondary);
+    }
+
+    this.getEdgeHash = async function(secondary) {
+        var data = "";
+        container.querySelectorAll(".inner-cell").forEach(c => { data += (c.getAttribute("data-edge-code") ?? 0); });
+        return await this.getSHA256Hash(data, secondary);
+    }
+
+    this.getPathHash = async function(secondary) {
+        var data = "";
+        container.querySelectorAll(".inner-cell").forEach(c => { data += (c.getAttribute("data-path-code") ?? 0); });
+        return await this.getSHA256Hash(data, secondary);
+    }
+
+    this.getSpokeHash = async function(secondary) {
+        var data = "";
+        container.querySelectorAll(".inner-cell").forEach(c => { data += (c.getAttribute("data-spoke-code") ?? 0); });
+        var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
+        for (var l = 2; l < maxSpokeLevels; l++) {
+            var codeLevel = `data-spoke-${l}-code`;
+            container.querySelectorAll(".inner-cell").forEach(c => { data += (c.getAttribute(codeLevel) ?? 0); });
+        }
+
+        return await this.getSHA256Hash(data, secondary);
     }
 
     this.afterLoaded = function() {

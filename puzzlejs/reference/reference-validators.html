@@ -52,54 +52,73 @@
         </script>
     </head>
     <body data-validators-beta-opt-in="true">
-        <h1>Puzzle.js Reference: Validators</h1>
+        <h1>Puzzle.js Reference: Validators (Logic-based and Hash-based)</h1>
         <p><i>Note: while Puzzle.js puzzles store their state locally (via localStorage), that behavior is inhibited on this page to make it easiest to see exactly what markup produces exactly what result.</i></p>
         <h2>Overview</h2>
-        <p>Many puzzles benefit from some kind of answer verification, or confirmation that the puzzle rules are/are not being followed. In puzzle.js, validators perform this service. Validators are intended to check one aspect of the puzzle rules, and highlight where those rules have been broken. A puzzle can mix and match validators to get the desired effect. Validators can be built-in, or may be provided with the puzzle.</p>
+        <p>Many puzzles benefit from some kind of answer verification, or confirmation that the puzzle rules are/are not being followed. In puzzle.js, validation performs this service. There are two types: logic-based and hash-based.</p>
+        <ul>
+            <li><b>Hash-based validation</b> is accomplished by checking the entire state of the grid for a single feature: text, fill, edge, path, or spoke.<br/>A puzzle is deemed to be solved if <b>any</b> hash-based validation results in success.</li>
+            <li><b>Logic-based validation</b> is accomplished by reasoning over the grid as a whole. A logic puzzle with several rules might have a logic-based validator for each rule, where the validator checks that the rule has been followed and optionally highlights where it hasn't. Puzzle.js has a growing library of built-in logic validators, and custom validators are also supported.<br/>A puzzle is deemed to be solved if <b>all</b> logic-based validation results in success.</li>
+        </ul>
         <p><b>This feature is in beta</b>, and many validator components still need to be written. <b>For now, the use of validators is opt-in</b> until the feature is more mature. You can opt in by setting <code>data-validators-beta-opt-in="true"</code> on your page&rsquo;s <code>body</code> tag.</p>
+        <h2>Hash-based Validation: <code>data-*-hashes</code></h2>
+        <p>There are five hash-based properties, and they all work the same way:</p>
+        <ul>
+            <li><a href="reference-options.html#data-text-hashes"><code>data-text-hashes</code></a></li>
+            <li><a href="reference-options.html#data-fill-hashes"><code>data-fill-hashes</code></a></li>
+            <li><a href="reference-options.html#data-edge-hashes"><code>data-edge-hashes</code></a></li>
+            <li><a href="reference-options.html#data-path-hashes"><code>data-path-hashes</code></a></li>
+            <li><a href="reference-options.html#data-spoke-hashes"><code>data-spoke-hashes</code></a></li>
+        </ul>
+        <p>Each property can contain one or more hashes, separated by spaces. The puzzle is considered to be solved if <b>any</b> of the hashes is correct; this supports letter grids where symmetry allows them to be entered two ways, puzzles where the solver might either mark cells with fills or edges but need not do both, etc. If a puzzle needs several hashes to <b>all</b> be correct, a logic-based validator can easily fill that role.</p>
+        <p>The hashes themselves are easily generated using the designer, which is accessible on any page by pressing <b>Shift + Ctrl + Alt + F12</b>, or in a example by clicking &ldquo;Open in designer&rdquo;. From there make sure the puzzle is selected, enter the Validation section, and click the camera button (📸) for each hash that you need to create.</p>
+        <div class="example with-validation hash">
+            <div class="puzzle-entry advance-horizontal" data-text="NEVER@GONNA@|....@...@..@|NEVER@GONNA@|...@...@...." data-text-advance-on-type="true" data-text-advance-style="wrap" data-text-advance-skip-filled="true" data-text-hashes="d7ac3afa51530825fac54251dd78c88551723e132126403119effc115d6a8d9b" data-show-commands="true"></div>
+        </div>
+        <h2>Logic-based Validation: <code>data-validators</code></h2>
         <p>The format of the <a href="reference-options.html#data-validators"><code>data-validators</code></a> property is a space-delimited set of validator names; these can be built-in validators or custom validators. The <code>validators</code> folder contains the built-in validators; if the name of the validator ends in .js, it will be interpreted as a page-relative path for a custom validator whose name is the filename minus the extension.</p>
         <p>Some validators take an optional parameter, which can be specified after the validator name with a <code>|</code> separator.</p>
-        <div class="example with-validation">
+        <div class="example with-validation logic">
             <div class="puzzle-entry" data-text="4x4" data-text-characters="1234" data-top-clues="1|2|3|4" data-outer-clue-checks="true" data-validators="text-unique-in-row text-unique-in-column reference-set-all-outer-checks.js|pass"></div>
         </div>
-        <h2>Built-in Validators</h2>
+        <h2>Built-in Logic-based Validators</h2>
         <p>Many more validators will be written.</p>
         <div class="item" data-name="text-unique-in-row">
             <p>Validates whether the text of any cell is repeated in its row, and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
-            <div class="example with-validation">
+            <div class="example with-validation logic">
                 <div class="puzzle-entry" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-row"></div>
             </div>
         </div>
 
         <div class="item" data-name="text-unique-in-column">
             <p>Validates whether the text of any cell is repeated in its column, and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
-            <div class="example with-validation">
+            <div class="example with-validation logic">
                 <div class="puzzle-entry" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-column"></div>
             </div>
         </div>
 
         <div class="item" data-name="text-unique-in-region">
             <p>Validates whether the text of any cell is repeated in its region (any shape bounded by edges), and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
-            <div class="example with-validation">
+            <div class="example with-validation logic">
                 <div class="puzzle-entry" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-region"></div>
             </div>
         </div>
 
         <div class="item" data-name="text-math-in-region">
             <p>Validates whether the values in a region (any shape bounded by edges) can be mathematically combined to match a value provided by a clue within the region. If the clue provides an operator (+, -, x, or /), that operator must be used; otherwise, any one of the four operators can be used.</p>
-            <div class="example with-validation">
+            <div class="example with-validation logic">
                 <div class="puzzle-entry" data-text="4x4" data-edges="2x1" data-text-characters="1234" data-text-avoid-position="top" data-clue-locations="all" data-clue-indicators="3+  1-  6x  4/  4  5  1  8" data-validators="text-math-in-region"></div>
             </div>
         </div>
         
         <div class="item" data-name="fill-spans-from-outer-clues">
             <p>Validates whether the outer clues of a puzzle specify the lengths of spans of fills with the same value. Currently, the only fill value checked is the second one ("black"), but this will be extended in the future. If <a href="reference-options.html#data-outer-clue-checks"><code>data-outer-clue-checks</code></a> is set to true, then indicators will be added to the edges of the grid to confirm success or highlight errors.</p>
-            <div class="example with-validation">
+            <div class="example with-validation logic">
                 <div class="puzzle-entry paint-by-numbers-example" data-show-commands="true" data-text="10x10" data-edges="5x5" data-mode="notext" data-outer-clue-checks="true" data-validators="fill-spans-from-outer-clues" data-fill-classes="lightgray black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
             </div>
         </div>
         
-        <h2>Validator Structure</h2>
+        <h2>Logic-based Validator Structure</h2>
         <p>This is an extremely simple validator that marks the outer clue checks to pass or fail. It should be in its own file named <code>reference-set-all-outer-checks.js</code>; the script tag here is just to fit it into the documentation.</p>
         <div class="example non-interactive">
             <script> <!-- ignore this tag -->

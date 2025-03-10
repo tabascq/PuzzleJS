@@ -53,21 +53,21 @@
         </div>
         <p><b>IMPORTANT NOTE:</b> In order to see paths and edges properly on your local development machine, you need to view your pages via a local webserver. In Visual Studio Code, I am using the &ldquo;Live Server&rdquo; extension with great results.</p>
         <p>From there it's as easy as this!</p>
-        <div class="example with-validation">
+        <div class="example with-validation logic">
             <div class="puzzle-entry" data-mode="sudoku" data-edges="2x2" data-text="#Y.A|.#Y.|.P#.|L.P#" data-text-characters="ALPY" data-extracts="1 2 3 4" data-show-commands="true"></div>
         </div>
         <div class="example">
             <div class="puzzle-entry" data-mode="linear" data-text="####" data-extracts="1 2 3 4"></div>
         </div>
-        <div class="example">
-            <div class="puzzle-entry" data-mode="notext slitherlink" data-text="2.12|10..|..12|32.1" data-show-commands="true"></div>
+        <div class="example with-validation hash">
+            <div class="puzzle-entry" data-mode="notext slitherlink" data-text="2.12|10..|..12|32.1" data-edge-hashes="aa447ead9f4e62ddc14a849a0354ed33f80a5a8ed226f2542b7f92cb69315879" data-show-commands="true"></div>
         </div>
-        <div class="example">
-            <div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="black yellow-laser red-laser" data-fills="1...|..1.|.2..|...2" data-show-commands="true"></div>
+        <div class="example with-validation hash">
+            <div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="black yellow-laser red-laser" data-fills="1...|..1.|.2..|...2" data-path-hashes="4be127b0fedfeee91fb49439a36524768040f0ce42ed33d5c3c9062d68de3a65" data-show-commands="true"></div>
         </div>
-        <div class="example">
+        <div class="example with-validation hash">
             <div style="min-width: 300px">
-    <div class="puzzle-entry" data-mode="wordsearch" data-text="r#bllm|aii#ro|narbe#" data-show-commands="true">
+    <div class="puzzle-entry" data-mode="wordsearch" data-text="r#bllm|aii#ro|narbe#" data-spoke-hashes="220c82e59525511cb273a23c08105fc3c88632a8d29e5d36067c8f18ca6db37f" data-show-commands="true">
         <p style="max-width: 450px; text-align: center;" class="puzzle-toggle-list">Fill in the blanks, then drag Boggle-style paths from letter to letter using each cell exactly once. Can you find <span>BINARY</span>, <span>BRAILLE</span>, and <span>MORSE</span>? Click those words in the previous sentence to mark what you&rsquo;ve found.</p>
     </div>
 </div>
