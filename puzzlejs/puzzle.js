@@ -888,11 +888,12 @@ function PuzzleEntry(p, index) {
             var row = parseInt(parts[1]);
             var col = parseInt(parts[2]);
             if (this.canHaveCornerFocus) {
-                this.setCornerFocusMode();
+                this.setCornerFocusMode(true);
                 this.setActiveGrid(puzzleGrid);
                 this.cornerFocusX = col + (closeRight ? 1 : 0);
                 this.cornerFocusY = row + (closeBottom ? 1 : 0);
                 this.updateCornerFocus();
+                this.cornerFocus.focus();
             }
         }
 
