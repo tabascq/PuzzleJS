@@ -1560,12 +1560,26 @@ function PuzzleEntry(p, index) {
 
     this.prepareToReset = function() { this.puzzleGrids.forEach(g => { g.prepareToReset(); }); }
 
+    this.checkValidationStates = function() {
+        if (this.buildingContents) return;
+
+        var validated = true;
+        var hasValidation = false; 
+        this.puzzleGrids.forEach(g => { if (g.hasValidation) { hasValidation = true; validated &= g.isValidated; }});
+
+        if (hasValidation && validated) {
+            if (!this.container.classList.contains("validated")) { this.container.dispatchEvent(new CustomEvent("puzzlevalidated", { bubbles: true })); }
+            this.container.classList.add("validated");
+        } else { this.container.classList.remove("validated"); }
+    }
+
     this.rebuildContents = function() {
         if (this.commands) { this.commands.remove(); this.commands = null; }
         this.buildContents(true);
     }
 
     this.buildContents = function(rebuild) {
+        this.buildingContents = true;
         this.options = {};
         this.setDataModeOptions(this.container, this.options, true);
         this.readLocalOptions(this.container, this.jsonOptions, this.options);
@@ -1587,6 +1601,9 @@ function PuzzleEntry(p, index) {
             this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { var prompt = this.options["data-reset-prompt"]; if (!prompt || confirm(prompt)) { this.prepareToReset(); window.location.reload(); } });
             this.container.appendChild(this.commands);
         }
+
+        this.buildingContents = false;
+        this.checkValidationStates();
     }
 
     // --- Construct the interactive player. ---
@@ -2108,8 +2125,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             });
         });
 
-        svgChangedElems.forEach(el => { this.updateSvg(el); });
-        changedElems.forEach(el => { if (el.classList.contains("cell")) { this.processTdForCopyjack(el); this.updateLabel(el); } });
+        svgChangedElems.forEach(el => { this.puzzleEntry.puzzleGridFromCell(el).updateSvg(el); });
+        changedElems.forEach(el => { if (el.classList.contains("cell")) { this.puzzleEntry.puzzleGridFromCell(el).processTdForCopyjack(el); this.updateLabel(el); } });
 
         changedGrids.forEach(g => { g.stateDirty = true; g.validate(); });
         if (!this.puzzleEntry.pointerIsDown) { changedGrids.forEach(g => { g.saveState(); }) }
@@ -2472,7 +2489,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     }
 
     this.validate = async function() {
-        var validated = false;
+        var wasValidated = this.isValidated;
+        this.isValidated = false;
 
         if (this.validators) {
             this.container.querySelectorAll(".validate-fail").forEach(c => { c.classList.remove("validate-fail"); });
@@ -2489,39 +2507,36 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 else if (validatorFn) { result = Math.min(result, validatorFn(wrapper, parts[1])); }
             });
 
-            validated = (result == 1);
+            this.isValidated = (result == 1);
         }
 
         if (this.options["data-text-hashes"]) {
             var currentHash = await this.getTextHash();
-            if (this.options["data-text-hashes"].split(" ").includes(currentHash)) { validated = true; }
+            if (this.options["data-text-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
         }
 
         if (this.options["data-fill-hashes"]) {
             var currentHash = await this.getFillHash();
-            if (this.options["data-fill-hashes"].split(" ").includes(currentHash)) { validated = true; }
+            if (this.options["data-fill-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
         }
 
         if (this.options["data-edge-hashes"]) {
             var currentHash = await this.getEdgeHash();
-            if (this.options["data-edge-hashes"].split(" ").includes(currentHash)) { validated = true; }
+            if (this.options["data-edge-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
         }
 
         if (this.options["data-path-hashes"]) {
             var currentHash = await this.getPathHash();
-            if (this.options["data-path-hashes"].split(" ").includes(currentHash)) { validated = true; }
+            if (this.options["data-path-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
         }
 
         if (this.options["data-spoke-hashes"]) {
             var currentHash = await this.getSpokeHash();
-            if (this.options["data-spoke-hashes"].split(" ").includes(currentHash)) { validated = true; }
+            if (this.options["data-spoke-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
         }
 
-        if (this.puzzleEntry.puzzleGrids.length == 1) {
-            if (validated) {
-                this.puzzleEntry.container.classList.add("validated");
-                this.puzzleEntry.container.dispatchEvent(new CustomEvent("puzzlevalidated", { bubbles: true }));
-            } else { this.puzzleEntry.container.classList.remove("validated"); }
+        if (this.isValidated != wasValidated) {
+            this.puzzleEntry.checkValidationStates();
         }
     }
 
@@ -2626,6 +2641,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
 
         if (!this.doGrid) return;
+
+        this.hasValidation = this.options["data-validators"] || this.options["data-text-hashes"] || this.options["data-fill-hashes"] || this.options["data-edge-hashes"] || this.options["data-path-hashes"] || this.options["data-spoke-hashes"];
 
         this.fillClasses = puzzleEntry.getOptionArray(this.options, "data-fill-classes", " ");
         this.extraStyleClasses = puzzleEntry.getOptionArray(this.options, "data-extra-style-classes", " ");

@@ -57,9 +57,10 @@
         <h2>Overview</h2>
         <p>Many puzzles benefit from some kind of answer verification, or confirmation that the puzzle rules are/are not being followed. In puzzle.js, validation performs this service. There are two types: logic-based and hash-based.</p>
         <ul>
-            <li><b>Hash-based validation</b> is accomplished by checking the entire state of the grid for a single feature: text, fill, edge, path, or spoke.<br/>A puzzle is deemed to be solved if <b>any</b> hash-based validation results in success.</li>
-            <li><b>Logic-based validation</b> is accomplished by reasoning over the grid as a whole. A logic puzzle with several rules might have a logic-based validator for each rule, where the validator checks that the rule has been followed and optionally highlights where it hasn't. Puzzle.js has a growing library of built-in logic validators, and custom validators are also supported.<br/>A puzzle is deemed to be solved if <b>all</b> logic-based validation results in success.</li>
+            <li><b>Hash-based validation</b> is accomplished by checking the entire state of the grid for a single feature: text, fill, edge, path, or spoke.<br/>A grid is deemed to be solved if <b>any</b> hash-based validation results in success.</li>
+            <li><b>Logic-based validation</b> is accomplished by reasoning over the grid as a whole. A logic puzzle with several rules might have a logic-based validator for each rule, where the validator checks that the rule has been followed and optionally highlights where it hasn't. Puzzle.js has a growing library of built-in logic validators, and custom validators are also supported.<br/>A grid is deemed to be solved if <b>all</b> logic-based validation results in success.</li>
         </ul>
+        <p>A <code>puzzle-entry</code> can have several <code>puzzle-grid</code>s in it, some of which have a form of validation and some of which do not. The overall puzzle is considered to be validated if at least one grid supports validation, and if all grids that support validation are validated.</p>
         <p><b>This feature is in beta</b>, and many validator components still need to be written. <b>For now, the use of validators is opt-in</b> until the feature is more mature. You can opt in by setting <code>data-validators-beta-opt-in="true"</code> on your page&rsquo;s <code>body</code> tag.</p>
         <h2>Hash-based Validation: <code>data-*-hashes</code></h2>
         <p>There are five hash-based properties, and they all work the same way:</p>
