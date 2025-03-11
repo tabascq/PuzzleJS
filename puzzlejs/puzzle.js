@@ -1923,7 +1923,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             if (this.screenreaderSupported) { td.ariaLabel = clues[clueIndex] + ": A clue in the " + zone + " clue area"; }
             td.textContent = clues[clueIndex];
             td.classList.add(zone + "-clue");
-            td.addEventListener("pointerdown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else if (e.shiftKey) { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
+            td.addEventListener("pointerdown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
             td.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
         } else { td.classList.add("unselectable"); if (this.screenreaderSupported) { td.ariaLabel = "An empty clue in the " + zone + " area"; } }
 
