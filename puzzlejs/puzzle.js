@@ -87,6 +87,7 @@ puzzleModes["default"] = {
 
 puzzleModes["linear"] = {
     "data-text-advance-on-type": true,
+    "data-text-advance-style": "wrap",
     "data-text-advance-skip-filled" : true,
     "data-unselectable-givens": true
 }
@@ -2578,7 +2579,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     this.rebuildContents = function() {
         if (this.grid) {
             this.container.removeChild(this.container.firstChild);
-            if (this.isUsingCopyjack) { this.container.removeChild(this.container.firstChild); }
+            if (this.puzzleEntry.isUsingCopyjack) { this.container.removeChild(this.container.firstChild); }
             this.grid = null;
         }
         this.buildContents();
