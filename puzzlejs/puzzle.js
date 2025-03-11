@@ -61,6 +61,7 @@ puzzleModes["default"] = {
     // validation
     "data-validators": null,
     "data-outer-clue-checks": false,
+    "data-hash-salt": "PuzzleJS",
     "data-text-hashes" : null,
     "data-fill-hashes" : null,
     "data-edge-hashes" : null,
@@ -2525,7 +2526,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     this.getSHA256Hash = async function(input, secondary) {
         if (secondary) { input = input.reverse(); }
 
-        const textAsBuffer = new TextEncoder().encode(input);
+        const textAsBuffer = new TextEncoder().encode(this.options["data-hash-salt"] + input);
         const hashBuffer = await window.crypto.subtle.digest("SHA-256", textAsBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hash = hashArray
