@@ -298,7 +298,7 @@ function PuzzleDesigner() {
 
     this.updateExport = function() {
         var element = this.puzzleGrid.isRootGrid ? this.puzzleGrid.puzzleEntry.container : this.puzzleGrid.container;
-        var result = `<div class="${element.className.replace(" loaded", "")}"`;
+        var result = `<div class="${element.className.replace(" loaded", "").replace(" advance-horizontal", "").replace(" advance-vertical", "").replace(" validated", "")}"`;
 
         for (const [key, value] of Object.entries(this.properties)) {
             if (element.hasAttribute(key)) { result += ` ${key}="${element.getAttribute(key)}"`; }
