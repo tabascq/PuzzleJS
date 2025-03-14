@@ -140,10 +140,17 @@ puzzleModes["nonogram"] = {
     "data-validators": "fill-spans-from-outer-clues"
 }
 
+puzzleModes["nurikabe"] = {
+    "data-fill-classes": "lightgray black white",
+    "data-text-characters": "",
+    "data-validators": "fill-no-2x2 fill-single-group|1 fill-group-size-in-text|2"
+}
+
 puzzleModes["pathpaint"] = {
     "data-path-style": "curved",
     "data-drag-draw-path": true,
-    "data-fill-cycle": false
+    "data-fill-cycle": false,
+    "data-validators": "path-connects-size path-interior-no-text path-touches-all-text"
 }
 
 puzzleModes["trains"] = {
@@ -2133,10 +2140,21 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     }
 
     function CellWrapper(puzzleGrid, cell) {
+        this.id = function() { return cell.id; }
         this.text = function() { return cell.querySelector(".text").innerText.trim(); }
         this.hasCandidates = function() { return cell.classList.contains("small-text") && puzzleGrid.options["data-text-shift-key"] == "candidates"; }
         this.clueLabel = function() { var label = cell.querySelector(".clue-label"); return label ? label.innerText.trim() : ""; }
-        this.fill = function() { return puzzleGrid.puzzleEntry.findClassInList(cell, puzzleGrid.fillClasses); }
+        this.fillClass = function() { return puzzleGrid.puzzleEntry.findClassInList(cell, puzzleGrid.fillClasses); }
+        this.fillIndex = function() { return puzzleGrid.fillClasses.indexOf(this.fillClass()); }
+        this.pathDirections = function() {
+            var result = [];
+            var pathCode = cell.getAttribute("data-path-code") ?? 0;
+            if (pathCode & 1) { result.push("up"); }
+            if (pathCode & 2) { result.push("down"); }
+            if (pathCode & 4) { result.push("left"); }
+            if (pathCode & 8) { result.push("right"); }
+            return result;
+        }
         this.fail = function() { cell.classList.add("validate-fail"); }
         this.pass = function() { cell.classList.add("validate-pass"); }
     }
@@ -2170,7 +2188,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.getRegions = function() {
             var floodAndCollectRegion = function(puzzleGrid, row, col, region) {
                 var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
-                if (seen.has(cell.id)) return;
+                if (!cell || seen.has(cell.id)) return;
         
                 seen.add(cell.id);
                 region.push(new CellWrapper(puzzleGrid, cell));
@@ -2195,6 +2213,113 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             return result;
         }
 
+        this.getFillGroups = function() {
+            var floodAndCollectFillGroup = function(puzzleGrid, row, col, fillGroup) {
+                var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                if (!cell) return;
+
+                var fillClass = puzzleGrid.puzzleEntry.findClassInList(cell, puzzleGrid.fillClasses);
+                var fillIndex = puzzleGrid.fillClasses.indexOf(fillClass);
+
+                if (fillIndex == 0) { fillGroup.complete = false; }
+                if (seen.has(cell.id)) return;
+                if (fillGroup.cells.length == 0) { fillGroup.fillClass = fillClass; fillGroup.fillIndex = fillIndex; }
+                if (fillIndex != fillGroup.fillIndex) return;
+        
+                seen.add(cell.id);
+                fillGroup.cells.push(new CellWrapper(puzzleGrid, cell));
+        
+                if (row > 0) { floodAndCollectFillGroup(puzzleGrid, row - 1, col, fillGroup); }
+                if (row < puzzleGrid.numRows - 1) { floodAndCollectFillGroup(puzzleGrid, row + 1, col, fillGroup); }
+                if (col > 0) { floodAndCollectFillGroup(puzzleGrid, row, col - 1, fillGroup); }
+                if (col < puzzleGrid.numCols - 1) { floodAndCollectFillGroup(puzzleGrid, row, col + 1, fillGroup); }
+            }
+
+            var result = [];
+            var seen = new Set();
+        
+            for (var row = 0; row < puzzleGrid.numRows; row++) {
+                for (var col = 0; col < puzzleGrid.numCols; col++) {
+                    var fillGroup = { complete: true, cells: [] };
+                    floodAndCollectFillGroup(puzzleGrid, row, col, fillGroup);
+                    if (fillGroup.cells.length != 0) {
+                        result.push(fillGroup);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        this.getPathGroups = function() {
+            var linksFromCode = function(pathCode) {
+                var numLinks = 0;
+                pathCode = pathCode ? parseInt(pathCode) : 0;
+                while (pathCode) { numLinks++; pathCode &= (pathCode - 1); }
+                return numLinks;
+            }
+
+            var floodAndCollectPathGroup = function(puzzleGrid, row, col, path) {
+                var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                if (!cell) return;
+                if (seen.has(cell.id)) return;
+                var pathCode = cell.getAttribute("data-path-code");
+                if (!pathCode) return;
+        
+                seen.add(cell.id);
+                path.cells.push(new CellWrapper(puzzleGrid, cell));
+        
+                if (row > 0 && (pathCode & 1)) { floodAndCollectPathGroup(puzzleGrid, row - 1, col, path); }
+                if (row < puzzleGrid.numRows - 1 && (pathCode & 2)) { floodAndCollectPathGroup(puzzleGrid, row + 1, col, path); }
+                if (col > 0 && (pathCode & 4)) { floodAndCollectPathGroup(puzzleGrid, row, col - 1, path); }
+                if (col < puzzleGrid.numCols - 1 && (pathCode & 8)) { floodAndCollectPathGroup(puzzleGrid, row, col + 1, path); }
+            }
+
+            var result = [];
+            var seen = new Set();
+        
+            // first get webs, which contain at least one cell with 3+ paths
+            for (var row = 0; row < puzzleGrid.numRows; row++) {
+                for (var col = 0; col < puzzleGrid.numCols; col++) {
+                    var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                    if (!cell || linksFromCode(cell.getAttribute("data-path-code")) < 3) continue;
+                    var path = { type: "web", cells: [] };
+                    floodAndCollectPathGroup(puzzleGrid, row, col, path);
+                    if (path.cells.length != 0) {
+                        result.push(path);
+                    }
+                }
+            }
+
+            // then get segments - any loose end is now a segment and will be collected endpoint-to-endpoint
+            for (var row = 0; row < puzzleGrid.numRows; row++) {
+                for (var col = 0; col < puzzleGrid.numCols; col++) {
+                    var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                    if (!cell || linksFromCode(cell.getAttribute("data-path-code")) != 1) continue;
+                    var path = { type: "segment", cells: [] };
+                    floodAndCollectPathGroup(puzzleGrid, row, col, path);
+                    if (path.cells.length != 0) {
+                        result.push(path);
+                    }
+                }
+            }
+
+            // anything left is a loop or unused
+            for (var row = 0; row < puzzleGrid.numRows; row++) {
+                for (var col = 0; col < puzzleGrid.numCols; col++) {
+                    var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                    if (!cell || linksFromCode(cell.getAttribute("data-path-code")) != 2) continue;
+                    var path = { type: "loop", cells: [] };
+                    floodAndCollectPathGroup(puzzleGrid, row, col, path);
+                    if (path.cells.length != 0) {
+                        result.push(path);
+                    }
+                }
+            }
+
+            return result;
+        }
+
         this.getOuterChecks = function(side) {
             var result = [];
 
@@ -2208,6 +2333,12 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
 
         this.getOption = function(optionName) { return puzzleGrid.options[optionName]; }
+
+        this.getTextHash = function(secondary) { return puzzleGrid.getTextHash(secondary); }
+        this.getFillHash = function(secondary) { return puzzleGrid.getFillHash(secondary); }
+        this.getEdgeHash = function(secondary) { return puzzleGrid.getEdgeHash(secondary); }
+        this.getPathHash = function(secondary) { return puzzleGrid.getPathHash(secondary); }
+        this.getSpokeHash = function(secondary) { return puzzleGrid.getSpokeHash(secondary); }
     }
 
     this.addEdgeToSvg = function(svg, edgeName) {

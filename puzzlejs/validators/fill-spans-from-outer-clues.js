@@ -2,13 +2,13 @@
 // Currently only works for 2-color nonograms, but will be expanded in the future.
 
 puzzleValidators["fill-spans-from-outer-clues"] = function(puzzleGrid, param) {
-    var checkLine = function(fillClasses, targetFillIndex, check, line, clues) {
+    var checkLine = function(targetFillIndex, check, line, clues) {
         var counts = [];
         var lastIndex = 0;
         var noUnknowns = true;
 
         line.forEach(cell => {
-            var fillIndex = fillClasses.indexOf(cell.fill());
+            var fillIndex = cell.fillIndex();
 
             if (fillIndex == 0) { noUnknowns = false;}
             else if (fillIndex == targetFillIndex) { if (fillIndex == lastIndex) { counts[counts.length-1]++; } else { counts.push(1); } }
@@ -36,14 +36,14 @@ puzzleValidators["fill-spans-from-outer-clues"] = function(puzzleGrid, param) {
         return result;
     }
 
-    var checkSide = function(fillClasses, sideName, targetFillIndex) {
+    var checkSide = function(sideName, targetFillIndex) {
         var result = 1;
         if (puzzleGrid.getOption(`data-${sideName}-clues`)) {
             var clues = puzzleGrid.getOption(`data-${sideName}-clues`).split("|");
             var lines = (sideName == "top" || sideName == "bottom") ? puzzleGrid.getColumns() : puzzleGrid.getRows();
             var checks = puzzleGrid.getOuterChecks(sideName);
             for (var i = 0; i < lines.length; i++) {
-                result = Math.min(result, checkLine(fillClasses, targetFillIndex, checks ? checks[i] : null, lines[i], clues[i]));
+                result = Math.min(result, checkLine(targetFillIndex, checks ? checks[i] : null, lines[i], clues[i]));
             }
         }
 
@@ -51,12 +51,11 @@ puzzleValidators["fill-spans-from-outer-clues"] = function(puzzleGrid, param) {
     }
 
     var result = 1;
-    var fillClasses = puzzleGrid.getOption("data-fill-classes").split(" ");
     
     // TODO: someday acquire targetFillIndex from param (if present) so different directions can target different colors
-    result = Math.min(result, checkSide(fillClasses, "top", 1));
-    result = Math.min(result, checkSide(fillClasses, "bottom", 1));
-    result = Math.min(result, checkSide(fillClasses, "left", 1));
-    result = Math.min(result, checkSide(fillClasses, "right", 1));
+    result = Math.min(result, checkSide("top", 1));
+    result = Math.min(result, checkSide("bottom", 1));
+    result = Math.min(result, checkSide("left", 1));
+    result = Math.min(result, checkSide("right", 1));
     return result;
 };

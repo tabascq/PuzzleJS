@@ -58,9 +58,9 @@
         <p>Many puzzles benefit from some kind of answer verification, or confirmation that the puzzle rules are/are not being followed. In puzzle.js, validation performs this service. There are two types: logic-based and hash-based.</p>
         <ul>
             <li><b>Hash-based validation</b> is accomplished by checking the entire state of the grid for a single feature: text, fill, edge, path, or spoke.<br/>A grid is deemed to be solved if <b>any</b> hash-based validation results in success.</li>
-            <li><b>Logic-based validation</b> is accomplished by reasoning over the grid as a whole. A logic puzzle with several rules might have a logic-based validator for each rule, where the validator checks that the rule has been followed and optionally highlights where it hasn't. Puzzle.js has a growing library of built-in logic validators, and custom validators are also supported.<br/>A grid is deemed to be solved if <b>all</b> logic-based validation results in success.</li>
+            <li><b>Logic-based validation</b> is accomplished by reasoning over the grid as a whole. A logic puzzle with several rules might have a logic-based validator for each rule, where the validator checks that the rule has been followed and optionally highlights where it hasn&rsquo;t. Puzzle.js has a growing library of built-in logic validators, and custom validators are also supported.<br/>A grid is deemed to be solved if <b>all</b> logic-based validation results in success.</li>
         </ul>
-        <p>A <code>puzzle-entry</code> can have several <code>puzzle-grid</code>s in it, some of which have a form of validation and some of which do not. The overall puzzle is considered to be validated if at least one grid supports validation, and if all grids that support validation are validated.</p>
+        <p>A <code>puzzle-entry</code> can have several instances of <code>puzzle-grid</code> in it, some of which have a form of validation and some of which do not. The overall puzzle is considered to be validated if at least one grid supports validation, and if all grids that support validation are validated.</p>
         <p><b>This feature is in beta</b>, and many validator components still need to be written. <b>For now, the use of validators is opt-in</b> until the feature is more mature. You can opt in by setting <code>data-validators-beta-opt-in="true"</code> on your page&rsquo;s <code>body</code> tag.</p>
         <h2>Hash-based Validation: <code>data-*-hashes</code></h2>
         <p>There are five hash-based properties, and they all work the same way:</p>
@@ -83,7 +83,7 @@
             <div class="puzzle-entry" data-text="4x4" data-text-characters="1234" data-top-clues="1|2|3|4" data-outer-clue-checks="true" data-validators="text-unique-in-row text-unique-in-column reference-set-all-outer-checks.js|pass"></div>
         </div>
         <h2>Built-in Logic-based Validators</h2>
-        <p>Many more validators will be written.</p>
+        <p style="color: red">Many more validators will be written.</p>
         <div class="item" data-name="text-unique-in-row">
             <p>Validates whether the text of any cell is repeated in its row, and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
             <div class="example with-validation logic">
@@ -112,10 +112,68 @@
             </div>
         </div>
         
+        <div class="item" data-name="fill-group-size-in-text">
+            <p>Validates whether a contiguously-connected group of cells, all with the same fill, has the size of its group in a single text field. Highlights errors if the size is too large, and only reports success if there are no unresolved neighbors.</p>
+            <ul>
+                <li><code>param</code> Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to validate.</li>
+            </ul>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="....|.5..|....|...." data-mode="notext" data-validators="fill-group-size-in-text|2" data-fill-classes="lightgray black white" data-fills="....|.2..|....|...."></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="fill-no-2x2">
+            <p>Validates whether there are no 2x2 regions with the same fill.</p>
+            <ul>
+                <li><code>param</code> Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to validate.</li>
+            </ul>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="fill-no-2x2|1" data-fill-classes="lightgray black white"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="fill-single-group">
+            <p>Validates whether there is a single contiguously-connected group of cells, all with the same fill. Only highlights errors if at least one group has no unresolved neighbors.</p>
+            <ul>
+                <li><code>param</code> Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to validate.</li>
+            </ul>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="fill-single-group|1" data-fill-classes="lightgray black white"></div>
+            </div>
+        </div>
+        
         <div class="item" data-name="fill-spans-from-outer-clues">
             <p>Validates whether the outer clues of a puzzle specify the lengths of spans of fills with the same value. Currently, the only fill value checked is the second one ("black"), but this will be extended in the future. If <a href="reference-options.html#data-outer-clue-checks"><code>data-outer-clue-checks</code></a> is set to true, then indicators will be added to the edges of the grid to confirm success or highlight errors.</p>
             <div class="example with-validation logic">
-                <div class="puzzle-entry paint-by-numbers-example" data-show-commands="true" data-text="10x10" data-edges="5x5" data-mode="notext" data-outer-clue-checks="true" data-validators="fill-spans-from-outer-clues" data-fill-classes="lightgray black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="10x10" data-edges="5x5" data-mode="notext" data-outer-clue-checks="true" data-validators="fill-spans-from-outer-clues" data-fill-classes="lightgray black white" data-top-clues="5|2 1|2 3|2 1 3|5 1|1 5|3 1 2|3 2|1 2|5" data-left-clues="5|5 2|1 4|1 1 2|2 2|2 2|2 1 1|4 1|2 5|5"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="path-connects-equal-text">
+            <p>Validates whether all paths connect cells with the same value. Only highlights errors if a path is not a line segment, or if both ends of the line segment are on cells with different text.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-connects-equal-text" data-drag-draw-path="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="path-connects-size">
+            <p>Validates whether all paths connect cells with the same value, whose value is the length of the path. Only highlights errors if a path is not a line segment, or if both ends of the line segment are on cells whose text does not equal the path length.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-connects-size" data-drag-draw-path="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="path-interior-no-text">
+            <p>Validates whether all paths avoid any interior text other than at their endpoints.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-interior-no-text" data-drag-draw-path="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="path-touches-all-text">
+            <p>Validates whether all cells with text also contain a component of a path.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-touches-all-text" data-drag-draw-path="true"></div>
             </div>
         </div>
         
@@ -154,12 +212,30 @@
             <div class="puzzle-entry" data-text="3x3" data-top-clues="1 2||3" data-left-clues="1 2||3" data-outer-clue-checks="true" data-validators="reference-set-all-outer-checks.js|pass"></div>
         </div>
         <h2>Validator API: puzzleGrid</h2>
-        <p>Many more functions will be written here, covering the full functionality of PuzzleJS.</p>
+        <p style="color: red">Many more functions will be written here, covering the full functionality of PuzzleJS.</p>
         <div class="item" data-name="getRows">
             <p>Gets all cells in the grid, grouped into rows.</p>
         </div>
         <div class="item" data-name="getColumns">
             <p>Gets all cells in the grid, grouped into columns.</p>
+        </div>
+        <div class="item" data-name="getFillGroups">
+            <p>Gets all connected groups of cells with the same fill.</p>
+            <p>A fill group has the following properties:</p>
+            <ul>
+                <li><code>cells</code>: An array of cells in this group.</li>
+                <li><code>complete</code>: True if none of the cells contiguous to the group have a default fill, false otherwise.</li>
+                <li><code>fillClass</code>: The name of the fill class (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) that the cells in this group share.</li>
+                <li><code>fillIndex</code>: The index of the fill class (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) that the cells in this group share.</li>
+            </ul>
+        </div>
+        <div class="item" data-name="getPathGroups">
+            <p>Gets all groups of cells connectd by paths.</p>
+            <p>A path group has the following properties:</p>
+            <ul>
+                <li><code>cells</code>: An array of cells in this group.</li>
+                <li><code>type</code>: A classification of the path. If the value is <code>"segment"</code>, then the cells are in sequence from one endpoint to the other. If the value is <code>"loop"</code>, then the cells are in sequence with no particular starting point. If the value is <code>"web"</code>, then the group contains at least one junction with more than two path routes leading out, and is therefore too complex to make connectivity assertions based on the array alone.</li>
+            </ul>
         </div>
         <div class="item" data-name="getRegions">
             <p>Gets all cells in the grid, grouped into regions (shapes bounded by edges).</p>
@@ -167,41 +243,78 @@
         <div class="item" data-name="getOuterChecks">
             <p>Gets all outer checks on a specific side of the grid. Does not get the values of the outer clues themselves; <code>getOption</code> can beused for that.</p>
             <ul>
-                <li>side: Which side of the grid to retrieve outer checks for.</li>
+                <li><code>side</code> Which side of the grid to retrieve outer checks for.</li>
+            </ul>
+            <p>An outer check has the following functions:</p>
+            <ul>
+                <li><code>fail</code>: Marks the outer check as having failed.</li>
+                <li><code>pass</code>: Marks the outer check as having passed.</li>
             </ul>
         </div>
         <div class="item" data-name="getOption">
             <p>Gets the value of a specific option, after all mode/inheritance rules are applied.</p>
             <ul>
-                <li>optionName: the name of the option.</li>
+                <li><code>optionName</code>: the name of the option.</li>
+            </ul>
+        </div>
+        <div class="item" data-name="getTextHash">
+            <p>Gets the hash of the puzzle text.</p>
+            <ul>
+                <li><code>secondary</code>: if false, uses the same hashing scheme that <a href="reference-options.html#data-text-hashes"><code>data-text-hashes</code></a> would use. If true, uses a different hashing scheme to produce a value not seen elsewhere in markup, and thus good for use in filenames on the server that can be accessed as a reward.</li>
+            </ul>
+        </div>
+        <div class="item" data-name="getFillHash">
+            <p>Gets the hash of the puzzle fills.</p>
+            <ul>
+                <li><code>secondary</code>: if false, uses the same hashing scheme that <a href="reference-options.html#data-fill-hashes"><code>data-fill-hashes</code></a> would use. If true, uses a different hashing scheme to produce a value not seen elsewhere in markup, and thus good for use in filenames on the server that can be accessed as a reward.</li>
+            </ul>
+        </div>
+        <div class="item" data-name="getEdgeHash">
+            <p>Gets the hash of the puzzle edges.</p>
+            <ul>
+                <li><code>secondary</code>: if false, uses the same hashing scheme that <a href="reference-options.html#data-edge-hashes"><code>data-edge-hashes</code></a> would use. If true, uses a different hashing scheme to produce a value not seen elsewhere in markup, and thus good for use in filenames on the server that can be accessed as a reward.</li>
+            </ul>
+        </div>
+        <div class="item" data-name="getPathHash">
+            <p>Gets the hash of the puzzle paths.</p>
+            <ul>
+                <li><code>secondary</code>: if false, uses the same hashing scheme that <a href="reference-options.html#data-path-hashes"><code>data-path-hashes</code></a> would use. If true, uses a different hashing scheme to produce a value not seen elsewhere in markup, and thus good for use in filenames on the server that can be accessed as a reward.</li>
+            </ul>
+        </div>
+        <div class="item" data-name="getSpokeHash">
+            <p>Gets the hash of the puzzle spokes.</p>
+            <ul>
+                <li><code>secondary</code>: if false, uses the same hashing scheme that <a href="reference-options.html#data-spoke-hashes"><code>data-spoke-hashes</code></a> would use. If true, uses a different hashing scheme to produce a value not seen elsewhere in markup, and thus good for use in filenames on the server that can be accessed as a reward.</li>
             </ul>
         </div>
         <h2>Validator API: cell</h2>
-        <p>Many more functions will be written here, covering the full functionality of PuzzleJS.</p>
+        <p style="color: red">Many more functions will be written here, covering the full functionality of PuzzleJS.</p>
+        <div class="item" data-name="id">
+            <p>Gets the DOM id of the cell, which is unique within the puzzleGrid.</p>
+        </div>
         <div class="item" data-name="text">
             <p>Gets the text in the middle of the cell.</p>
         </div>
         <div class="item" data-name="hasCandidates">
-            <p>True if the cell has oneor more candidate values (typed using the Shift key); false otherwise.</p>
+            <p>Gets true if the cell has oneor more candidate values (typed using the Shift key); false otherwise.</p>
         </div>
         <div class="item" data-name="clueLabel">
-            <p>The text of the inner clue on the cell, if any.</p>
+            <p>Gets the text of the inner clue on the cell, if any.</p>
         </div>
-        <div class="item" data-name="fill">
-            <p>The name of the class that represents the fill of the cell.</p>
+        <div class="item" data-name="fillClass">
+            <p>Gets the name of the class that represents the fill of the cell.</p>
+        </div>
+        <div class="item" data-name="fillIndex">
+            <p>Gets the index of the class that represents the fill of the cell, within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>.</p>
+        </div>
+        <div class="item" data-name="pathDirections">
+            <p>Gets an array with a value for each direction a path takes within the cell. Values can be <code>"up"</code>, <code>"down"</code>, <code>"left"</code>, or <code>"right"</code>.</p>
         </div>
         <div class="item" data-name="pass">
             <p>Marks the cell as having passed.</p>
         </div>
         <div class="item" data-name="fail">
             <p>Marks the cell as having failed.</p>
-        </div>
-        <h2>Validator API: outerCheck</h2>
-        <div class="item" data-name="pass">
-            <p>Marks the outer check as having passed.</p>
-        </div>
-        <div class="item" data-name="fail">
-            <p>Marks the outer check as having failed.</p>
         </div>
     </body>
 </html>

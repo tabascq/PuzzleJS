@@ -210,8 +210,8 @@
     text-shadow: none;
 }
 
-.puzzle-entry td.inner-cell.validate-fail {
-    background: #ff8080;
+.puzzle-entry td.inner-cell.validate-fail .text {
+    background: #ff808080;
 }
 
 .puzzle-entry td.inner-cell.validate-fail:not(.given-text) {
