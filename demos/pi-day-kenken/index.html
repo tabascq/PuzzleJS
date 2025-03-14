@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pi Day KenKen</title>
+    <link rel="stylesheet" href="../../puzzlejs/reference/reference-example.css"/>
+    <script type="text/javascript" src="../../puzzlejs/reference/reference-example.js"></script>
+    <link rel="stylesheet" href="../pd2023/base-styles.css">
+    <link rel="stylesheet" href="../pd2023/print-styles.css" media="print">
+    <link rel="stylesheet" href="../../puzzlejs/puzzle.css">
+    <link rel="stylesheet" href="../../puzzlejs/puzzle-basic-colors.css">
+    <script type="text/javascript" src="../../puzzlejs/puzzle.js"></script>
+    <style>
+        code { background-color: #ddf; }
+        .content-div { font-size: 1rem; }
+        .pi-day-example { --puzzle-cell-size: 60px; }
+        .pi-day-example .cell.yellow .clue-label { font-weight: bold; }
+    </style>
+</head>
+<body data-validators-beta-opt-in="true">
+<div class="page-div">
+    <div class="header-div">
+        <h1>
+            Pi Day KenKen
+            <div class="byline-div">
+                Kenny Y.
+            </div>
+        </h1>
+
+        <div class="divider-div">
+        </div>
+    </div>
+    <div class="content-div">
+        <p>Solve this KenKen where each row and column contains the numbers <b>3, 1, 4, 1, 5, 9, 2, 6</b>. This means that the digit 1 will appear twice in each row and column.</p>
+        <p>This puzzle was created with <a href="../../index.html" target="_blank">PuzzleJS</a>, a framework that lets website authors quickly render interactive puzzles in HTML while retaining control of the visual look.</p>
+        <p>This demo has been added to celebrate both Pi Day and the beginnings of the PuzzleJS <a href="../../puzzlejs/reference/reference-validators.html" target="_blank">validation</a> framework, which contains both hash-based validation and an extensible mechanism for logic-based validation against the rules of the puzzle.</p>
+        <p>For the puzzle below, the <code>kenken</code> mode automatically adds <code>data-validators="text-unique-in-row text-unique-in-column text-math-in-region"</code> (though this can be overriden if desired) and the duplicate 1 is permitted/enforced because it appears twice in <code>data-text-characters="31415926"</code>.</p>
+
+        <div class="example vertical with-validation logic">
+            <div class="puzzle-entry pi-day-example" data-mode="kenken" data-text="8x8" data-text-characters="31415926" data-extra-style-classes="white yellow" data-extra-styles="11111111|..1..1..|..1..1..|..1..1..|..1..1..|..1..1.1|.11..1.1|.11..111" data-edges="51111119|5155155d|5544044c|44451459|51451459|5145545d|4505444c|7626363a" data-clue-indicators="31        7  41 100  59 8 1 2 4          12   15  20   27   12  90   2 12  2     1     4" data-show-commands="true"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
