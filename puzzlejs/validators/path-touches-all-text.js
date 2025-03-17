@@ -1,4 +1,4 @@
-// Validates whether a path is a single line connecting two equal texts.
+// Validates whether every cell containing text has path connected to it.
 
 puzzleValidators["path-touches-all-text"] = function(puzzleGrid, param) {
     var result = 1;

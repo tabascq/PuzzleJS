@@ -170,10 +170,66 @@
             </div>
         </div>
         
+        <div class="item" data-name="path-touches-all-cells">
+            <p>Validates whether all cells also contain a component of a path.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-touches-all-text" data-drag-draw-path="true"></div>
+            </div>
+        </div>
+        
         <div class="item" data-name="path-touches-all-text">
             <p>Validates whether all cells with text also contain a component of a path.</p>
             <div class="example with-validation logic">
                 <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-touches-all-text" data-drag-draw-path="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="spoke-count-in-text">
+            <p>Validates whether the text in a cell matches the number of spokes leaving the cell.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="210.|10..|0...|...." data-mode="notext" data-validators="spoke-count-in-text" data-drag-draw-spoke="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="spoke-no-x">
+            <p>Validates whether no scopes cross each other (i.e. diagonally).</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="spoke-no-x" data-drag-draw-spoke="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="spoke-sequentially-numbered-segments">
+            <p>Validates whether a chain of cells connected by spokes can be numbered 1..N sequentially, with all givens lining up with cell text.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="....|.24.|....|...." data-mode="notext" data-validators="spoke-sequentially-numbered-segments" data-drag-draw-spoke="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="spoke-single-segment">
+            <p>Validates whether there is a single spoke chain that is not a loop or a web.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="spoke-single-segment" data-drag-draw-spoke="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="spoke-touches-all-cells">
+            <p>Validates whether all cells also contain a component of a spoke.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="spoke-touches-all-cells" data-drag-draw-spoke="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="spoke-touches-all-text">
+            <p>Validates whether all cells with text also contain a component of a spoke.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="spoke-touches-all-text" data-drag-draw-spoke="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="validator-never-pass">
+            <p>Never succeeds; a useful way to borrow failure highlighting logic from some rules, but not allow overall success because not all rules have been written.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="validator-never-pass"></div>
             </div>
         </div>
         
@@ -235,6 +291,15 @@
             <ul>
                 <li><code>cells</code>: An array of cells in this group.</li>
                 <li><code>type</code>: A classification of the path. If the value is <code>"segment"</code>, then the cells are in sequence from one endpoint to the other. If the value is <code>"loop"</code>, then the cells are in sequence with no particular starting point. If the value is <code>"web"</code>, then the group contains at least one junction with more than two path routes leading out, and is therefore too complex to make connectivity assertions based on the array alone.</li>
+            </ul>
+        </div>
+        <div class="item" data-name="getSpokeGroups">
+            <p>Gets all groups of cells connectd by spokes.</p>
+            <p>A spoke group has the following properties:</p>
+            <ul>
+                <li><code>cells</code>: An array of cells in this group.</li>
+                <li><code>level</code>: The level of the spokes in this group. Always 1, unless <a href="reference-options.html#data-spoke-levels"><code>data-spoke-levels</code></a> is set.</li>
+                <li><code>type</code>: A classification of the group. If the value is <code>"segment"</code>, then the cells are in sequence from one endpoint to the other. If the value is <code>"loop"</code>, then the cells are in sequence with no particular starting point. If the value is <code>"web"</code>, then the group contains at least one junction with more than two spoke routes leading out, and is therefore too complex to make connectivity assertions based on the array alone.</li>
             </ul>
         </div>
         <div class="item" data-name="getRegions">
@@ -308,7 +373,13 @@
             <p>Gets the index of the class that represents the fill of the cell, within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>.</p>
         </div>
         <div class="item" data-name="pathDirections">
-            <p>Gets an array with a value for each direction a path takes within the cell. Values can be <code>"up"</code>, <code>"down"</code>, <code>"left"</code>, or <code>"right"</code>.</p>
+            <p>Gets an array with a value for each direction a path takes within the cell. Values can be <code>"top"</code>, <code>"bottom"</code>, <code>"left"</code>, or <code>"right"</code>.</p>
+        </div>
+        <div class="item" data-name="spokeDirections">
+            <p>Gets an array with a value for each direction a spoke takes within the cell. Values can be <code>"top"</code>, <code>"bottom"</code>, <code>"left"</code>, <code>"right"</code>, <code>"top-left"</code>, <code>"top-right"</code>, <code>"bottom-left"</code>, or <code>"bottom-right"</code>.</p>
+            <ul>
+                <li><code>level</code>: if specified, a level of spoke (see <a href="reference-options.html#data-spoke-levels"><code>data-spoke-levels</code></a>). If unspecified, spokes of all levels are returned.</li>
+            </ul>
         </div>
         <div class="item" data-name="pass">
             <p>Marks the cell as having passed.</p>

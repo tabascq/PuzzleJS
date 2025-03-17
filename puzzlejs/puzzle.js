@@ -146,6 +146,14 @@ puzzleModes["nurikabe"] = {
     "data-validators": "fill-no-2x2 fill-single-group|1 fill-group-size-in-text|2"
 }
 
+puzzleModes["hidato"] = {
+    "data-text-characters": "0123456789",
+    "data-text-shift-lock": true,
+    "data-drag-draw-spoke": true,
+    "data-spoke-max-directions": 2,
+    "data-validators": "spoke-touches-all-cells spoke-single-segment spoke-sequentially-numbered-segments"
+}
+
 puzzleModes["pathpaint"] = {
     "data-path-style": "curved",
     "data-drag-draw-path": true,
@@ -166,7 +174,8 @@ puzzleModes["slitherlink"] = {
 }
 
 puzzleModes["spokes"] = {
-    "data-drag-draw-spoke": true
+    "data-drag-draw-spoke": true,
+    "data-validators": "spoke-no-x spoke-count-in-text"
 }
 
 puzzleModes["wordsearch"] = {
@@ -2149,10 +2158,29 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.pathDirections = function() {
             var result = [];
             var pathCode = cell.getAttribute("data-path-code") ?? 0;
-            if (pathCode & 1) { result.push("up"); }
-            if (pathCode & 2) { result.push("down"); }
+            if (pathCode & 1) { result.push("top"); }
+            if (pathCode & 2) { result.push("bottom"); }
             if (pathCode & 4) { result.push("left"); }
             if (pathCode & 8) { result.push("right"); }
+            return result;
+        }
+        this.spokeDirections = function(level) {
+            var result = [];
+            var levels = parseInt(puzzleGrid.options["data-spoke-levels"]);
+            for (var l = 1; l <= levels; l++) {
+                if (level && l != level) continue;
+
+                var spokeCodeName = (l == 1) ? "data-spoke-code" : `data-spoke-${l}-code`;
+                var spokeCode = cell.getAttribute(spokeCodeName) ?? 0;
+                if (spokeCode & 1) { result.push("top"); }
+                if (spokeCode & 2) { result.push("top-right"); }
+                if (spokeCode & 4) { result.push("right"); }
+                if (spokeCode & 8) { result.push("bottom-right"); }
+                if (spokeCode & 16) { result.push("bottom"); }
+                if (spokeCode & 32) { result.push("bottom-left"); }
+                if (spokeCode & 64) { result.push("left"); }
+                if (spokeCode & 128) { result.push("top-left"); }
+            }
             return result;
         }
         this.fail = function() { cell.classList.add("validate-fail"); }
@@ -2187,10 +2215,11 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
         this.getRegions = function() {
             var floodAndCollectRegion = function(puzzleGrid, row, col, region) {
+                var index = row * puzzleGrid.numCols + col;
                 var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
-                if (!cell || seen.has(cell.id)) return;
+                if (!cell || seen[index]) return;
         
-                seen.add(cell.id);
+                seen[index] = true;
                 region.push(new CellWrapper(puzzleGrid, cell));
         
                 if (row > 0 && !(cell.getAttribute("data-edge-code") & 1)) { floodAndCollectRegion(puzzleGrid, row - 1, col, region); }
@@ -2200,7 +2229,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             }
 
             var result = [];
-            var seen = new Set();
+            var seen = [];
         
             for (var row = 0; row < puzzleGrid.numRows; row++) {
                 for (var col = 0; col < puzzleGrid.numCols; col++) {
@@ -2215,6 +2244,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
         this.getFillGroups = function() {
             var floodAndCollectFillGroup = function(puzzleGrid, row, col, fillGroup) {
+                var index = row * puzzleGrid.numCols + col;
                 var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
                 if (!cell) return;
 
@@ -2222,11 +2252,11 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 var fillIndex = puzzleGrid.fillClasses.indexOf(fillClass);
 
                 if (fillIndex == 0) { fillGroup.complete = false; }
-                if (seen.has(cell.id)) return;
+                if (seen[index]) return;
                 if (fillGroup.cells.length == 0) { fillGroup.fillClass = fillClass; fillGroup.fillIndex = fillIndex; }
                 if (fillIndex != fillGroup.fillIndex) return;
         
-                seen.add(cell.id);
+                seen[index] = true;
                 fillGroup.cells.push(new CellWrapper(puzzleGrid, cell));
         
                 if (row > 0) { floodAndCollectFillGroup(puzzleGrid, row - 1, col, fillGroup); }
@@ -2236,7 +2266,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             }
 
             var result = [];
-            var seen = new Set();
+            var seen = [];
         
             for (var row = 0; row < puzzleGrid.numRows; row++) {
                 for (var col = 0; col < puzzleGrid.numCols; col++) {
@@ -2260,61 +2290,112 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             }
 
             var floodAndCollectPathGroup = function(puzzleGrid, row, col, path) {
+                var index = row * puzzleGrid.numCols + col;
                 var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
-                if (!cell) return;
-                if (seen.has(cell.id)) return;
+                if (!cell || seen[index]) return;
                 var pathCode = cell.getAttribute("data-path-code");
                 if (!pathCode) return;
         
-                seen.add(cell.id);
+                seen[index] = true;
                 path.cells.push(new CellWrapper(puzzleGrid, cell));
         
-                if (row > 0 && (pathCode & 1)) { floodAndCollectPathGroup(puzzleGrid, row - 1, col, path); }
-                if (row < puzzleGrid.numRows - 1 && (pathCode & 2)) { floodAndCollectPathGroup(puzzleGrid, row + 1, col, path); }
-                if (col > 0 && (pathCode & 4)) { floodAndCollectPathGroup(puzzleGrid, row, col - 1, path); }
-                if (col < puzzleGrid.numCols - 1 && (pathCode & 8)) { floodAndCollectPathGroup(puzzleGrid, row, col + 1, path); }
+                if (pathCode & 1) { floodAndCollectPathGroup(puzzleGrid, row - 1, col, path); }
+                if (pathCode & 2) { floodAndCollectPathGroup(puzzleGrid, row + 1, col, path); }
+                if (pathCode & 4) { floodAndCollectPathGroup(puzzleGrid, row, col - 1, path); }
+                if (pathCode & 8) { floodAndCollectPathGroup(puzzleGrid, row, col + 1, path); }
+            }
+
+            var addGroupsOfType = function(puzzleGrid, leastLinks, mostLinks, groupType) {
+                for (var row = 0; row < puzzleGrid.numRows; row++) {
+                    for (var col = 0; col < puzzleGrid.numCols; col++) {
+                        var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                        if (!cell) continue;
+                        var links = linksFromCode(cell.getAttribute("data-path-code"));
+                        if (links < leastLinks || links > mostLinks) continue;
+                        var path = { type: groupType, cells: [] };
+                        floodAndCollectPathGroup(puzzleGrid, row, col, path);
+                        if (path.cells.length != 0) {
+                            result.push(path);
+                        }
+                    }
+                }
             }
 
             var result = [];
-            var seen = new Set();
+            var seen = [];
         
             // first get webs, which contain at least one cell with 3+ paths
-            for (var row = 0; row < puzzleGrid.numRows; row++) {
-                for (var col = 0; col < puzzleGrid.numCols; col++) {
-                    var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
-                    if (!cell || linksFromCode(cell.getAttribute("data-path-code")) < 3) continue;
-                    var path = { type: "web", cells: [] };
-                    floodAndCollectPathGroup(puzzleGrid, row, col, path);
-                    if (path.cells.length != 0) {
-                        result.push(path);
-                    }
-                }
-            }
+            addGroupsOfType(puzzleGrid, 3, 4, "web");
 
             // then get segments - any loose end is now a segment and will be collected endpoint-to-endpoint
-            for (var row = 0; row < puzzleGrid.numRows; row++) {
-                for (var col = 0; col < puzzleGrid.numCols; col++) {
-                    var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
-                    if (!cell || linksFromCode(cell.getAttribute("data-path-code")) != 1) continue;
-                    var path = { type: "segment", cells: [] };
-                    floodAndCollectPathGroup(puzzleGrid, row, col, path);
-                    if (path.cells.length != 0) {
-                        result.push(path);
+            addGroupsOfType(puzzleGrid, 1, 1, "segment");
+
+            // anything left is a loop or unused
+            addGroupsOfType(puzzleGrid, 2, 2, "loop");
+
+            return result;
+        }
+
+        this.getSpokeGroups = function() {
+            var linksFromCode = function(spokeCode) {
+                var numLinks = 0;
+                spokeCode = spokeCode ? parseInt(spokeCode) : 0;
+                while (spokeCode) { numLinks++; spokeCode &= (spokeCode - 1); }
+                return numLinks;
+            }
+
+            var floodAndCollectSpokeGroup = function(puzzleGrid, spokeCodeName, row, col, spokeGroup) {
+                var index = row * puzzleGrid.numCols + col;
+                var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                if (!cell || seen[index]) return;
+                var spokeCode = cell.getAttribute(spokeCodeName);
+                if (!spokeCode) return;
+        
+                seen[index] = true;
+                spokeGroup.cells.push(new CellWrapper(puzzleGrid, cell));
+        
+                if (spokeCode & 1) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row - 1, col, spokeGroup); }
+                if (spokeCode & 2) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row - 1, col + 1, spokeGroup); }
+                if (spokeCode & 4) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row, col + 1, spokeGroup); }
+                if (spokeCode & 8) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row + 1, col + 1, spokeGroup); }
+                if (spokeCode & 16) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row + 1, col, spokeGroup); }
+                if (spokeCode & 32) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row + 1, col - 1, spokeGroup); }
+                if (spokeCode & 64) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row, col - 1, spokeGroup); }
+                if (spokeCode & 128) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row - 1, col - 1, spokeGroup); }
+            }
+
+            var addGroupsOfType = function(puzzleGrid, level, leastLinks, mostLinks, groupType) {
+                for (var row = 0; row < puzzleGrid.numRows; row++) {
+                    for (var col = 0; col < puzzleGrid.numCols; col++) {
+                        var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                        if (!cell) continue;
+                        var spokeCodeName = (level == 1) ? "data-spoke-code" : `data-spoke-${level}-code`;
+                        var links = linksFromCode(cell.getAttribute(spokeCodeName));
+                        if (links < leastLinks || links > mostLinks) continue;
+                        var spokeGroup = { level: level, type: groupType, cells: [] };
+                        floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row, col, spokeGroup);
+                        if (spokeGroup.cells.length != 0) {
+                            result.push(spokeGroup);
+                        }
                     }
                 }
             }
 
-            // anything left is a loop or unused
-            for (var row = 0; row < puzzleGrid.numRows; row++) {
-                for (var col = 0; col < puzzleGrid.numCols; col++) {
-                    var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
-                    if (!cell || linksFromCode(cell.getAttribute("data-path-code")) != 2) continue;
-                    var path = { type: "loop", cells: [] };
-                    floodAndCollectPathGroup(puzzleGrid, row, col, path);
-                    if (path.cells.length != 0) {
-                        result.push(path);
-                    }
-                }
+            var result = [];
+            var seen;
+        
+            var levels = parseInt(puzzleGrid.options["data-spoke-levels"]);
+            for (var level = 1; level <= levels; level++) {
+                seen = [];
+
+                // first get webs, which contain at least one cell with 3+ paths
+                addGroupsOfType(puzzleGrid, level, 3, 4, "web");
+
+                // then get segments - any loose end is now a segment and will be collected endpoint-to-endpoint
+                addGroupsOfType(puzzleGrid, level, 1, 1, "segment");
+
+                // anything left is a loop or unused
+                addGroupsOfType(puzzleGrid, level, 2, 2, "loop");
             }
 
             return result;
