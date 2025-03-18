@@ -12,7 +12,7 @@ puzzleValidators["spoke-sequentially-numbered-segments"] = function(puzzleGrid, 
         var lastNumber = null;
         group.cells.forEach((cell, index) => {
             var text = cell.text();
-            if (text && !cell.hasCandidates() && /^[0-9]*$/.test(value)) {
+            if (text && !cell.hasCandidates() && /^[0-9]*$/.test(text)) {
                 var number = parseInt(text);
 
                 // fail any range between two numbers that is of the wrong length
