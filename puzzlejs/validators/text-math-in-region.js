@@ -27,7 +27,7 @@ puzzleValidators["text-math-in-region"] = function(puzzleGrid, param) {
         region.forEach(cell => {
             // get the cell contents
             var value = cell.text();
-            if (!value || cell.hasCandidates()) { result = Math.min(0, result); return; } // validation is incomplete at best with blanks/candidates present
+            if (!value || cell.hasCandidates() || !/^[0-9]*$/.test(value)) { result = Math.min(0, result); return; } // validation is incomplete at best with blanks/candidates present
             numbers.push(parseInt(value));
 
             // look for a target clue and optional operator

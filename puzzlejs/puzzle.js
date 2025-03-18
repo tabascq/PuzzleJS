@@ -2155,6 +2155,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.clueLabel = function() { var label = cell.querySelector(".clue-label"); return label ? label.innerText.trim() : ""; }
         this.fillClass = function() { return puzzleGrid.puzzleEntry.findClassInList(cell, puzzleGrid.fillClasses); }
         this.fillIndex = function() { return puzzleGrid.fillClasses.indexOf(this.fillClass()); }
+        this.extraStyleClass = function() { return puzzleGrid.puzzleEntry.findClassInList(cell, puzzleGrid.extraStyleClasses); }
+        this.extraStyleIndex = function() { return puzzleGrid.extraStyleClasses.indexOf(this.extraStyleClass()); }
         this.pathDirections = function() {
             var result = [];
             var pathCode = cell.getAttribute("data-path-code") ?? 0;
