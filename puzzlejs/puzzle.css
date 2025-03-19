@@ -45,11 +45,14 @@
 .puzzle-entry .puzzle-grid > tr {
     display: block;
     height: var(--puzzle-cell-size);
+    min-height: var(--puzzle-cell-size);
 }
 
 .puzzle-entry td {
     width: var(--puzzle-cell-size);
+    min-width: var(--puzzle-cell-size);
     height: var(--puzzle-cell-size);
+    min-height: var(--puzzle-cell-size);
     padding: 0px;
     position: relative;
     background: transparent;
