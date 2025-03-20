@@ -24,6 +24,10 @@
     white-space: pre-wrap;
 }
 
+.example-title-and-code {
+    align-self: start;
+}
+
 .example-title {
     display: flex;
     align-items: center;
@@ -73,4 +77,11 @@
 
 @media print {
     .example { flex-direction: column; }
+}
+
+@media screen and (max-width: 1000px) {
+    .example {
+        flex-direction: column-reverse;
+        align-items: center;
+    }
 }

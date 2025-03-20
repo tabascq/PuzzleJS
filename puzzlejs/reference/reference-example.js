@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let source = example.innerHTML.replace(/&amp;/g,'&').replace(/&quot;/g,'"').trim();
 
         let code = document.createElement("div");
+        code.classList.add("example-title-and-code");
         code.insertAdjacentHTML("afterbegin", "<div class='example-title'><button type='button' class='designer-button'>Open in designer</button></div>");
         code.querySelector(".designer-button").addEventListener("click", e => {
             window.open(`${puzzleJsFolderPath}designer/puzzle-designer.html?puzzle=${encodeURIComponent(source)}&css=${encodeURIComponent(classes)}`);
