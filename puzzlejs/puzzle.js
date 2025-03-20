@@ -170,7 +170,8 @@ puzzleModes["trains"] = {
 
 puzzleModes["slitherlink"] = {
     "data-drag-draw-edge" : true,
-    "data-edge-style": "dots"
+    "data-edge-style": "dots",
+    "data-validators": "edge-single-loop edge-count-in-text|single-loop"
 }
 
 puzzleModes["spokes"] = {
@@ -2157,6 +2158,20 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.fillIndex = function() { return puzzleGrid.fillClasses.indexOf(this.fillClass()); }
         this.extraStyleClass = function() { return puzzleGrid.puzzleEntry.findClassInList(cell, puzzleGrid.extraStyleClasses); }
         this.extraStyleIndex = function() { return puzzleGrid.extraStyleClasses.indexOf(this.extraStyleClass()); }
+        this.edgeDirections = function() {
+            var result = [];
+            var parts = cell.id.split("-");
+            var row = parseInt(parts[1]);
+            var col = parseInt(parts[2]);
+            var cellR = puzzleGrid.lookup[`cell-${row}-${col + 1}`];
+            var cellB = puzzleGrid.lookup[`cell-${row + 1}-${col}`];
+
+            if (cell.getAttribute("data-edge-code") & 1) { result.push("top"); }
+            if (cellB ? (cellB.getAttribute("data-edge-code") & 1) : (cell.getAttribute("data-edge-code") & 2)) { result.push("bottom"); }
+            if (cell.getAttribute("data-edge-code") & 4) { result.push("left"); }
+            if (cellR ? (cellR.getAttribute("data-edge-code") & 4) : (cell.getAttribute("data-edge-code") & 8)) { result.push("right"); }
+            return result;
+        }
         this.pathDirections = function() {
             var result = [];
             var pathCode = cell.getAttribute("data-path-code") ?? 0;
@@ -2326,6 +2341,76 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             var result = [];
             var seen = [];
         
+            // first get webs, which contain at least one cell with 3+ paths
+            addGroupsOfType(puzzleGrid, 3, 4, "web");
+
+            // then get segments - any loose end is now a segment and will be collected endpoint-to-endpoint
+            addGroupsOfType(puzzleGrid, 1, 1, "segment");
+
+            // anything left is a loop or unused
+            addGroupsOfType(puzzleGrid, 2, 2, "loop");
+
+            return result;
+        }
+
+        this.getEdgeGroups = function() {
+            var linksFromCode = function(edgeCode) {
+                var numLinks = 0;
+                edgeCode = edgeCode ? parseInt(edgeCode) : 0;
+                while (edgeCode) { numLinks++; edgeCode &= (edgeCode - 1); }
+                return numLinks;
+            }
+
+            var floodAndCollectEdgeGroup = function(puzzleGrid, row, col, edgeGroup) {
+                var index = row * (puzzleGrid.numCols + 1) + col;
+                var edgeCode = vertexEdgeCodes[index];
+                if (seen[index] || !edgeCode) return;
+        
+                seen[index] = true;
+                edgeGroup.vertices.push({ row: row, col : col});
+        
+                if (edgeCode & 1) { floodAndCollectEdgeGroup(puzzleGrid, row - 1, col, edgeGroup); }
+                if (edgeCode & 2) { floodAndCollectEdgeGroup(puzzleGrid, row + 1, col, edgeGroup); }
+                if (edgeCode & 4) { floodAndCollectEdgeGroup(puzzleGrid, row, col - 1, edgeGroup); }
+                if (edgeCode & 8) { floodAndCollectEdgeGroup(puzzleGrid, row, col + 1, edgeGroup); }
+            }
+
+            var addGroupsOfType = function(puzzleGrid, leastLinks, mostLinks, groupType) {
+                for (var row = 0; row < puzzleGrid.numRows + 1; row++) {
+                    for (var col = 0; col < puzzleGrid.numCols + 1; col++) {
+                        var links = linksFromCode(vertexEdgeCodes[row * (puzzleGrid.numCols + 1) + col]);
+                        if (links < leastLinks || links > mostLinks) continue;
+                        var edgeGroup = { type: groupType, vertices: [] };
+                        floodAndCollectEdgeGroup(puzzleGrid, row, col, edgeGroup);
+                        if (edgeGroup.vertices.length != 0) {
+                            result.push(edgeGroup);
+                        }
+                    }
+                }
+            }
+
+            var updateVertexEdgeCode = function(row, col, val) {
+                var index = row * (puzzleGrid.numCols + 1) + col;
+                vertexEdgeCodes[index] = (vertexEdgeCodes[index] ?? 0) | val;
+            }
+
+            var result = [];
+            var seen = [];
+            var vertexEdgeCodes = [];
+
+            // convert data from cell-based to vertex-based
+            for (var row = 0; row < puzzleGrid.numRows; row++) {
+                for (var col = 0; col < puzzleGrid.numCols; col++) {
+                    var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                    if (!cell) continue;
+                    var cellEdgeCode = cell.getAttribute("data-edge-code");
+                    if (cellEdgeCode & 1) { updateVertexEdgeCode(row, col, 8); updateVertexEdgeCode(row, col + 1, 4); }
+                    if (cellEdgeCode & 2) { updateVertexEdgeCode(row + 1, col, 8); updateVertexEdgeCode(row + 1, col + 1, 4); }
+                    if (cellEdgeCode & 4) { updateVertexEdgeCode(row, col, 2); updateVertexEdgeCode(row+ 1, col, 1); }
+                    if (cellEdgeCode & 8) { updateVertexEdgeCode(row, col + 1, 2); updateVertexEdgeCode(row+ 1, col + 1, 1); }
+                }
+            }
+
             // first get webs, which contain at least one cell with 3+ paths
             addGroupsOfType(puzzleGrid, 3, 4, "web");
 
