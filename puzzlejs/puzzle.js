@@ -2149,7 +2149,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         if (!this.puzzleEntry.pointerIsDown) { changedGrids.forEach(g => { g.saveState(); }) }
     }
 
-    function CellWrapper(puzzleGrid, cell) {
+    function CellWrapper(puzzleGrid, validatorState, cell) {
         this.id = function() { return cell.id; }
         this.text = function() { return cell.querySelector(".text").innerText.trim(); }
         this.hasCandidates = function() { return cell.classList.contains("small-text") && puzzleGrid.options["data-text-shift-key"] == "candidates"; }
@@ -2200,29 +2200,30 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             }
             return result;
         }
-        this.fail = function() { puzzleGrid.validateFail(cell); }
-        this.incomplete = function() { puzzleGrid.validateIncomplete(cell); }
-        this.pass = function() { puzzleGrid.validatePass(cell); }
+        this.fail = function() { validatorState.result = -1; cell.classList.remove("validate-pass"); cell.classList.add("validate-fail"); }
+        this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { validatorState.result = Math.min(0, validatorState.result); } }
+        this.pass = function() { }
     }
 
-    function OuterCheckWrapper(puzzleGrid, outerCheck) {
-        this.fail = function() { puzzleGrid.validateFail(outerCheck); }
-        this.incomplete = function() { puzzleGrid.validateIncomplete(outerCheck); }
-        this.pass = function() { puzzleGrid.validatePass(outerCheck); }
+    function OuterCheckWrapper(puzzleGrid, validatorState, outerCheck) {
+        this.fail = function() { validatorState.result = -1; outerCheck.classList.remove("validate-pass"); outerCheck.classList.add("validate-fail"); }
+        this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { validatorState.result = Math.min(0, validatorState.result); } }
+        this.pass = function() { outerCheck.classList.add("validate-pass"); }
     }
 
-    function VertexWrapper(puzzleGrid, row, col) {
-        this.fail = function() { puzzleGrid.validateFail(null); }
-        this.incomplete = function() { puzzleGrid.validateIncomplete(null); }
-        this.pass = function() { puzzleGrid.validatePass(null); }
+    // TODO: Finish
+    function VertexWrapper(puzzleGrid, validatorState, row, col) {
+        this.fail = function() { validatorState.result = -1; }
+        this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { validatorState.result = Math.min(0, validatorState.result); } }
+        this.pass = function() { }
     }
 
-    function PuzzleGridWrapper(puzzleGrid) {
+    function PuzzleGridWrapper(puzzleGrid, validatorState) {
         this.getColumns = function() {
             var result = [];
             for (var c = 0; c < puzzleGrid.numCols; c++) {
                 var column = [];
-                for (var r = 0; r < puzzleGrid.numRows; r++) { column.push(new CellWrapper(puzzleGrid, puzzleGrid.lookup[`cell-${r}-${c}`])); }
+                for (var r = 0; r < puzzleGrid.numRows; r++) { column.push(new CellWrapper(puzzleGrid, validatorState, puzzleGrid.lookup[`cell-${r}-${c}`])); }
                 result.push(column);
             }
             return result;
@@ -2232,7 +2233,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             var result = [];
             for (var r = 0; r < puzzleGrid.numRows; r++) {
                 var row = [];
-                for (var c = 0; c < puzzleGrid.numCols; c++) { row.push(new CellWrapper(puzzleGrid, puzzleGrid.lookup[`cell-${r}-${c}`])); }
+                for (var c = 0; c < puzzleGrid.numCols; c++) { row.push(new CellWrapper(puzzleGrid, validatorState, puzzleGrid.lookup[`cell-${r}-${c}`])); }
                 result.push(row);
             }
             return result;
@@ -2245,7 +2246,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 if (!cell || seen[index]) return;
         
                 seen[index] = true;
-                region.push(new CellWrapper(puzzleGrid, cell));
+                region.push(new CellWrapper(puzzleGrid, validatorState, cell));
         
                 if (row > 0 && !(cell.getAttribute("data-edge-code") & 1)) { floodAndCollectRegion(puzzleGrid, row - 1, col, region); }
                 if (row < puzzleGrid.numRows - 1 && !(puzzleGrid.lookup[`cell-${row + 1}-${col}`].getAttribute("data-edge-code") & 1)) { floodAndCollectRegion(puzzleGrid, row + 1, col, region); }
@@ -2282,7 +2283,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 if (fillIndex != fillGroup.fillIndex) return;
         
                 seen[index] = true;
-                fillGroup.cells.push(new CellWrapper(puzzleGrid, cell));
+                fillGroup.cells.push(new CellWrapper(puzzleGrid, validatorState, cell));
         
                 if (row > 0) { floodAndCollectFillGroup(puzzleGrid, row - 1, col, fillGroup); }
                 if (row < puzzleGrid.numRows - 1) { floodAndCollectFillGroup(puzzleGrid, row + 1, col, fillGroup); }
@@ -2322,7 +2323,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 if (!pathCode) return;
         
                 seen[index] = true;
-                path.cells.push(new CellWrapper(puzzleGrid, cell));
+                path.cells.push(new CellWrapper(puzzleGrid, validatorState, cell));
         
                 if (pathCode & 1) { floodAndCollectPathGroup(puzzleGrid, row - 1, col, path); }
                 if (pathCode & 2) { floodAndCollectPathGroup(puzzleGrid, row + 1, col, path); }
@@ -2375,7 +2376,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 if (seen[index] || !edgeCode) return;
         
                 seen[index] = true;
-                edgeGroup.vertices.push(new VertexWrapper(puzzleGrid, row, col));
+                edgeGroup.vertices.push(new VertexWrapper(puzzleGrid, validatorState, row, col));
         
                 if (edgeCode & 1) { floodAndCollectEdgeGroup(puzzleGrid, row - 1, col, edgeGroup); }
                 if (edgeCode & 2) { floodAndCollectEdgeGroup(puzzleGrid, row + 1, col, edgeGroup); }
@@ -2447,7 +2448,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 if (!spokeCode) return;
         
                 seen[index] = true;
-                spokeGroup.cells.push(new CellWrapper(puzzleGrid, cell));
+                spokeGroup.cells.push(new CellWrapper(puzzleGrid, validatorState, cell));
         
                 if (spokeCode & 1) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row - 1, col, spokeGroup); }
                 if (spokeCode & 2) { floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row - 1, col + 1, spokeGroup); }
@@ -2502,16 +2503,16 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             for (var i = 0; i < ((side == "left" || side == "right") ? puzzleGrid.numRows : puzzleGrid.numCols); i++) {
                 var outerCheck = puzzleGrid.lookup[`check-${side}-${i}`];
                 if (!outerCheck) return null;
-                result.push(new OuterCheckWrapper(puzzleGrid, outerCheck));
+                result.push(new OuterCheckWrapper(puzzleGrid, validatorState, outerCheck));
             }
 
             return result;
         }
 
         this.getOption = function(optionName) { return puzzleGrid.options[optionName]; }
-        this.fail = function() { puzzleGrid.validateFail(); }
-        this.incomplete = function() { puzzleGrid.validateIncomplete(); }
-        this.pass = function() { puzzleGrid.validatePass(); }
+        this.fail = function() { validatorState.result = -1; }
+        this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { validatorState.result = Math.min(0, validatorState.result); } }
+        this.pass = function() { }
 
         this.getTextHash = function(secondary) { return puzzleGrid.getTextHash(secondary); }
         this.getFillHash = function(secondary) { return puzzleGrid.getFillHash(secondary); }
@@ -2782,41 +2783,24 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     }
 
     this.loadValidators = function() {
-        this.validators = this.puzzleEntry.getOptionArray(this.options, "data-validators", " ");
-        if (!this.validators) return;
+        var rawValidators = this.puzzleEntry.getOptionArray(this.options, "data-validators", " ");
+        if (!rawValidators)  { this.validators = null; return; }
 
-        this.validators.forEach(v => {
-            v = v.split("|")[0];
-            var vKey = v.endsWith(".js") ? v.replace(/^.*[\\\/]/, '').replace('.js', '') : v;
+        this.validators = [];
+
+        rawValidators.forEach(v => {
+            var parts = v.split("|");
+            var vKey = parts[0].endsWith(".js") ? parts[0].replace(/^.*[\\\/]/, '').replace('.js', '') : parts[0];
             if (!puzzleValidators[vKey]) {
                 var validatorjs = document.createElement('script');
                 validatorjs.setAttribute("type", "text/javascript");
-                validatorjs.setAttribute("src", v.endsWith(".js") ? v : `${puzzleJsFolderPath}validators/${v}.js`);
+                validatorjs.setAttribute("src", parts[0].endsWith(".js") ? v : `${puzzleJsFolderPath}validators/${parts[0]}.js`);
                 puzzleValidators[vKey] = validatorjs;
                 document.head.appendChild(validatorjs);            
             }
+
+            this.validators.push({ key: vKey, param: parts[1], listening: false });
         });
-    }
-
-    this.validatorResult = 1;
-
-    this.validateFail = function(element) {
-        this.validatorResult = -1;
-        if (!element) return;
-        element.classList.remove("validate-pass");
-        element.classList.add("validate-fail");
-    }
-
-    this.validateIncomplete = function(element) {
-        this.validatorResult = Math.min(0, this.validatorResult);
-        if (!element) return;
-        element.classList.remove("validate-pass");
-        element.classList.add("validate-incomplete");
-    }
-
-    this.validatePass = function(element) {
-        if (!element) return;
-        element.classList.add("validate-pass");
     }
 
     this.validate = async function() {
@@ -2828,17 +2812,24 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             this.container.querySelectorAll(".validate-pass").forEach(c => { c.classList.remove("validate-pass"); });
     
             var fullResult = 1;
-            var wrapper = new PuzzleGridWrapper(this);
     
             this.validators.forEach(v => {
-                this.validatorResult = 1;
-                var parts = v.split("|");
-                var vKey = parts[0].endsWith(".js") ? parts[0].replace(/^.*[\\\/]/, '').replace('.js', '') : parts[0];
-                var validator = puzzleValidators[vKey];
-                if (validator instanceof Element) { this.validatorResult = Math.min(0, this.validatorResult); validator.addEventListener("load", e => { this.validate(); }); }
-                else if (validator) { validator.validate(wrapper, parts[1]); }
-                fullResult = Math.min(this.validatorResult, fullResult);
+                var validator = puzzleValidators[v.key];
+
+                if (!validator || validator instanceof Element) {
+                    fullResult = 0;
+                    if (!v.listening && validator) { v.listening = true; validator.addEventListener("load", e => { v.listening = false; this.validate(); }); }
+                }
             });
+
+            if (fullResult == 1) {
+                this.validators.forEach(v => {
+                    var validatorState = { result: 1, strict: false };
+                    var puzzleGridWrapper = new PuzzleGridWrapper(this, validatorState);
+                    puzzleValidators[v.key].validate(puzzleGridWrapper, v.param);
+                    fullResult = Math.min(validatorState.result, fullResult);
+                });
+            }
 
             this.isValidated = (fullResult == 1);
         }
