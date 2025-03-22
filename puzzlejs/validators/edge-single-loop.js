@@ -1,16 +1,15 @@
-// Validates whether there is a single edge group that is a loop.
+puzzleValidators["edge-single-loop"] = {
+    getDescription: function(puzzleGrid, param) { return("All edges form a single loop."); },
+    validate: function(puzzleGrid, param) {
+        var edgeGroups = puzzleGrid.getEdgeGroups();
 
-puzzleValidators["edge-single-loop"] = function(puzzleGrid, param) {
-    var edgeGroups = puzzleGrid.getEdgeGroups();
+        // if there's only 1 loop then we're done
+        if (edgeGroups.length == 1 && edgeGroups[0].type == "loop") return;
 
-    // if there's only 1 then we're done
-    if (edgeGroups.length == 1 && edgeGroups[0].type == "loop") return 1;
-
-    // mark errors on any loops or webs
-    var result = 0;
-    edgeGroups.forEach(group => {
-        if (group.type != "segment") { result = -1; /* group.vertices.forEach(v => { v.fail(); });*/ } 
-    });
-
-    return result;
+        // mark errors on any loops or webs, anything else is just incomplete
+        edgeGroups.forEach(group => {
+            if (group.type != "chain") { group.vertices.forEach(v => { v.fail(); }); } 
+            else { group.vertices.forEach(v => { v.incomplete(); }); } 
+        });
+    }
 };

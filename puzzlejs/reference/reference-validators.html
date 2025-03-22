@@ -115,7 +115,7 @@
         <div class="item" data-name="fill-group-size-in-text">
             <p>Validates whether a contiguously-connected group of cells, all with the same fill, has the size of its group in a single text field. Highlights errors if the size is too large, and only reports success if there are no unresolved neighbors.</p>
             <ul>
-                <li><code>param</code> Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to validate.</li>
+                <li><code>param</code>: Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to validate.</li>
             </ul>
             <div class="example with-validation logic">
                 <div class="puzzle-entry" data-show-commands="true" data-text="....|.5..|....|...." data-mode="notext" data-validators="fill-group-size-in-text|2" data-fill-classes="lightgray black white" data-fills="....|.2..|....|...."></div>
@@ -125,7 +125,7 @@
         <div class="item" data-name="fill-no-2x2">
             <p>Validates whether there are no 2x2 regions with the same fill.</p>
             <ul>
-                <li><code>param</code> Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to validate.</li>
+                <li><code>param</code>: Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to validate.</li>
             </ul>
             <div class="example with-validation logic">
                 <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="fill-no-2x2|1" data-fill-classes="lightgray black white"></div>
@@ -135,7 +135,7 @@
         <div class="item" data-name="fill-single-group">
             <p>Validates whether there is a single contiguously-connected group of cells, all with the same fill. Only highlights errors if at least one group has no unresolved neighbors.</p>
             <ul>
-                <li><code>param</code> Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to validate.</li>
+                <li><code>param</code>: Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to validate.</li>
             </ul>
             <div class="example with-validation logic">
                 <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="fill-single-group|1" data-fill-classes="lightgray black white"></div>
@@ -150,14 +150,14 @@
         </div>
         
         <div class="item" data-name="path-connects-equal-text">
-            <p>Validates whether all paths connect cells with the same value. Only highlights errors if a path is not a line segment, or if both ends of the line segment are on cells with different text.</p>
+            <p>Validates whether all paths connect cells with the same value. Only highlights errors if a path is not a chain, or if both ends of the chain are on cells with different text.</p>
             <div class="example with-validation logic">
                 <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-connects-equal-text" data-drag-draw-path="true"></div>
             </div>
         </div>
         
         <div class="item" data-name="path-connects-size">
-            <p>Validates whether all paths connect cells with the same value, whose value is the length of the path. Only highlights errors if a path is not a line segment, or if both ends of the line segment are on cells whose text does not equal the path length.</p>
+            <p>Validates whether all paths connect cells with the same value, whose value is the length of the path. Only highlights errors if a path is not a chain, or if both ends of the chain are on cells whose text does not equal the path length.</p>
             <div class="example with-validation logic">
                 <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-connects-size" data-drag-draw-path="true"></div>
             </div>
@@ -179,8 +179,11 @@
         
         <div class="item" data-name="path-touches-all-text">
             <p>Validates whether all cells with text also contain a component of a path.</p>
+            <ul>
+                <li><code>param</code>: Any text to ignore.</li>
+            </ul>
             <div class="example with-validation logic">
-                <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-touches-all-text" data-drag-draw-path="true"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-touches-all-text|1" data-drag-draw-path="true"></div>
             </div>
         </div>
         
@@ -198,17 +201,17 @@
             </div>
         </div>
         
-        <div class="item" data-name="spoke-sequentially-numbered-segments">
+        <div class="item" data-name="spoke-sequentially-numbered-chains">
             <p>Validates whether a chain of cells connected by spokes can be numbered 1..N sequentially, with all givens lining up with cell text.</p>
             <div class="example with-validation logic">
-                <div class="puzzle-entry" data-show-commands="true" data-text="....|.24.|....|...." data-mode="notext" data-validators="spoke-sequentially-numbered-segments" data-drag-draw-spoke="true"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="....|.24.|....|...." data-mode="notext" data-validators="spoke-sequentially-numbered-chains" data-drag-draw-spoke="true"></div>
             </div>
         </div>
         
-        <div class="item" data-name="spoke-single-segment">
-            <p>Validates whether there is a single spoke chain that is not a loop or a web.</p>
+        <div class="item" data-name="spoke-single-chain">
+            <p>Validates whether there is a single spoke group that is a chain, not a loop or a web.</p>
             <div class="example with-validation logic">
-                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="spoke-single-segment" data-drag-draw-spoke="true"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="spoke-single-chain" data-drag-draw-spoke="true"></div>
             </div>
         </div>
         
@@ -221,25 +224,29 @@
         
         <div class="item" data-name="spoke-touches-all-text">
             <p>Validates whether all cells with text also contain a component of a spoke.</p>
+            <ul>
+                <li><code>param</code>: Any text to ignore.</li>
+            </ul>
             <div class="example with-validation logic">
                 <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="spoke-touches-all-text" data-drag-draw-spoke="true"></div>
             </div>
         </div>
         
-        <div class="item" data-name="validator-never-pass">
+        <div class="item" data-name="validator-always-incomplete">
             <p>Never succeeds; a useful way to borrow failure highlighting logic from some rules, but not allow overall success because not all rules have been written.</p>
             <div class="example with-validation logic">
-                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="validator-never-pass"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="validator-always-incomplete"></div>
             </div>
         </div>
         
         <h2>Logic-based Validator Structure</h2>
+        <p><i>Note: This structure has changed somewhat from its initial beta form, to both require less code and open up new scenarios.</i></p>
         <p>This is an extremely simple validator that marks the outer clue checks to pass or fail. It should be in its own file named <code>reference-set-all-outer-checks.js</code>; the script tag here is just to fit it into the documentation.</p>
         <div class="example non-interactive">
             <script> <!-- ignore this tag -->
-    // Trivial validator just to illustrate how things work. See the validators folder for more realistic examples.
-
-    puzzleValidators["reference-set-all-outer-checks"] = function(puzzleGrid, param) {
+puzzleValidators["edge-single-loop"] = {
+    getDescription: function(puzzleGrid, param) { return(`Trivial validator for use in the PuzzleJS reference. Just sets all outer checks to ${param}.`); },
+    validate: function(puzzleGrid, param) {
         var checkSide = function(sideName, param) {
             if (puzzleGrid.getOption(`data-${sideName}-clues`)) {
                 puzzleGrid.getOuterChecks(sideName).forEach(check => { if (param == "pass") { check.pass(); } else { check.fail(); } });
@@ -250,18 +257,19 @@
         checkSide("bottom", param);
         checkSide("left", param);
         checkSide("right", param);
-        return param == "pass" ? 1 : -1;
     }
+}
 </script>
         </div>
 
         <p>This validator:</p>
         <ul>
             <li>Registers itself with <code>puzzleValidators</code>, using a key that equals the filename minus the trailing <code>.js</code>.</li>
-            <li>Is a function that takes as input a <code>puzzleGrid</code> and an optional <code>param</code>.</li>
-            <li>Calls functions within <code>puzzleGrid</code> to analyze the grid and optionally set success/failure states within.</li>
-            <li>Returns a value indicating the result: <code>1</code> for pass, <code>0</code> for inconclusive, <code>-1</code> for fail.</li>
+            <li>Exposes two functions: <code>getDescription</code> to get a textual description, and <code>validate</code> to validate. Both functions take as input a <code>puzzleGrid</code> and an optional <code>param</code>.</li>
+            <li>Calls functions within <code>puzzleGrid</code> to analyze the puzzle and optionally set success/incomplete/failure states within.</li>
         </ul>
+
+        <li>A validator is a success if the call to <code>validate</code> generates no calls to <code>incomplete()</code> or <code>fail()</code> on any component of the puzzle.</li>
 
         <p>A custom validator such as this can be used by providing its page-relative path, and a value for <code>param</code> can be provided after a <code>|</code> character.</p>
         <div class="example">
@@ -290,7 +298,7 @@
             <p>A path group has the following properties:</p>
             <ul>
                 <li><code>cells</code>: An array of cells in this group.</li>
-                <li><code>type</code>: A classification of the path. If the value is <code>"segment"</code>, then the cells are in sequence from one endpoint to the other. If the value is <code>"loop"</code>, then the cells are in sequence with no particular starting point. If the value is <code>"web"</code>, then the group contains at least one junction with more than two path routes leading out, and is therefore too complex to make connectivity assertions based on the array alone.</li>
+                <li><code>type</code>: A classification of the path. If the value is <code>"chain"</code>, then the cells are in sequence from one endpoint to the other. If the value is <code>"loop"</code>, then the cells are in sequence with no particular starting point. If the value is <code>"web"</code>, then the group contains at least one junction with more than two path routes leading out, and is therefore too complex to make connectivity assertions based on the array alone.</li>
             </ul>
         </div>
         <div class="item" data-name="getSpokeGroups">
@@ -299,7 +307,7 @@
             <ul>
                 <li><code>cells</code>: An array of cells in this group.</li>
                 <li><code>level</code>: The level of the spokes in this group. Always 1, unless <a href="reference-options.html#data-spoke-levels"><code>data-spoke-levels</code></a> is set.</li>
-                <li><code>type</code>: A classification of the group. If the value is <code>"segment"</code>, then the cells are in sequence from one endpoint to the other. If the value is <code>"loop"</code>, then the cells are in sequence with no particular starting point. If the value is <code>"web"</code>, then the group contains at least one junction with more than two spoke routes leading out, and is therefore too complex to make connectivity assertions based on the array alone.</li>
+                <li><code>type</code>: A classification of the group. If the value is <code>"chain"</code>, then the cells are in sequence from one endpoint to the other. If the value is <code>"loop"</code>, then the cells are in sequence with no particular starting point. If the value is <code>"web"</code>, then the group contains at least one junction with more than two spoke routes leading out, and is therefore too complex to make connectivity assertions based on the array alone.</li>
             </ul>
         </div>
         <div class="item" data-name="getRegions">
@@ -312,8 +320,9 @@
             </ul>
             <p>An outer check has the following functions:</p>
             <ul>
-                <li><code>fail</code>: Marks the outer check as having failed.</li>
                 <li><code>pass</code>: Marks the outer check as having passed.</li>
+                <li><code>incomplete</code>: Marks the outer check as being incomplete.</li>
+                <li><code>fail</code>: Marks the outer check as having failed.</li>
             </ul>
         </div>
         <div class="item" data-name="getOption">
@@ -388,7 +397,10 @@
             </ul>
         </div>
         <div class="item" data-name="pass">
-            <p>Marks the cell as having passed.</p>
+            <p>Marks the cell as having passed. Doesn't really do anything and does not need to be called, only here for symmetry.</p>
+        </div>
+        <div class="item" data-name="incomplete">
+            <p>Marks the cell as being incomplete.</p>
         </div>
         <div class="item" data-name="fail">
             <p>Marks the cell as having failed.</p>

@@ -1,13 +1,10 @@
-// Validates whether every cell containing text has spoke connected to it.
-
-puzzleValidators["spoke-touches-all-text"] = function(puzzleGrid, param) {
-    var result = 1;
-
-    puzzleGrid.getRows().forEach(row => {
-        row.forEach(cell => {
-            if (cell.text() && cell.text() != "1" && cell.spokeDirections().length == 0) { result = -1; } // has text but no spoke
+puzzleValidators["spoke-touches-all-text"] = {
+    getDescription: function(puzzleGrid, param) { return(`Every cell containing text ${param ? `(except &ldquo;${param}&rdquo;)` : ""}has a spoke line connected to it.`); },
+    validate: function(puzzleGrid, param) {
+        puzzleGrid.getRows().forEach(row => {
+            row.forEach(cell => {
+                if (cell.text() && cell.text() != param && cell.spokeDirections().length == 0) { cell.incomplete(); }
+            });
         });
-    });
-
-    return result;
+    }
 };

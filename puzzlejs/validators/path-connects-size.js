@@ -1,19 +1,17 @@
-// Validates whether a path is a single line connecting two equal texts.
+puzzleValidators["path-connects-size"] = {
+    getDescription: function(puzzleGrid, param) { return("The cells at the endpoints of every path chain hace text that is the same as the length of the path."); },
+    validate: function(puzzleGrid, param) {
+        puzzleGrid.getPathGroups().forEach(group => {
+            var groupFail = false;
+            var firstText = group.cells[0].text();
+            var lastText = group.cells[group.cells.length - 1].text();
 
-puzzleValidators["path-connects-size"] = function(puzzleGrid, param) {
-    var result = 1;
+            if (group.type != "chain") { groupFail = true; }                                                // no loops or webs
+            else if (!firstText || !lastText) { group.cells.forEach(cell => { cell.incomplete(); }) }       // inconclusive if either end has no text yet
+            else if (parseInt(firstText) != group.cells.length) { groupFail = true; }                       // text has to match size if present
+            else if (parseInt(lastText) != group.cells.length) { groupFail = true; }                        // text has to match size if present
 
-    puzzleGrid.getPathGroups().forEach(group => {
-        var groupResult = 1;
-
-        if (group.type != "segment") { groupResult = -1; }                                                          // no loops or webs
-        else if (!group.cells[0].text() || !group.cells[group.cells.length - 1].text()) { groupResult = 0; }        // inconclusive if either end has no text yet
-        else if (parseInt(group.cells[0].text()) != group.cells.length) { groupResult = -1; }                       // text has to match size if present
-        else if (parseInt(group.cells[group.cells.length - 1].text()) != group.cells.length) { groupResult = -1; }  // text has to match size if present
-
-        if (groupResult == -1) { group.cells.forEach(cell => { cell.fail(); }); }
-        result = Math.min(groupResult, result);
-    });
-
-    return result;
+            if (groupFail) { group.cells.forEach(cell => { cell.fail(); }); }
+        });
+    }
 };

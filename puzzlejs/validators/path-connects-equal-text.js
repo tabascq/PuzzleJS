@@ -1,18 +1,16 @@
-// Validates whether a path is a single line connecting two equal texts.
+puzzleValidators["path-connects-equal-text"] = {
+    getDescription: function(puzzleGrid, param) { return("The cells at the endpoints of every path chain have the same text."); },
+    validate: function(puzzleGrid, param) {
+        puzzleGrid.getPathGroups().forEach(group => {
+            var groupFail = false;
+            var firstText = group.cells[0].text();
+            var lastText = group.cells[group.cells.length - 1].text();
 
-puzzleValidators["path-connects-equal-text"] = function(puzzleGrid, param) {
-    var result = 1;
+            if (group.type != "chain") { groupFail = true; }                                                // no loops or webs
+            else if (!firstText || !lastText) { group.cells.forEach(cell => { cell.incomplete(); }) }       // inconclusive if either end has no text yet
+            else if (firstText != lastText) { groupFail = true; }                                           // text has to match
 
-    puzzleGrid.getPathGroups().forEach(group => {
-        var groupResult = 1;
-
-        if (group.type != "segment") { groupResult = -1; }                                                      // no loops or webs
-        else if (!group.cells[0].text() || !group.cells[group.cells.length - 1].text()) { groupResult = 0; }    // inconclusive if either end has no text yet
-        else { groupResult = (group.cells[0].text() == group.cells[group.cells.length - 1].text()) ? 1 : -1; }  // text has to match if present
-
-        if (groupResult == -1) { group.cells.forEach(cell => { cell.fail(); }); }
-        result = Math.min(groupResult, result);
-    });
-
-    return result;
+            if (groupFail) { group.cells.forEach(cell => { cell.fail(); }); }
+        });
+    }
 };

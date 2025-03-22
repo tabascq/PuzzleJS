@@ -151,14 +151,14 @@ puzzleModes["hidato"] = {
     "data-text-shift-lock": true,
     "data-drag-draw-spoke": true,
     "data-spoke-max-directions": 2,
-    "data-validators": "spoke-touches-all-cells spoke-single-segment spoke-sequentially-numbered-segments"
+    "data-validators": "spoke-touches-all-cells spoke-single-chain spoke-sequentially-numbered-chains"
 }
 
 puzzleModes["pathpaint"] = {
     "data-path-style": "curved",
     "data-drag-draw-path": true,
     "data-fill-cycle": false,
-    "data-validators": "path-connects-size path-interior-no-text path-touches-all-text"
+    "data-validators": "path-connects-size path-interior-no-text path-touches-all-text|1"
 }
 
 puzzleModes["trains"] = {
@@ -2200,13 +2200,21 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             }
             return result;
         }
-        this.fail = function() { cell.classList.add("validate-fail"); }
-        this.pass = function() { cell.classList.add("validate-pass"); }
+        this.fail = function() { puzzleGrid.validateFail(cell); }
+        this.incomplete = function() { puzzleGrid.validateIncomplete(cell); }
+        this.pass = function() { puzzleGrid.validatePass(cell); }
     }
 
     function OuterCheckWrapper(puzzleGrid, outerCheck) {
-        this.fail = function() { outerCheck.classList.add("validate-fail"); }
-        this.pass = function() { outerCheck.classList.add("validate-pass"); }
+        this.fail = function() { puzzleGrid.validateFail(outerCheck); }
+        this.incomplete = function() { puzzleGrid.validateIncomplete(outerCheck); }
+        this.pass = function() { puzzleGrid.validatePass(outerCheck); }
+    }
+
+    function VertexWrapper(puzzleGrid, row, col) {
+        this.fail = function() { puzzleGrid.validateFail(null); }
+        this.incomplete = function() { puzzleGrid.validateIncomplete(null); }
+        this.pass = function() { puzzleGrid.validatePass(null); }
     }
 
     function PuzzleGridWrapper(puzzleGrid) {
@@ -2344,8 +2352,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             // first get webs, which contain at least one cell with 3+ paths
             addGroupsOfType(puzzleGrid, 3, 4, "web");
 
-            // then get segments - any loose end is now a segment and will be collected endpoint-to-endpoint
-            addGroupsOfType(puzzleGrid, 1, 1, "segment");
+            // then get chains - any loose end is now a chain and will be collected endpoint-to-endpoint
+            addGroupsOfType(puzzleGrid, 1, 1, "chain");
 
             // anything left is a loop or unused
             addGroupsOfType(puzzleGrid, 2, 2, "loop");
@@ -2367,7 +2375,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 if (seen[index] || !edgeCode) return;
         
                 seen[index] = true;
-                edgeGroup.vertices.push({ row: row, col : col});
+                edgeGroup.vertices.push(new VertexWrapper(puzzleGrid, row, col));
         
                 if (edgeCode & 1) { floodAndCollectEdgeGroup(puzzleGrid, row - 1, col, edgeGroup); }
                 if (edgeCode & 2) { floodAndCollectEdgeGroup(puzzleGrid, row + 1, col, edgeGroup); }
@@ -2414,8 +2422,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             // first get webs, which contain at least one cell with 3+ paths
             addGroupsOfType(puzzleGrid, 3, 4, "web");
 
-            // then get segments - any loose end is now a segment and will be collected endpoint-to-endpoint
-            addGroupsOfType(puzzleGrid, 1, 1, "segment");
+            // then get chains - any loose end is now a chain and will be collected endpoint-to-endpoint
+            addGroupsOfType(puzzleGrid, 1, 1, "chain");
 
             // anything left is a loop or unused
             addGroupsOfType(puzzleGrid, 2, 2, "loop");
@@ -2478,8 +2486,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 // first get webs, which contain at least one cell with 3+ paths
                 addGroupsOfType(puzzleGrid, level, 3, 4, "web");
 
-                // then get segments - any loose end is now a segment and will be collected endpoint-to-endpoint
-                addGroupsOfType(puzzleGrid, level, 1, 1, "segment");
+                // then get chains - any loose end is now a chain and will be collected endpoint-to-endpoint
+                addGroupsOfType(puzzleGrid, level, 1, 1, "chain");
 
                 // anything left is a loop or unused
                 addGroupsOfType(puzzleGrid, level, 2, 2, "loop");
@@ -2501,6 +2509,9 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
 
         this.getOption = function(optionName) { return puzzleGrid.options[optionName]; }
+        this.fail = function() { puzzleGrid.validateFail(); }
+        this.incomplete = function() { puzzleGrid.validateIncomplete(); }
+        this.pass = function() { puzzleGrid.validatePass(); }
 
         this.getTextHash = function(secondary) { return puzzleGrid.getTextHash(secondary); }
         this.getFillHash = function(secondary) { return puzzleGrid.getFillHash(secondary); }
@@ -2787,6 +2798,27 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         });
     }
 
+    this.validatorResult = 1;
+
+    this.validateFail = function(element) {
+        this.validatorResult = -1;
+        if (!element) return;
+        element.classList.remove("validate-pass");
+        element.classList.add("validate-fail");
+    }
+
+    this.validateIncomplete = function(element) {
+        this.validatorResult = Math.min(0, this.validatorResult);
+        if (!element) return;
+        element.classList.remove("validate-pass");
+        element.classList.add("validate-incomplete");
+    }
+
+    this.validatePass = function(element) {
+        if (!element) return;
+        element.classList.add("validate-pass");
+    }
+
     this.validate = async function() {
         var wasValidated = this.isValidated;
         this.isValidated = false;
@@ -2795,18 +2827,20 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             this.container.querySelectorAll(".validate-fail").forEach(c => { c.classList.remove("validate-fail"); });
             this.container.querySelectorAll(".validate-pass").forEach(c => { c.classList.remove("validate-pass"); });
     
+            var fullResult = 1;
             var wrapper = new PuzzleGridWrapper(this);
     
-            var result = 1;
             this.validators.forEach(v => {
+                this.validatorResult = 1;
                 var parts = v.split("|");
                 var vKey = parts[0].endsWith(".js") ? parts[0].replace(/^.*[\\\/]/, '').replace('.js', '') : parts[0];
-                var validatorFn = puzzleValidators[vKey];
-                if (validatorFn instanceof Element) { result = Math.min(result, 0); validatorFn.addEventListener("load", e => { this.validate(); }); }
-                else if (validatorFn) { result = Math.min(result, validatorFn(wrapper, parts[1])); }
+                var validator = puzzleValidators[vKey];
+                if (validator instanceof Element) { this.validatorResult = Math.min(0, this.validatorResult); validator.addEventListener("load", e => { this.validate(); }); }
+                else if (validator) { validator.validate(wrapper, parts[1]); }
+                fullResult = Math.min(this.validatorResult, fullResult);
             });
 
-            this.isValidated = (result == 1);
+            this.isValidated = (fullResult == 1);
         }
 
         if (this.options["data-text-hashes"]) {
