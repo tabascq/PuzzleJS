@@ -232,10 +232,12 @@
 
 .puzzle-entry td.outer-check-width {
     width: calc(var(--puzzle-cell-size) / 3);
+    min-width: calc(var(--puzzle-cell-size) / 3);
 }
 
 .puzzle-entry td.outer-check-height {
     height: calc(var(--puzzle-cell-size) / 3);
+    min-height: calc(var(--puzzle-cell-size) / 3);
 }
 
 .puzzle-entry .link-label, .puzzle-entry .extract-label, .puzzle-entry .clue-label {
