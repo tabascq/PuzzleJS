@@ -221,6 +221,10 @@
     color: #ff0000;
 }
 
+.puzzle-entry .edge-top.validate-fail, .puzzle-entry .edge-bottom.validate-fail, .puzzle-entry .edge-left.validate-fail, .puzzle-entry .edge-right.validate-fail {
+    stroke: #ff0000;
+}
+
 .puzzle-entry.validated .success-marker::after {
     content: "✅";
     margin-left: 10px;

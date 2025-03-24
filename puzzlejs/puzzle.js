@@ -2213,7 +2213,23 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
     // TODO: Finish
     function VertexWrapper(puzzleGrid, validatorState, row, col) {
-        this.fail = function() { validatorState.result = -1; }
+        this.fail = function() {
+            var failCellEdge = function(row, col, edgeCode) {
+                if (row == puzzleGrid.numRows && col == puzzleGrid.numCols) return;
+                if (row == puzzleGrid.numRows && edgeCode == 1) { row -= 1; edgeCode = 2; }
+                if (col == puzzleGrid.numCols && edgeCode == 4) { col -= 1; edgeCode = 8; }
+                var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
+                if (!cell) return;
+                var validateFailEdgeCode = cell.getAttribute("data-edge-validate-fail-code") ?? 0;
+                cell.setAttribute("data-edge-validate-fail-code", validateFailEdgeCode | edgeCode);
+                puzzleGrid.updateSvg(cell);
+            }
+            validatorState.result = -1;
+            failCellEdge(row, col, 1);
+            failCellEdge(row, col, 4);
+            failCellEdge(row, col - 1, 1);
+            failCellEdge(row - 1, col, 4);
+        }
         this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { validatorState.result = Math.min(0, validatorState.result); } }
         this.pass = function() { }
     }
@@ -2521,9 +2537,10 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.getSpokeHash = function(secondary) { return puzzleGrid.getSpokeHash(secondary); }
     }
 
-    this.addEdgeToSvg = function(svg, edgeName) {
+    this.addEdgeToSvg = function(svg, edgeName, validateFail) {
         var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
         use.classList.add(edgeName);
+        if (validateFail) { use.classList.add("validate-fail"); }
         var edgePath = this.options["data-edge-style"];
         if (!edgePath.endsWith(".svg")) { edgePath = puzzleJsFolderPath + "edge-" + edgePath + ".svg"; }
         use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", edgePath + "#" + edgeName);
@@ -2584,10 +2601,11 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         if (!td.classList.contains("unselectable")) { this.addEdgeToSvg(svg, "edge-base"); }
 
         var edgeCode = td.getAttribute("data-edge-code");
-        if (edgeCode & 1) { this.addEdgeToSvg(svg, "edge-top"); }
-        if (edgeCode & 2) { this.addEdgeToSvg(svg, "edge-bottom"); }
-        if (edgeCode & 4) { this.addEdgeToSvg(svg, "edge-left"); }
-        if (edgeCode & 8) { this.addEdgeToSvg(svg, "edge-right"); }
+        var edgeCodeFail = td.getAttribute("data-edge-validate-fail-code");
+        if (edgeCode & 1) { this.addEdgeToSvg(svg, "edge-top", (edgeCodeFail & 1)); }
+        if (edgeCode & 2) { this.addEdgeToSvg(svg, "edge-bottom", (edgeCodeFail & 2)); }
+        if (edgeCode & 4) { this.addEdgeToSvg(svg, "edge-left", (edgeCodeFail & 4)); }
+        if (edgeCode & 8) { this.addEdgeToSvg(svg, "edge-right", (edgeCodeFail & 8)); }
 
         edgeCode = td.getAttribute("data-x-edge-code");
         if (edgeCode & 1) { this.addEdgeToSvg(svg, "x-edge-top"); }
@@ -2810,6 +2828,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         if (this.validators) {
             this.container.querySelectorAll(".validate-fail").forEach(c => { c.classList.remove("validate-fail"); });
             this.container.querySelectorAll(".validate-pass").forEach(c => { c.classList.remove("validate-pass"); });
+            this.container.querySelectorAll(".inner-cell").forEach(c => { c.removeAttribute("data-edge-validate-fail-code"); });
     
             var fullResult = 1;
     
