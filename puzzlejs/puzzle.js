@@ -1580,14 +1580,40 @@ function PuzzleEntry(p, index) {
     this.checkValidationStates = function() {
         if (this.buildingContents) return;
 
-        var validated = true;
+        var validationState = 1;
         var hasValidation = false; 
-        this.puzzleGrids.forEach(g => { if (g.hasValidation) { hasValidation = true; validated &= g.isValidated; }});
+        this.puzzleGrids.forEach(g => { if (g.hasLogicValidation || g.hasHashValidation) { hasValidation = true; validationState = Math.min(validationState, g.validationState); }});
 
-        if (hasValidation && validated) {
-            if (!this.container.classList.contains("validated")) { this.container.dispatchEvent(new CustomEvent("puzzlevalidated", { bubbles: true })); }
-            this.container.classList.add("validated");
-        } else { this.container.classList.remove("validated"); }
+        if (hasValidation) {
+            var master = this.container.querySelector(".master-validation-marker");
+            master.classList.remove("validate-pass");
+            master.classList.remove("validate-incomplete");
+            master.classList.remove("validate-fail");
+            if (validationState == 1) {
+                if (!this.container.classList.contains("validated")) { this.container.dispatchEvent(new CustomEvent("puzzlevalidated", { bubbles: true })); }
+                this.container.classList.add("validated");
+                master.classList.add("validate-pass");
+                master.title = "Validation: pass";
+            } else { this.container.classList.remove("validated"); master.classList.add(validationState ? "validate-fail" : "validate-incomplete"); master.title = validationState ? "Validation: fail" : "Validation: incomplete"; }
+        }
+    }
+
+    this.toggleValidatorSelect = function(validator) {
+        var puzzleGridOff;
+        var puzzleGridOn;
+        if (this.selectedValidator) {
+            if (this.selectedValidator == validator) { validator = null; }
+            puzzleGridOff = this.selectedValidator.puzzleGrid;
+            this.selectedValidator.marker.classList.remove("selected");
+            this.selectedValidator = null;
+        }
+        if (validator) { this.selectedValidator = validator; }
+
+        this.container.querySelector(".validation-marker-description").innerHTML = this.selectedValidator ? this.selectedValidator.description : null;
+        if (this.selectedValidator) { puzzleGridOn = this.selectedValidator.puzzleGrid; this.selectedValidator.marker.classList.add("selected"); }
+
+        if (puzzleGridOff) { puzzleGridOff.validate(); }
+        if (puzzleGridOn && puzzleGridOn != puzzleGridOff) { puzzleGridOn.validate(); }
     }
 
     this.rebuildContents = function() {
@@ -1610,13 +1636,40 @@ function PuzzleEntry(p, index) {
             this.commands = document.createElement("div");
             this.commands.classList.add("puzzle-commands");
             this.commands.classList.add("no-copy");
-            this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button><div class='success-marker'></div>";
+            this.commands.innerHTML = "<button type='button' class='puzzle-about-button'>About</button><button type='button' class='puzzle-undo-button'>Undo</button><button type='button' class='puzzle-redo-button'>Redo</button><button type='button' class='puzzle-reset-button'>Reset</button>";
             this.commands.querySelector(".puzzle-about-button").addEventListener("click", e => { this.aboutPopup(); });
             this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
             this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
             // TODO shouldn't need a reload after reset
             this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { var prompt = this.options["data-reset-prompt"]; if (!prompt || confirm(prompt)) { this.prepareToReset(); window.location.reload(); } });
             this.container.appendChild(this.commands);
+
+            var hasLogicValidation = false;
+            var hasHashValidation = false;
+            this.puzzleGrids.forEach(g => { if (g.hasLogicValidation) { hasLogicValidation = true; } if (g.hasHashValidation) { hasHashValidation = true; }});
+            if (hasLogicValidation || hasHashValidation) {
+                var title = (hasLogicValidation && hasHashValidation) ? "Validation by rules and snapshot" : (hasLogicValidation ? "Validation by rules" : "Validation by snapshot");
+                this.commands.insertAdjacentHTML("beforeend", `<div class='validation-dropdown'><div class='master-validation-marker validation-marker'></div><div class='validation-markers-all'><div class='validation-title'>${title}</div></div></div>`);
+                var markers = this.commands.querySelector(".validation-markers-all");
+                this.puzzleGrids.forEach(g => { if (g.validators) {
+                    var section = document.createElement("div");
+                    section.classList.add("validation-markers-puzzle");
+                    g.validators.forEach(v => {
+                        var m = document.createElement("div");
+                        m.classList.add("validation-marker");
+                        v.marker = m;
+                        m.validator = v;
+                        m.addEventListener("click", e => { this.toggleValidatorSelect(e.target.validator)});
+                        section.appendChild(m);
+                    });
+                    markers.appendChild(section);
+                }});
+                markers.insertAdjacentHTML("beforeend", "<div class='validation-marker-description'></div>");
+
+                this.commands.querySelector(".master-validation-marker").addEventListener("click",e => {
+                    this.container.querySelector(".validation-markers-all").classList.toggle("visible");
+                });
+            }
         }
 
         this.buildingContents = false;
@@ -2817,13 +2870,22 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 document.head.appendChild(validatorjs);            
             }
 
-            this.validators.push({ key: vKey, param: parts[1], listening: false });
+            this.validators.push({ key: vKey, param: parts[1], listening: false, puzzleGrid: this });
         });
     }
 
+    this.validateStrict = function(validator) {
+        this.container.querySelectorAll(".validate-fail").forEach(c => { c.classList.remove("validate-fail"); });
+        this.container.querySelectorAll(".validate-pass").forEach(c => { c.classList.remove("validate-pass"); });
+        this.container.querySelectorAll(".inner-cell").forEach(c => { c.removeAttribute("data-edge-validate-fail-code"); });
+        var validatorState = { result: 1, strict: true };
+        var puzzleGridWrapper = new PuzzleGridWrapper(this, validatorState);
+        puzzleValidators[validator.key].validate(puzzleGridWrapper, validator.param);
+    }
+
     this.validate = async function() {
-        var wasValidated = this.isValidated;
-        this.isValidated = false;
+        var oldValidationState = this.validationState;
+        this.validationState = 0;
 
         if (this.validators) {
             this.container.querySelectorAll(".validate-fail").forEach(c => { c.classList.remove("validate-fail"); });
@@ -2845,41 +2907,54 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 this.validators.forEach(v => {
                     var validatorState = { result: 1, strict: false };
                     var puzzleGridWrapper = new PuzzleGridWrapper(this, validatorState);
+                    if (!v.description) { v.description = puzzleValidators[v.key].getDescription(puzzleGridWrapper, v.param); }
                     puzzleValidators[v.key].validate(puzzleGridWrapper, v.param);
+                    v.marker.classList.remove("validate-pass");
+                    v.marker.classList.remove("validate-incomplete");
+                    v.marker.classList.remove("validate-fail");
+                    switch (validatorState.result) {
+                        case 1: v.marker.classList.add("validate-pass"); v.marker.title = "Pass: " + v.description; break;
+                        case 0: v.marker.classList.add("validate-incomplete"); v.marker.title = "Incomplete: " + v.description; break;
+                        case -1: v.marker.classList.add("validate-fail"); v.marker.title = "Fail: " + v.description; break;
+                    }
                     fullResult = Math.min(validatorState.result, fullResult);
                 });
             }
 
-            this.isValidated = (fullResult == 1);
+            this.validationState = fullResult;
         }
 
         if (this.options["data-text-hashes"]) {
             var currentHash = await this.getTextHash();
-            if (this.options["data-text-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
+            if (this.options["data-text-hashes"].split(" ").includes(currentHash)) { this.validationState = 1; }
         }
 
         if (this.options["data-fill-hashes"]) {
             var currentHash = await this.getFillHash();
-            if (this.options["data-fill-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
+            if (this.options["data-fill-hashes"].split(" ").includes(currentHash)) { this.validationState = 1; }
         }
 
         if (this.options["data-edge-hashes"]) {
             var currentHash = await this.getEdgeHash();
-            if (this.options["data-edge-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
+            if (this.options["data-edge-hashes"].split(" ").includes(currentHash)) { this.validationState = 1; }
         }
 
         if (this.options["data-path-hashes"]) {
             var currentHash = await this.getPathHash();
-            if (this.options["data-path-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
+            if (this.options["data-path-hashes"].split(" ").includes(currentHash)) { this.validationState = 1; }
         }
 
         if (this.options["data-spoke-hashes"]) {
             var currentHash = await this.getSpokeHash();
-            if (this.options["data-spoke-hashes"].split(" ").includes(currentHash)) { this.isValidated = true; }
+            if (this.options["data-spoke-hashes"].split(" ").includes(currentHash)) { this.validationState = 1; }
         }
 
-        if (this.isValidated != wasValidated) {
+        if (this.validationState != oldValidationState) {
             this.puzzleEntry.checkValidationStates();
+        }
+
+        if (this.puzzleEntry.selectedValidator && this.puzzleEntry.selectedValidator.puzzleGrid == this) {
+            this.validateStrict(this.puzzleEntry.selectedValidator);
         }
     }
 
@@ -2985,7 +3060,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
         if (!this.doGrid) return;
 
-        this.hasValidation = this.options["data-validators"] || this.options["data-text-hashes"] || this.options["data-fill-hashes"] || this.options["data-edge-hashes"] || this.options["data-path-hashes"] || this.options["data-spoke-hashes"];
+        this.hasLogicValidation = this.options["data-validators"];
+        this.hasHashValidation = this.options["data-text-hashes"] || this.options["data-fill-hashes"] || this.options["data-edge-hashes"] || this.options["data-path-hashes"] || this.options["data-spoke-hashes"];
 
         this.fillClasses = puzzleEntry.getOptionArray(this.options, "data-fill-classes", " ");
         this.extraStyleClasses = puzzleEntry.getOptionArray(this.options, "data-extra-style-classes", " ");

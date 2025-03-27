@@ -1,7 +1,7 @@
 puzzleValidators["fill-no-2x2"] = {
     getDescription: function(puzzleGrid, param) {
         var targetFillIndex = parseInt(param ?? "1");
-        var targetFillClass = puzzleGrid.getOption("data-fill-classes")[targetFillIndex] ?? "black";
+        var targetFillClass = (puzzleGrid.getOption("data-fill-classes") ?? "").split(" ")[targetFillIndex] ?? "black";
         return(`There are no 2x2 areas with entirely ${targetFillClass} fill.`);
     },
     validate: function(puzzleGrid, param) {

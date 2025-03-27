@@ -3,7 +3,7 @@
 puzzleValidators["fill-spans-from-outer-clues"] = {
     getDescription: function(puzzleGrid, param) {
         var targetFillIndex = parseInt(param ?? "1");
-        var targetFillClass = puzzleGrid.getOption("data-fill-classes")[targetFillIndex] ?? "black";
+        var targetFillClass = (puzzleGrid.getOption("data-fill-classes") ?? "").split(" ")[targetFillIndex] ?? "black";
         return(`Outer clues for each row and column describe contiguous spans of ${targetFillClass} fill in that row or column.`);
     },
     validate: function(puzzleGrid, param) {

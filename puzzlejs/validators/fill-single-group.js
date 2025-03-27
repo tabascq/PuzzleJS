@@ -1,7 +1,7 @@
 puzzleValidators["fill-single-group"] = {
     getDescription: function(puzzleGrid, param) {
         var targetFillIndex = parseInt(param ?? "1");
-        var targetFillClass = puzzleGrid.getOption("data-fill-classes")[targetFillIndex] ?? "black";
+        var targetFillClass = (puzzleGrid.getOption("data-fill-classes") ?? "").split(" ")[targetFillIndex] ?? "black";
         return(`All cells with ${targetFillClass} fill are connected.`);
     },
     validate: function(puzzleGrid, param) {

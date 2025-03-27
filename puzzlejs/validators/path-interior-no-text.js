@@ -1,5 +1,5 @@
 puzzleValidators["path-interior-no-text"] = {
-    getDescription: function(puzzleGrid, param) { return("The cells in the middle of ebery path chain (i.e. not the endpoints) have no text."); },
+    getDescription: function(puzzleGrid, param) { return("The cells in the middle of every path chain (i.e. not the endpoints) have no text."); },
     validate: function(puzzleGrid, param) {
         puzzleGrid.getPathGroups().forEach(group => {
             if (group.type != "chain") { group.cells.forEach(cell => { cell.fail(); }); }                                                      // no loops or webs

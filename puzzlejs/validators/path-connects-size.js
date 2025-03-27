@@ -1,5 +1,5 @@
 puzzleValidators["path-connects-size"] = {
-    getDescription: function(puzzleGrid, param) { return("The cells at the endpoints of every path chain hace text that is the same as the length of the path."); },
+    getDescription: function(puzzleGrid, param) { return("The cells at the endpoints of every path chain have text that is the same as the length of the path."); },
     validate: function(puzzleGrid, param) {
         puzzleGrid.getPathGroups().forEach(group => {
             var groupFail = false;

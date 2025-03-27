@@ -1,7 +1,7 @@
 puzzleValidators["fill-group-size-in-text"] = {
     getDescription: function(puzzleGrid, param) {
         var targetFillIndex = parseInt(param ?? "2");
-        var targetFillClass = puzzleGrid.getOption("data-fill-classes")[targetFillIndex] ?? "white";
+        var targetFillClass = (puzzleGrid.getOption("data-fill-classes") ?? "").split(" ")[targetFillIndex] ?? "white";
         return(`The size of every contiguous ${targetFillClass} fill group equals the text of a single number within the group.`);
     },
     validate: function(puzzleGrid, param) {
