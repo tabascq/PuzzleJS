@@ -2854,6 +2854,9 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     }
 
     this.loadValidators = function() {
+        this.hasLogicValidation = this.options["data-validators"];
+        this.hasHashValidation = this.options["data-text-hashes"] || this.options["data-fill-hashes"] || this.options["data-edge-hashes"] || this.options["data-path-hashes"] || this.options["data-spoke-hashes"];
+
         var rawValidators = this.puzzleEntry.getOptionArray(this.options, "data-validators", " ");
         if (!rawValidators)  { this.validators = null; return; }
 
@@ -3059,9 +3062,6 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
 
         if (!this.doGrid) return;
-
-        this.hasLogicValidation = this.options["data-validators"];
-        this.hasHashValidation = this.options["data-text-hashes"] || this.options["data-fill-hashes"] || this.options["data-edge-hashes"] || this.options["data-path-hashes"] || this.options["data-spoke-hashes"];
 
         this.fillClasses = puzzleEntry.getOptionArray(this.options, "data-fill-classes", " ");
         this.extraStyleClasses = puzzleEntry.getOptionArray(this.options, "data-extra-style-classes", " ");
