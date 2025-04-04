@@ -136,6 +136,7 @@ puzzleModes["kenken"] = {
 
 puzzleModes["nonogram"] = {
     "data-edges": "5x5",
+    "data-text-characters": "",
     "data-outer-clue-checks": true,
     "data-validators": "fill-spans-from-outer-clues"
 }
