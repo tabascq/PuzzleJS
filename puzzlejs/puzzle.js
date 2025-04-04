@@ -298,7 +298,7 @@ function UndoManager() {
             this.activeAction.groups.push(group);
         }
 
-        var unit = { "elem": element, "propertyKey": propertyKey, "oldValue": oldValue, "newValue" : newValue };
+        var unit = { "elem": element, "propertyKey": propertyKey, "oldValue": oldValue.toString(), "newValue" : newValue.toString() };
         group.units.push(unit);
     }
 }
@@ -1575,7 +1575,14 @@ function PuzzleEntry(p, index) {
         this.container.querySelector(".puzzle-about-close").addEventListener("keyup", e => { if (e.keyCode == 27 || e.keyCode == 13) this.closeAbout(); });
     }
 
-    this.prepareToReset = function() { this.puzzleGrids.forEach(g => { g.prepareToReset(); }); }
+    this.prepareToReset = function(fromButton) {
+        if (fromButton) {
+            var resetIds = [];
+            this.puzzleGrids.forEach(g => { resetIds.push(g.puzzleId); g.dotZones.forEach(dz => { resetIds.push(dz.puzzleId); }); });
+            this.container.dispatchEvent(new CustomEvent("puzzlereset", { detail: resetIds, bubbles: true }));
+        }
+        this.puzzleGrids.forEach(g => { g.prepareToReset(); });
+    }
 
     this.checkValidationStates = function() {
         if (this.buildingContents) return;
@@ -1641,7 +1648,7 @@ function PuzzleEntry(p, index) {
             this.commands.querySelector(".puzzle-undo-button").addEventListener("click", e => { this.undoManager.undo(); });
             this.commands.querySelector(".puzzle-redo-button").addEventListener("click", e => { this.undoManager.redo(); });
             // TODO shouldn't need a reload after reset
-            this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { var prompt = this.options["data-reset-prompt"]; if (!prompt || confirm(prompt)) { this.prepareToReset(); window.location.reload(); } });
+            this.commands.querySelector(".puzzle-reset-button").addEventListener("click", e => { var prompt = this.options["data-reset-prompt"]; if (!prompt || confirm(prompt)) { this.prepareToReset(true); window.location.reload(); } });
             this.container.appendChild(this.commands);
 
             var hasLogicValidation = false;
@@ -1880,7 +1887,7 @@ function PuzzleDotZone(container, puzzleGrid, index) {
 
     this.changeWithoutUndo = function(changes) {
         changes.forEach(c => {
-            if (c.value) { this.lineData[c.propertyKey] = c.value; } else { delete this.lineData[c.propertyKey]; }
+            if (c.value && c.value != "false") { this.lineData[c.propertyKey] = c.value; } else { delete this.lineData[c.propertyKey]; }
         });
 
         if (!this.inhibitSave) { localStorage.setItem(this.puzzleId, JSON.stringify(this.lineData)); }
@@ -2188,8 +2195,12 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                         else { elem.classList.remove("toggled"); delete grid.toggleState[elem.id]; }
                         break;
                     default:
-                        if (c.propertyKey.endsWith("-code") && !svgChangedElems.includes(elem)) { svgChangedElems.push(elem); }
-                        elem.setAttribute(c.propertyKey, c.value);
+                        var value = c.value;
+                        if (c.propertyKey.endsWith("-code")) {
+                            value = value ? parseInt(value) : 0;
+                            if (!svgChangedElems.includes(elem)) { svgChangedElems.push(elem); }
+                        }
+                        elem.setAttribute(c.propertyKey, value);
                         break;
                 }
             });
