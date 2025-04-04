@@ -2198,7 +2198,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                     default:
                         var value = c.value;
                         if (c.propertyKey.endsWith("-code")) {
-                            value = value ? parseInt(value) : 0;
+                            value = value ? parseInt(value) : elem.getAttribute(c.propertyKey.replace("data-", "data-given-"));
                             if (!svgChangedElems.includes(elem)) { svgChangedElems.push(elem); }
                         }
                         elem.setAttribute(c.propertyKey, value);
