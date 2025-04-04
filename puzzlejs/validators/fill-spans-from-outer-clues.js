@@ -32,7 +32,7 @@ puzzleValidators["fill-spans-from-outer-clues"] = {
             if (clueNumbers.length == 0) { clueNumbers.push(0); }
 
             check.pass();
-            if (currentTotal < clueNumberTotal) { if (noUnknowns) { check.fail(); } else{ check.incomplete(); } }
+            if (currentTotal < clueNumberTotal) { if (noUnknowns) { check.fail(); } else { check.incomplete(); } }
             else if (currentTotal > clueNumberTotal || counts.length != clueNumbers.length) { check.fail(); }
             else { for (var i = 0; i < counts.length; i++) { if (counts[i] != clueNumbers[i]) { check.fail(); } } }
         }
