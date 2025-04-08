@@ -136,6 +136,7 @@ puzzleModes["kenken"] = {
 
 puzzleModes["nonogram"] = {
     "data-edges": "5x5",
+    "data-fill-classes": "lightgray black white",
     "data-text-characters": "",
     "data-outer-clue-checks": true,
     "data-validators": "fill-spans-from-outer-clues"
@@ -158,8 +159,21 @@ puzzleModes["hidato"] = {
 puzzleModes["pathpaint"] = {
     "data-path-style": "curved",
     "data-drag-draw-path": true,
+    "data-fill-cycle": false
+}
+
+puzzleModes["pathpaint-some"] = {
+    "data-path-style": "curved",
+    "data-drag-draw-path": true,
     "data-fill-cycle": false,
     "data-validators": "path-connects-size path-interior-no-text path-touches-all-text|1"
+}
+
+puzzleModes["pathpaint-all"] = {
+    "data-path-style": "curved",
+    "data-drag-draw-path": true,
+    "data-fill-cycle": false,
+    "data-validators": "path-connects-equal-fill path-touches-all-cells"
 }
 
 puzzleModes["trains"] = {
@@ -299,7 +313,7 @@ function UndoManager() {
             this.activeAction.groups.push(group);
         }
 
-        var unit = { "elem": element, "propertyKey": propertyKey, "oldValue": oldValue.toString(), "newValue" : newValue.toString() };
+        var unit = { "elem": element, "propertyKey": propertyKey, "oldValue": (oldValue == null ? oldValue : oldValue.toString()), "newValue" : (newValue == null ? newValue : newValue.toString()) };
         group.units.push(unit);
     }
 }
@@ -1594,6 +1608,7 @@ function PuzzleEntry(p, index) {
 
         if (hasValidation) {
             var master = this.container.querySelector(".master-validation-marker");
+            if (!master) return;
             master.classList.remove("validate-pass");
             master.classList.remove("validate-incomplete");
             master.classList.remove("validate-fail");
@@ -2924,13 +2939,15 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                     var puzzleGridWrapper = new PuzzleGridWrapper(this, validatorState);
                     if (!v.description) { v.description = puzzleValidators[v.key].getDescription(puzzleGridWrapper, v.param); }
                     puzzleValidators[v.key].validate(puzzleGridWrapper, v.param);
-                    v.marker.classList.remove("validate-pass");
-                    v.marker.classList.remove("validate-incomplete");
-                    v.marker.classList.remove("validate-fail");
-                    switch (validatorState.result) {
-                        case 1: v.marker.classList.add("validate-pass"); v.marker.title = "Pass: " + v.description; break;
-                        case 0: v.marker.classList.add("validate-incomplete"); v.marker.title = "Incomplete: " + v.description; break;
-                        case -1: v.marker.classList.add("validate-fail"); v.marker.title = "Fail: " + v.description; break;
+                    if (v.marker) {
+                        v.marker.classList.remove("validate-pass");
+                        v.marker.classList.remove("validate-incomplete");
+                        v.marker.classList.remove("validate-fail");
+                        switch (validatorState.result) {
+                            case 1: v.marker.classList.add("validate-pass"); v.marker.title = "Pass: " + v.description; break;
+                            case 0: v.marker.classList.add("validate-incomplete"); v.marker.title = "Incomplete: " + v.description; break;
+                            case -1: v.marker.classList.add("validate-fail"); v.marker.title = "Fail: " + v.description; break;
+                        }
                     }
                     fullResult = Math.min(validatorState.result, fullResult);
                 });

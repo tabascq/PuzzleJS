@@ -206,10 +206,52 @@
             </div>
         </div>
 
-        <div class="mode" data-name="pathpaint">
-            <p>The <code>pathpaint</code> mode allows dragging (or shift-arrowing) between cells to draw paths and propagate fills.</p>
+        <div class="mode" data-name="kenken">
+            <p>The <code>kenken</code> mode allows clues to be added to cells with or without operators. Characters are constrained to digits, which can be toggled on and off.</p>
             <div class="example">
-                <div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="white yellow red" data-fills="1...|..1.|.2..|...2"></div>
+                <div class="puzzle-entry" data-mode="kenken" data-text="3x3" data-text-characters="123" data-clue-indicators="1 8+  12x 1    1" data-edges="559|55c|63f" data-show-commands="true"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="nonogram">
+            <p>The <code>nonogram</code> mode sets up a nonogram (aka paint-by-numbers) grid.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="nonogram" data-text="10x10" data-left-clues="||||2|2||||" data-top-clues="||||2|2||||"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="nurikabe">
+            <p>The <code>nurikabe</code> mode sets up a nurikabe grid.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="nurikabe" data-text=" 3 |   | 3 " data-fills=".2.|...|.2." data-show-commands="true"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="hidato">
+            <p>The <code>hidato</code> mode sets up a hidato grid, where a path must be drawn from 1 to N covering the whole grid. Missing number can be placed if desired, but can be implied by the correct path.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="hidato" data-text="1 3| 9 |7 5" data-show-commands="true"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="pathpaint">
+            <p>The <code>pathpaint</code> mode allows dragging (or shift-arrowing) between cells to draw paths and propagate fills. Performs no validation.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="white yellow red" data-fills="1...|..1.|.2..|...2" data-show-commands="true"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="pathpaint-some">
+            <p>The <code>pathpaint-some</code> mode allows dragging (or shift-arrowing) between cells to draw paths and propagate fills. Validates that lines are drawn between matching numbers with the same fill, and the length of the path must match the number. Only some of the grid needs to be filled.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="pathpaint-some" data-text="    |    | 22 |4  4" data-fill-classes="white yellow red" data-fills="....|....|.11.|2..2" data-show-commands="true"></div>
+            </div>
+        </div>
+
+        <div class="mode" data-name="pathpaint-all">
+            <p>The <code>pathpaint-some</code> mode allows dragging (or shift-arrowing) between cells to draw paths and propagate fills. Validates that lines are drawn between items with the same fill. All of the grid needs to be filled.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="pathpaint-all" data-text="4x4" data-fill-classes="white yellow red" data-fills="....|....|.11.|2..2" data-show-commands="true"></div>
             </div>
         </div>
 
@@ -230,7 +272,7 @@
         <div class="mode" data-name="spokes">
             <p>The <code>spokes</code> mode allows dragging (or shift-arrowing) between cells to draw intersecting lines. The primary difference between spokes and paths are that spokes can emanate from any (or all) 8 directions from within any cell, allowing them to appear to intersect or cross existing spokes.</p>
             <div class="example">
-                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true">
+                <div class="puzzle-entry" data-text="3x3" data-drag-draw-spoke="true" data-show-commands="true">
     { "data-spokes": [
     "......'",
     ".*-*-*.",
@@ -241,6 +283,13 @@
     "'......"
     ] }
 </div>
+            </div>
+        </div>
+        
+        <div class="mode" data-name="wordsearch">
+            <p>The <code>wordsearch</code> mode simply allows spokes to be drawn to connect letters.</p>
+            <div class="example">
+                <div class="puzzle-entry" data-mode="wordsearch" data-text="FIND|DSNS|RWOO|OWEM"></div>
             </div>
         </div>
         

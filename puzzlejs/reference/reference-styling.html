@@ -109,12 +109,12 @@
         </div>
         <div class="example">
             <!-- Drag to connect the cells! -->
-<div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="white yellow red" data-fills="1...|..1.|.2..|...2"></div>
+<div class="puzzle-entry" data-mode="notext pathpaint-all" data-text="4x4" data-fill-classes="white yellow red" data-fills="1...|..1.|.2..|...2"></div>
         </div>
         <p><code>puzzle-basic-colors.css</code> also provides fill classes that support interior paths of many colors on a black background, via <code>white-laser</code>, <code>red-laser</code>, <code>orange-laser</code>, <code>yellow-laser</code>, <code>green-laser</code>, <code>blue-laser</code>, <code>indigo-laser</code>, and <code>violet-laser</code>.</p>
         <div class="example">
             <!-- Drag to connect the cells! -->
-<div class="puzzle-entry" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="black yellow-laser red-laser" data-fills="1...|..1.|.2..|...2"></div>
+<div class="puzzle-entry" data-mode="notext pathpaint-all" data-text="4x4" data-fill-classes="black yellow-laser red-laser" data-fills="1...|..1.|.2..|...2"></div>
         </div>
         
         <h2>Text properties: always forward-compatible</h2>
@@ -147,7 +147,7 @@
         <p>The fills that are specified in <code>data-fill-classes</code> can change more than just colors, and do not have to even change the background at all. In addition, <code>given-fill</code> can be used to give special marking to the cells with givens. Finally, the fill class can also be used to color paths or edges.</p>
         <div class="example">
             <!-- Drag to connect the fruit! -->
-<div class="puzzle-entry connect-a-fruit-example" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="none kiwi tangerine" data-fills="1...|..1.|.2..|...2"></div>
+<div class="puzzle-entry connect-a-fruit-example" data-mode="notext pathpaint-all" data-text="4x4" data-fill-classes="none kiwi tangerine" data-fills="1...|..1.|.2..|...2"></div>
         </div>
         <p>If the fill contains a special symbol provided by <code>::before</code> or <code>::after</code>, it can be centered with an absolute-positioning trick, as follows:</p>
         <div class="example">
@@ -156,7 +156,7 @@
         <p>The absolute-positioning trick can also be used to put such pseudoelements above path lines, along with a <code>z-index</code> change.</p>
         <div class="example">
             <!-- Drag to connect the fruit! -->
-<div class="puzzle-entry connect-a-fruit-2-example" data-mode="notext pathpaint" data-text="4x4" data-fill-classes="none kiwi tangerine" data-fills="1...|..1.|.2..|...2"></div>
+<div class="puzzle-entry connect-a-fruit-2-example" data-mode="notext pathpaint-all" data-text="4x4" data-fill-classes="none kiwi tangerine" data-fills="1...|..1.|.2..|...2"></div>
         </div>
         <p>If the special symbol includes emoji, you may need to slightly tweak the positioning to get it to center vertically, like the <code>45%</code> below.</p>
         <div class="example">
