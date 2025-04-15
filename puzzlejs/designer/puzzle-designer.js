@@ -404,7 +404,7 @@ function PuzzleDesigner() {
 
         var type = "text";
         var values = this.propertyValues[key];
-        if (values && values.length > 1 && key != "data-reset-prompt") {
+        if (values && values.length > 1 && key != "data-reset-prompt" && !values.some(v => { return v.includes(" "); })) {
             if (values.includes("true") || values.includes("false")) { type = "bool"; }
             else if (key == "data-link-position" || key == "data-extract-position" || key == "data-clue-position") { type = "multi-select"; }
             else if (key == "data-edge-style" || key == "data-path-style" || key == "data-spoke-style") { type = "select"; } // TODO - use datalist here if there's a good way to show all options instead of filtering
