@@ -1,6 +1,6 @@
 // Trivial validator just to illustrate how things work. See the validators folder for more realistic examples.
 
-puzzleValidators["edge-single-loop"] = {
+puzzleValidators["reference-set-all-outer-checks"] = {
     getDescription: function(puzzleGrid, param) { return(`Trivial validator for use in the PuzzleJS reference. Just sets all outer checks to ${param}.`); },
     validate: function(puzzleGrid, param) {
         var checkSide = function(sideName, param) {

@@ -251,7 +251,7 @@
         <p>This is an extremely simple validator that marks the outer clue checks to pass or fail. It should be in its own file named <code>reference-set-all-outer-checks.js</code>; the script tag here is just to fit it into the documentation.</p>
         <div class="example non-interactive">
             <script> <!-- ignore this tag -->
-puzzleValidators["edge-single-loop"] = {
+puzzleValidators["reference-set-all-outer-checks"] = {
     getDescription: function(puzzleGrid, param) { return(`Trivial validator for use in the PuzzleJS reference. Just sets all outer checks to ${param}.`); },
     validate: function(puzzleGrid, param) {
         var checkSide = function(sideName, param) {
