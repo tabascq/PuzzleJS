@@ -2895,7 +2895,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             if (!puzzleValidators[vKey]) {
                 var validatorjs = document.createElement('script');
                 validatorjs.setAttribute("type", "text/javascript");
-                validatorjs.setAttribute("src", parts[0].endsWith(".js") ? v : `${puzzleJsFolderPath}validators/${parts[0]}.js`);
+                validatorjs.setAttribute("src", parts[0].endsWith(".js") ? parts[0] : `${puzzleJsFolderPath}validators/${parts[0]}.js`);
                 puzzleValidators[vKey] = validatorjs;
                 document.head.appendChild(validatorjs);            
             }
