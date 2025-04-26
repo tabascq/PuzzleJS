@@ -2026,17 +2026,20 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         tr.appendChild(td);
     }
 
-    this.addOuterClue = function(tr, clues, clueIndex, colIndex, zone) {
+    this.addOuterClue = function(tr, clues, cluesIndex, clueIndex, colIndex, zone) {
         var td = document.createElement("td");
+        var id = `${zone}-${cluesIndex}-${clueIndex}`;
         if (this.screenreaderSupported) { td.role = "cell"; td.ariaColIndex = colIndex; }
+        td.id = id;
+        this.lookup[id] = td;
         td.classList.add("cell");
         td.classList.add("outer-cell");
-        if (clueIndex >= 0 && clueIndex < clues.length && clues[clueIndex]) {
-            if (this.screenreaderSupported) { td.ariaLabel = clues[clueIndex] + ": A clue in the " + zone + " clue area"; }
-            td.textContent = clues[clueIndex];
+        if (clueIndex >= 0 && clueIndex < clues[cluesIndex].length && clues[cluesIndex][clueIndex]) {
+            if (this.screenreaderSupported) { td.ariaLabel = clues[cluesIndex][clueIndex] + ": A clue in the " + zone + " clue area"; }
+            td.textContent = clues[cluesIndex][clueIndex];
             td.classList.add(zone + "-clue");
-            td.addEventListener("pointerdown", e => { if (e.ctrlKey) { e.target.classList.toggle("interesting"); e.preventDefault(); } else { e.target.classList.toggle("strikethrough"); e.preventDefault(); } });
-            td.addEventListener("contextmenu", e => { e.target.classList.toggle("strikethrough"); e.preventDefault(); });
+            td.addEventListener("pointerdown", e => { this.puzzleEntry.toggleClass(e.target, e.ctrlKey ? "interesting" : "strikethrough"); e.preventDefault(); });
+            td.addEventListener("contextmenu", e => { this.puzzleEntry.toggleClass(e.target, "strikethrough"); e.preventDefault(); });
         } else { td.classList.add("unselectable"); if (this.screenreaderSupported) { td.ariaLabel = "An empty clue in the " + zone + " area"; } }
 
         tr.appendChild(td);
@@ -2205,6 +2208,10 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                     case "class-interesting":
                         if (c.value) { elem.classList.add("interesting"); }
                         else { elem.classList.remove("interesting"); }
+                        break;
+                    case "class-strikethrough":
+                        if (c.value) { elem.classList.add("strikethrough"); }
+                        else { elem.classList.remove("strikethrough"); }
                         break;
                     case "class-toggled":
                         if (c.value) { elem.classList.add("toggled"); grid.toggleState[elem.id] = true; }
@@ -3187,7 +3194,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         ariaRow = 1;
 
         for (var i = 0; i < this.topClueDepth; i++) {
-            this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterClue(tr, topClues[j], i - this.topClueDepth + (topClues[j] ? topClues[j].length : 0), ariaCol, "top"); });
+            this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterClue(tr, topClues, j, i - this.topClueDepth + (topClues[j] ? topClues[j].length : 0), ariaCol, "top"); });
         }
         if (this.topClueDepth && this.outerClueChecks) { this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterCheck(tr, ariaCol, j, "top", "outer-check-height"); }, ["outer-check-height"]); }
     
@@ -3199,7 +3206,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             if (this.screenreaderSupported) { tr.role = "row"; tr.ariaRowIndex = ariaRow++; }
             var ariaCol = 1;
     
-            for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues[r], j - this.leftClueDepth + (leftClues[r] ? leftClues[r].length : 0), ariaCol++, "left"); }
+            for (var j = 0; j < this.leftClueDepth; j++) { this.addOuterClue(tr, leftClues, r, j - this.leftClueDepth + (leftClues[r] ? leftClues[r].length : 0), ariaCol++, "left"); }
             if (this.leftClueDepth && this.outerClueChecks) { this.addOuterCheck(tr, ariaCol++, r, "left", "outer-check-width"); }
     
             for (var c = 0; c < textLines[r].length; c++) {
@@ -3451,14 +3458,14 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             }
     
             if (this.rightClueDepth && this.outerClueChecks) { this.addOuterCheck(tr, ariaCol++, r, "right", "outer-check-width"); }
-            for (var j = 0; j < this.rightClueDepth; j++) { this.addOuterClue(tr, rightClues[r], j, ariaCol++, "right"); }
+            for (var j = 0; j < this.rightClueDepth; j++) { this.addOuterClue(tr, rightClues, r, j, ariaCol++, "right"); }
     
             table.appendChild(tr);
         }
     
         if (this.bottomClueDepth && this.outerClueChecks) { this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterCheck(tr, ariaCol, j, "bottom", "outer-check-height"); }, ["outer-check-height"]); }
         for (var i = 0; i < this.bottomClueDepth; i++) {
-            this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterClue(tr, bottomClues[j], i, ariaCol, "bottom"); });
+            this.buildOuterClueRow(table, ariaRow++, (tr, j, ariaCol) => { this.addOuterClue(tr, bottomClues, j, i, ariaCol, "bottom"); });
         }
     
         table.querySelectorAll(".cell.inner-cell").forEach(c => { this.updateLabel(c); });
