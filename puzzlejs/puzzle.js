@@ -216,6 +216,14 @@ puzzleModes["solution"] = {
     "data-no-input": true
 }
 
+const COPYJACK_DATA_ATTRIBUTES = [
+  'data-skip-inline-styles',
+  'data-skip-inline-borders',
+  'data-skip-table-breaks',
+  'data-copy-only-styles',
+  'data-copy-input-value',
+];
+
 // Parse string as raw JS objects. e.g. "false" -> false
 // (if ("false") is truthy in JS)
 function parseFalseStrings(s) {
@@ -354,6 +362,7 @@ function PuzzleEntry(p, index) {
             if (element.hasAttribute(key)) { options[key] = parseFalseStrings(element.getAttribute(key)); }
             if (jsonOptions[key] != undefined) { options[key] = jsonOptions[key];}
         }
+        COPYJACK_DATA_ATTRIBUTES.forEach(a => { this.options[a] = element.getAttribute(a) });
     }
 
     this.pointerIsDown = false;
@@ -2862,8 +2871,12 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         // Set class names.
         // Remove "transient" class names such as 'marked'.
         copyTd.className = inputTd.className.replace(/marked/g, '');
-        // Reset the font size to avoid row overflow.
-        copyTd.style.fontSize = '1em';
+        if (this.options['data-copy-only-styles']) {
+          copyTd.style = this.options['data-copy-only-styles'];
+        } else {
+          // Reset the font size to avoid row overflow.
+          copyTd.style.fontSize = '1em';
+        }
         // Copy any text inside the td. This includes text inside divs within the td.
         copyTd.innerHTML = inputTd.innerHTML;
         // If the td has a "value", overwrite the innertext.
@@ -3504,6 +3517,9 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             this.copyjackVersion.setAttribute("aria-hidden", true);
             this.copyjackVersion.classList.add('copy-only');
             this.copyjackVersion.style.userSelect = 'auto'; // Needed for Firefox compatibility.
+            for (const copyjackAttr of COPYJACK_DATA_ATTRIBUTES) {
+                this.copyjackVersion.setAttribute(copyjackAttr, this.options[copyjackAttr]);
+            }
             this.container.insertBefore(this.copyjackVersion, table);
             // Populate the copy-only table.
             for (const [i, tr] of Array.from(table.getElementsByTagName('tr')).entries()) {
