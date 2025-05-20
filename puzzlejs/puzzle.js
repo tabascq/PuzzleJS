@@ -2298,7 +2298,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
         this.fail = function() { validatorState.result = -1; cell.classList.remove("validate-pass"); cell.classList.add("validate-fail"); }
         this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { validatorState.result = Math.min(0, validatorState.result); } }
-        this.pass = function() { }
+        this.pass = function() { if (!cell.classList.contains("validate-fail")) { cell.classList.add("validate-pass"); } }
     }
 
     function OuterCheckWrapper(puzzleGrid, validatorState, outerCheck) {
