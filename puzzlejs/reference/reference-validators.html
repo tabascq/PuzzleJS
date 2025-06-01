@@ -38,6 +38,23 @@
             .item h3 {
                 margin-left: -2rem;
             }
+
+            .item > table {
+                border-collapse: collapse;
+            }
+
+            .item > table td {
+                border: 1px solid black;
+                font-family: monospace;
+                padding: 5px;
+            }
+
+            .item > table th {
+                border: 1px solid black;
+                font-family: monospace;
+                background-color: #eee;
+                padding: 5px;
+            }
         </style>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
@@ -47,6 +64,26 @@
                     ih.innerText = itemName;
                     ih.id = itemName;
                     item.insertBefore(ih, item.firstChild);
+
+                    let t = document.createElement("table");
+                    t.insertAdjacentHTML("afterbegin", "<tr><th>Mode</th><th>Validators</th></tr>");
+                    for (const [key, value] of Object.entries(puzzleModes)) {
+                        if (!value["data-validators"]) continue;
+                        if (!value["data-validators"].includes(itemName)) continue;
+
+                        let tr = document.createElement("tr");
+                        let keyTd = document.createElement("td");
+                        let keyA = document.createElement("a");
+                        let valueTd = document.createElement("td");
+                        keyA.href = "reference-options.html#" + key;
+                        keyA.innerText = key;
+                        keyTd.appendChild(keyA);
+                        valueTd.innerText = value["data-validators"];
+                        tr.appendChild(keyTd);
+                        tr.appendChild(valueTd);
+                        t.appendChild(tr);
+                    }
+                    item.insertBefore(t, ih.nextSibling);
                 });
             });
         </script>
