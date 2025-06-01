@@ -80,35 +80,35 @@
         <p>The format of the <a href="reference-options.html#data-validators"><code>data-validators</code></a> property is a space-delimited set of validator names; these can be built-in validators or custom validators. The <code>validators</code> folder contains the built-in validators; if the name of the validator ends in .js, it will be interpreted as a page-relative path for a custom validator whose name is the filename minus the extension.</p>
         <p>Some validators take an optional parameter, which can be specified after the validator name with a <code>|</code> separator.</p>
         <div class="example with-validation logic">
-            <div class="puzzle-entry" data-text="4x4" data-text-characters="1234" data-top-clues="1|2|3|4" data-outer-clue-checks="true" data-validators="text-unique-in-row text-unique-in-column reference-set-all-outer-checks.js|pass"></div>
+            <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-text-characters="1234" data-top-clues="1|2|3|4" data-outer-clue-checks="true" data-validators="text-unique-in-row text-unique-in-column reference-set-all-outer-checks.js|pass"></div>
         </div>
         <h2>Built-in Logic-based Validators</h2>
         <p style="color: red">Many more validators will be written.</p>
         <div class="item" data-name="text-unique-in-row">
             <p>Validates whether the text of any cell is repeated in its row, and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
             <div class="example with-validation logic">
-                <div class="puzzle-entry" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-row"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-row"></div>
             </div>
         </div>
 
         <div class="item" data-name="text-unique-in-column">
             <p>Validates whether the text of any cell is repeated in its column, and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
             <div class="example with-validation logic">
-                <div class="puzzle-entry" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-column"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-column"></div>
             </div>
         </div>
 
         <div class="item" data-name="text-unique-in-region">
             <p>Validates whether the text of any cell is repeated in its region (any shape bounded by edges), and highlights any duplicates. Uses <a href="reference-options.html#data-text-characters"><code>data-text-characters</code></a> for the list of values; if that property contains two or more copies of a value, they are considered to be distinct. In the example below, two 1&rsquo;s are permitted but not three.</p>
             <div class="example with-validation logic">
-                <div class="puzzle-entry" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-region"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-edges="2x2" data-text-characters="1123" data-validators="text-unique-in-region"></div>
             </div>
         </div>
 
         <div class="item" data-name="text-math-in-region">
             <p>Validates whether the values in a region (any shape bounded by edges) can be mathematically combined to match a value provided by a clue within the region. If the clue provides an operator (+, -, x, or /), that operator must be used; otherwise, any one of the four operators can be used.</p>
             <div class="example with-validation logic">
-                <div class="puzzle-entry" data-text="4x4" data-edges="2x1" data-text-characters="1234" data-text-avoid-position="top" data-clue-locations="all" data-clue-indicators="3+  1-  6x  4/  4  5  1  8" data-validators="text-math-in-region"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-edges="2x1" data-text-characters="1234" data-text-avoid-position="top" data-clue-locations="all" data-clue-indicators="3+  1-  6x  4/  4  5  1  8" data-validators="text-math-in-region"></div>
             </div>
         </div>
         
@@ -152,7 +152,7 @@
         <div class="item" data-name="path-connects-equal-fill">
             <p>Validates whether all paths connect cells with the same (non-default) fill. Only highlights errors if a path is not a chain, or if both ends of the chain are on cells with different (non-default) fills.</p>
             <div class="example with-validation logic">
-                <div class="puzzle-entry" data-show-commands="true" data-fill-classes="none red green blue yellow" data-fills="1001|2002|3003|4004" data-mode="notext" data-validators="path-connects-equal-fill" data-drag-draw-path="true"></div>
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-fill-classes="none red green blue yellow" data-fills="1001|2002|3003|4004" data-mode="notext" data-validators="path-connects-equal-fill" data-drag-draw-path="true"></div>
             </div>
         </div>
         
