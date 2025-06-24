@@ -146,6 +146,40 @@ function PuzzleBox(puzzleBox) {
         this.container.querySelector(".puzzle-box-rotate-direction a").innerText = this.flip ? "against" : "along";
     }
 
+    this.buildLinks = function() {
+        var up = this.perspective.querySelector(".side-up").puzzleGrid; up.origFaceLetter = "U";
+        var left = this.perspective.querySelector(".side-left").puzzleGrid; left.origFaceLetter= "L";
+        var front = this.perspective.querySelector(".side-front").puzzleGrid; front.origFaceLetter = "F";
+        var right = this.perspective.querySelector(".side-right").puzzleGrid; right.origFaceLetter= "R";
+        var back = this.perspective.querySelector(".side-back").puzzleGrid; back.origFaceLetter = "B";
+        var down = this.perspective.querySelector(".side-down").puzzleGrid; down.origFaceLetter = "D";
+    
+        this.linkSides(up, "left", left, "top");
+        this.linkSides(up, "bottom", front, "top");
+        this.linkSides(up, "right", right, "top");
+        this.linkSides(up, "top", back, "bottom");
+        this.linkSides(left, "right", front, "left");
+        this.linkSides(front, "right", right, "left");
+        this.linkSides(right, "right", back, "right");
+        this.linkSides(back, "left", left, "left");
+        this.linkSides(down, "top", front, "bottom");
+        this.linkSides(down, "right", right, "bottom");
+        this.linkSides(down, "bottom", back, "top");
+        this.linkSides(down, "left", left, "bottom");
+
+        var FtoB = up.numRows;
+        var LtoR = up.numCols;
+        var UtoD = left.numRows;
+        var max = Math.max(FtoB, LtoR, UtoD);
+        this.container.style.setProperty("--puzzle-grid-size-FtoB", FtoB);
+        this.container.style.setProperty("--puzzle-grid-size-LtoR", LtoR);
+        this.container.style.setProperty("--puzzle-grid-size-UtoD", UtoD);
+        this.container.style.setProperty("--puzzle-grid-size", max);
+    
+        this.faceLocations = { R: right, L: left, U: up, D: down, F: front, B: back };
+        this.cycles = { R: "UFDB", L: "UBDF", U: "BLFR", D: "FLBR", F: "ULDR", B: "DLUR"};
+    }
+
     this.container.ariaLabel = "a 3D puzzle that unfortunately will not work with a screenreader."
     this.puzzleContent.setAttribute("aria-hidden", true);
 
@@ -163,38 +197,12 @@ function PuzzleBox(puzzleBox) {
 
     this.updateFlipText();
     this.container.querySelector(".puzzle-box-rotate-direction a").addEventListener("click", e => { this.toggleFlipDirection(); });
-
-    var up = this.perspective.querySelector(".side-up").puzzleGrid; up.origFaceLetter = "U";
-    var left = this.perspective.querySelector(".side-left").puzzleGrid; left.origFaceLetter= "L";
-    var front = this.perspective.querySelector(".side-front").puzzleGrid; front.origFaceLetter = "F";
-    var right = this.perspective.querySelector(".side-right").puzzleGrid; right.origFaceLetter= "R";
-    var back = this.perspective.querySelector(".side-back").puzzleGrid; back.origFaceLetter = "B";
-    var down = this.perspective.querySelector(".side-down").puzzleGrid; down.origFaceLetter = "D";
-
-    this.linkSides(up, "left", left, "top");
-    this.linkSides(up, "bottom", front, "top");
-    this.linkSides(up, "right", right, "top");
-    this.linkSides(up, "top", back, "bottom");
-    this.linkSides(left, "right", front, "left");
-    this.linkSides(front, "right", right, "left");
-    this.linkSides(right, "right", back, "right");
-    this.linkSides(back, "left", left, "left");
-    this.linkSides(down, "top", front, "bottom");
-    this.linkSides(down, "right", right, "bottom");
-    this.linkSides(down, "bottom", back, "top");
-    this.linkSides(down, "left", left, "bottom");
     
-    var FtoB = up.numRows;
-    var LtoR = up.numCols;
-    var UtoD = left.numRows;
-    var max = Math.max(FtoB, LtoR, UtoD);
-    this.container.style.setProperty("--puzzle-grid-size-FtoB", FtoB);
-    this.container.style.setProperty("--puzzle-grid-size-LtoR", LtoR);
-    this.container.style.setProperty("--puzzle-grid-size-UtoD", UtoD);
-    this.container.style.setProperty("--puzzle-grid-size", max);
+    this.buildLinks();
 
-    this.faceLocations = { R: right, L: left, U: up, D: down, F: front, B: back };
-    this.cycles = { R: "UFDB", L: "UBDF", U: "BLFR", D: "FLBR", F: "ULDR", B: "DLUR"};
+    this.container.addEventListener("puzzlerebuild", e => {
+        this.buildLinks();
+    });
 
     this.container.addEventListener("puzzlegridnavigate", e => {
         let navData = e.detail;

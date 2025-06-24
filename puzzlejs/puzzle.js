@@ -1651,6 +1651,7 @@ function PuzzleEntry(p, index) {
     this.rebuildContents = function() {
         if (this.commands) { this.commands.remove(); this.commands = null; }
         this.buildContents(true);
+        this.container.dispatchEvent(new CustomEvent("puzzlerebuild", { bubbles: true }));
     }
 
     this.buildContents = function(rebuild) {
