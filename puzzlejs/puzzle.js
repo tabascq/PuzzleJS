@@ -1087,7 +1087,7 @@ function PuzzleEntry(p, index) {
             var centerOffsetX = e.clientX - cellClientRect.x - e.currentTarget.offsetWidth/2;
             var centerOffsetY = e.clientY - cellClientRect.y - e.currentTarget.offsetHeight/2;
     
-            dragBetweenCells = ((centerOffsetX * centerOffsetX + centerOffsetY * centerOffsetY) * 4 < e.currentTarget.offsetWidth * e.currentTarget.offsetHeight);
+            dragBetweenCells = ((centerOffsetX * centerOffsetX + centerOffsetY * centerOffsetY) * 4 < e.currentTarget.offsetWidth * e.currentTarget.offsetHeight * 0.8);
         } else {
             dragBetweenCells = this.precisionHitTestSubregion(e.currentTarget, e.clientX, e.clientY, "top: 0; left: 0; width: 100%; height: 100%; border-radius: 100%")
         }
@@ -1307,7 +1307,7 @@ function PuzzleEntry(p, index) {
         var fromGrid = this.puzzleGridFromCell(cellFrom);
         var toGrid = this.puzzleGridFromCell(cellTo);
 
-        if (!(codeFrom & directionFrom) && !(codeTo & directionTo) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
+        if ((!(codeFrom & directionFrom) || !(codeTo & directionTo)) && (attributeNameBase.startsWith("x-") || (!this.IsFullyLinked(codeFrom, maxLinks) && !this.IsFullyLinked(codeTo, maxLinks)))) {
             var otherAttributeName = (attributeNameBase.startsWith("x-") ? attributeName.replace(attributeNameBase, attributeNameBase.substring(2)) : attributeName.replace(attributeNameBase, "x-" + attributeNameBase));
             if ((otherAttributeName === "data-spoke-code") && (currentSpokeLevel > 1)) {
                 otherAttributeName = otherAttributeName.replace("spoke", "spoke-" + currentSpokeLevel.toString());
@@ -2013,7 +2013,6 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     this.tilt = 0;
     this.stateDirty = false;
     this.inhibitSave = false;
-    this.tabstopGrid = null;
     this.doGrid = doGrid;
     this.isRootGrid = isRootGrid;
     this.jsonOptions = this.puzzleEntry.extractJsonOptions(this.container);
@@ -3154,6 +3153,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         var acrossClueIndex = 0;
         var downClues = puzzleEntry.container.querySelectorAll(".crossword-clues.down li");
         var downClueIndex = 0;
+
+        this.tabstopGrid = null;
     
         if (!textLines) { textLines = solution; }
     
