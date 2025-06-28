@@ -2326,6 +2326,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             failCellEdge(row, col - 1, 1);
             failCellEdge(row - 1, col, 4);
         }
+        this.row = function() { return row; }
+        this.column = function() { return col; }
         this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { validatorState.result = Math.min(0, validatorState.result); } }
         this.pass = function() { }
     }
@@ -2764,9 +2766,13 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
         if (this.options["data-clue-locations"] == "crossword") {
             const acrossNumber = td.getAttribute("data-across-cluenumber");
-            if (acrossNumber) { label += `Cell is part of ${acrossNumber} Across. `}
+            const acrossClue = acrossNumber ? this.container.querySelector(`li[data-across-cluenumber='${acrossNumber}']`) : null;
+            const acrossClueText = acrossClue ? `, with clue ${acrossClue.innerText}` : "";
+            if (acrossNumber) { label += `Cell is part of ${acrossNumber} Across${acrossClueText}. `}
             const downNumber = td.getAttribute("data-down-cluenumber");
-            if (downNumber) { label += `Cell is part of ${downNumber} Down. `}
+            const downClue = downNumber ? this.container.querySelector(`li[data-down-cluenumber='${downNumber}']`) : null;
+            const downClueText = downClue ? `, with clue ${downClue.innerText}` : "";
+            if (downNumber) { label += `Cell is part of ${downNumber} Down${downClueText}. `}
         }
 
         // link
@@ -3544,9 +3550,17 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     }
 
     if (this.isRootGrid) {
-        this.wireToggleInteractivity = function(toggleItem, id) {
+        this.wireToggleInteractivity = function(toggleItem, id, tabIndex) {
             toggleItem.id = id;
             toggleItem.addEventListener("pointerdown", e => { this.puzzleEntry.toggleClass(e.target, "toggled"); });
+            toggleItem.addEventListener("keydown", e => {
+                if (e.key === " ") { this.puzzleEntry.toggleClass(e.target, "toggled"); e.preventDefault(); }
+                if (tabIndex !== undefined) {
+                    if (e.key === "ArrowLeft" || e.key === "ArrowUp") { var next = e.target.previousElementSibling; if (next) { next.focus(); e.preventDefault(); } }
+                    if (e.key === "ArrowRight" || e.key === "ArrowDown") { var next = e.target.nextElementSibling; if (next) { next.focus(); e.preventDefault(); } }
+                }
+            });
+            if (tabIndex !== undefined) { toggleItem.tabIndex = tabIndex; }
         }
     
         this.container.querySelectorAll(".puzzle-toggle-item").forEach((ti, index) => {
@@ -3558,7 +3572,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             for (var i = 0; i < tl.children.length; i++) {
                 var ti = tl.children[i];
                 ti.classList.add("puzzle-toggle-item");
-                this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? (tlBase + "-" + i));
+                this.wireToggleInteractivity(ti, ti.getAttribute("data-toggle-id") ?? (tlBase + "-" + i), (i == 0) ? 0 : -1);
             }
         });
 

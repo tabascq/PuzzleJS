@@ -575,6 +575,6 @@
 
 @media print {
     .puzzle-commands {
-        display: none;
+        display: none !important;
     }
 }
