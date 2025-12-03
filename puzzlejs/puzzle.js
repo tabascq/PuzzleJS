@@ -1911,6 +1911,18 @@ function PuzzleDotZone(container, puzzleGrid, index) {
         list.style.justifyItems = (x === 0) ? "end" : "begin";
     }
 
+    this.getDotHash = async function(secondary) {
+        var keys = [];
+        for (const[key, value] of Object.entries(this.lineData)) {
+            if (!value) continue;
+            keys.push(key);
+        }
+        keys.sort();
+        var data = keys.join(",");
+
+        return await this.puzzleGrid.getSHA256Hash(data, secondary);
+    }
+
     this.changeWithoutUndo = function(changes) {
         changes.forEach(c => {
             if (c.value && c.value != "false") { this.lineData[c.propertyKey] = c.value; } else { delete this.lineData[c.propertyKey]; }
@@ -1918,6 +1930,8 @@ function PuzzleDotZone(container, puzzleGrid, index) {
 
         if (!this.inhibitSave) { localStorage.setItem(this.puzzleId, JSON.stringify(this.lineData)); }
         this.rebuildLinesFromData();
+
+        this.puzzleGrid.validate();
     }
 
     this.prepareToReset = function() {
@@ -2000,6 +2014,8 @@ function PuzzleDotZone(container, puzzleGrid, index) {
             try { this.lineData = JSON.parse(savedState); this.rebuildLinesFromData(); }
             catch {}
         }
+
+        this.puzzleGrid.validate();
     }
 
     this.dotZone = this.container.querySelector(".puzzle-dot-list-center") ?? this.container;
@@ -2909,6 +2925,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     this.loadValidators = function() {
         this.hasLogicValidation = this.options["data-validators"];
         this.hasHashValidation = this.options["data-text-hashes"] || this.options["data-fill-hashes"] || this.options["data-edge-hashes"] || this.options["data-path-hashes"] || this.options["data-spoke-hashes"];
+        this.dotZones.forEach(dz => { if (dz.container.getAttribute("data-dot-hashes")) this.hasHashValidation = true; });
 
         var rawValidators = this.puzzleEntry.getOptionArray(this.options, "data-validators", " ");
         if (!rawValidators)  { this.validators = null; return; }
@@ -3005,6 +3022,13 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         if (this.options["data-spoke-hashes"]) {
             var currentHash = await this.getSpokeHash();
             if (this.options["data-spoke-hashes"].split(" ").includes(currentHash)) { this.validationState = 1; }
+        }
+
+        for (const dz of this.dotZones) {
+            if (dz.container.getAttribute("data-dot-hashes")) {
+                var currentHash = await dz.getDotHash();
+                if (dz.container.getAttribute("data-dot-hashes").split(" ").includes(currentHash)) { this.validationState = 1; }
+            }
         }
 
         if (this.validationState != oldValidationState) {
