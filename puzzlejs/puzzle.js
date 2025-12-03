@@ -1626,7 +1626,12 @@ function PuzzleEntry(p, index) {
                 this.container.classList.add("validated");
                 master.classList.add("validate-pass");
                 master.title = "Validation: pass";
-            } else { this.container.classList.remove("validated"); master.classList.add(validationState ? "validate-fail" : "validate-incomplete"); master.title = validationState ? "Validation: fail" : "Validation: incomplete"; }
+            } else {
+                if (this.container.classList.contains("validated")) { this.container.dispatchEvent(new CustomEvent("puzzleinvalidated", { bubbles: true })); }
+                this.container.classList.remove("validated");
+                master.classList.add(validationState ? "validate-fail" : "validate-incomplete");
+                master.title = validationState ? "Validation: fail" : "Validation: incomplete";
+            }
         }
     }
 
@@ -3041,7 +3046,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     }
 
     this.getSHA256Hash = async function(input, secondary) {
-        if (secondary) { input = input.reverse(); }
+        if (secondary) { input = input.split('').reverse().join(''); }
 
         const textAsBuffer = new TextEncoder().encode(this.options["data-hash-salt"] + input);
         const hashBuffer = await window.crypto.subtle.digest("SHA-256", textAsBuffer);
