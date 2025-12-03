@@ -2654,9 +2654,10 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.getSpokeHash = function(secondary) { return puzzleGrid.getSpokeHash(secondary); }
     }
 
-    this.addEdgeToSvg = function(svg, edgeName, validateFail) {
+    this.addEdgeToSvg = function(svg, edgeName, given, validateFail) {
         var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
         use.classList.add(edgeName);
+        if (given) { use.classList.add("given"); }
         if (validateFail) { use.classList.add("validate-fail"); }
         var edgePath = this.options["data-edge-style"];
         if (!edgePath.endsWith(".svg")) { edgePath = puzzleJsFolderPath + "edge-" + edgePath + ".svg"; }
@@ -2664,12 +2665,13 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         svg.appendChild(use);
     }
 
-    this.addSpokesToSvg = function(svg, spokeCode, spokePrefix, spokeSuffix) {
+    this.addSpokesToSvg = function(svg, spokeCode, givenSpokeCode, spokePrefix, spokeSuffix) {
         for (var i = 0; i < 8; i++) {
             if (!(spokeCode & (1 << i))) continue;
 
             var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
             use.classList.add(spokePrefix + "spoke" + spokeSuffix);
+            if (givenSpokeCode & (1 << i)) { use.classList.add("given"); };
             var spokePath = this.options["data-spoke-style"];
             if (!spokePath.endsWith(".svg")) { spokePath = puzzleJsFolderPath + "spoke-" + spokePath + ".svg"; }
             use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", spokePath + "#" + spokePrefix + "spoke-n" + ((i & 1) ? "e" : "") + spokeSuffix);
@@ -2718,11 +2720,12 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         if (!td.classList.contains("unselectable")) { this.addEdgeToSvg(svg, "edge-base"); }
 
         var edgeCode = td.getAttribute("data-edge-code");
+        var edgeCodeGiven = td.getAttribute("data-given-edge-code");
         var edgeCodeFail = td.getAttribute("data-edge-validate-fail-code");
-        if (edgeCode & 1) { this.addEdgeToSvg(svg, "edge-top", (edgeCodeFail & 1)); }
-        if (edgeCode & 2) { this.addEdgeToSvg(svg, "edge-bottom", (edgeCodeFail & 2)); }
-        if (edgeCode & 4) { this.addEdgeToSvg(svg, "edge-left", (edgeCodeFail & 4)); }
-        if (edgeCode & 8) { this.addEdgeToSvg(svg, "edge-right", (edgeCodeFail & 8)); }
+        if (edgeCode & 1) { this.addEdgeToSvg(svg, "edge-top", (edgeCodeGiven & 1), (edgeCodeFail & 1)); }
+        if (edgeCode & 2) { this.addEdgeToSvg(svg, "edge-bottom", (edgeCodeGiven & 2), (edgeCodeFail & 2)); }
+        if (edgeCode & 4) { this.addEdgeToSvg(svg, "edge-left", (edgeCodeGiven & 4), (edgeCodeFail & 4)); }
+        if (edgeCode & 8) { this.addEdgeToSvg(svg, "edge-right", (edgeCodeGiven & 8), (edgeCodeFail & 8)); }
 
         edgeCode = td.getAttribute("data-x-edge-code");
         if (edgeCode & 1) { this.addEdgeToSvg(svg, "x-edge-top"); }
@@ -2730,11 +2733,11 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         if (edgeCode & 4) { this.addEdgeToSvg(svg, "x-edge-left"); }
         if (edgeCode & 8) { this.addEdgeToSvg(svg, "x-edge-right"); }
 
-        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), "", "");
-        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), "x-", "");
+        this.addSpokesToSvg(svg, td.getAttribute("data-spoke-code"), td.getAttribute("data-given-spoke-code"), "", "");
+        this.addSpokesToSvg(svg, td.getAttribute("data-x-spoke-code"), 0, "x-", "");
         var maxSpokeLevels = parseInt(this.options["data-spoke-levels"]) + 1;
         for (var l = 2; l < maxSpokeLevels; l++) {
-            this.addSpokesToSvg(svg, td.getAttribute("data-spoke-" + l.toString() + "-code"), "", "-" + l.toString());
+            this.addSpokesToSvg(svg, td.getAttribute("data-spoke-" + l.toString() + "-code"), td.getAttribute("data-given-spoke-" + l.toString() + "-code"), "", "-" + l.toString());
         }
         if (this.canDrawSpokes && td === this.puzzleEntry.currentCenterFocus) {
             this.addReticleLayer(svg, "reticle-back");
