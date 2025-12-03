@@ -225,6 +225,14 @@
     stroke: #ff0000;
 }
 
+.puzzle-entry .validate-fail .path {
+    stroke: #ff0000;
+}
+
+.puzzle-entry .validate-fail .spoke {
+    stroke: #ff0000;
+}
+
 .puzzle-entry .validation-marker {
     cursor: pointer;
 }
