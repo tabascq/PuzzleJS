@@ -1521,12 +1521,10 @@ function PuzzleEntry(p, index) {
         var oldCenter = this.currentCenterFocus;
 
         this.currentCenterFocus = center;
-        this.currentCenterFocus.focus();
+        if (center) this.currentCenterFocus.focus();
 
-        if (this.activeGrid.canDrawSpokes) {
-            if (oldCenter) this.updateSvg(oldCenter);
-            if (center) this.updateSvg(center);
-        }
+        if (oldCenter && this.puzzleGridFromCell(oldCenter).canDrawSpokes) { this.updateSvg(oldCenter); }
+        if (center && this.puzzleGridFromCell(center).canDrawSpokes) { this.updateSvg(center); }
     }
 
     this.closeAbout = function() {
