@@ -2266,6 +2266,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
     function CellWrapper(puzzleGrid, validatorState, cell) {
         this.id = function() { return cell.id; }
+        this.row = function() { return parseInt(cell.id.split("-")[1]); }
+        this.column = function() { return parseInt(cell.id.split("-")[2]); }
         this.text = function() { return cell.querySelector(".text").innerText.trim(); }
         this.hasCandidates = function() { return cell.classList.contains("small-text") && puzzleGrid.options["data-text-shift-key"] == "candidates"; }
         this.clueLabel = function() { var label = cell.querySelector(".clue-label"); return label ? label.innerText.trim() : ""; }
