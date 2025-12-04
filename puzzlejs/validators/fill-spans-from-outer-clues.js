@@ -38,13 +38,12 @@ puzzleValidators["fill-spans-from-outer-clues"] = {
         }
 
         var checkSide = function(sideName, targetFillIndex) {
-            var result = 1;
             if (puzzleGrid.getOption(`data-${sideName}-clues`)) {
                 var clues = puzzleGrid.getOption(`data-${sideName}-clues`).split("|");
                 var lines = (sideName == "top" || sideName == "bottom") ? puzzleGrid.getColumns() : puzzleGrid.getRows();
                 var checks = puzzleGrid.getOuterChecks(sideName);
                 for (var i = 0; i < lines.length; i++) {
-                    checkLine(targetFillIndex, checks ? checks[i] : null, lines[i], clues[i]);
+                    checkLine(targetFillIndex, checks[i], lines[i], clues[i]);
                 }
             }
         }

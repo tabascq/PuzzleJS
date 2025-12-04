@@ -149,6 +149,20 @@
             </div>
         </div>
         
+        <div class="item" data-name="edge-count-in-text">
+            <p>Validates whether each cell with numeric text has an edge count that matches the cell.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="....|.01.|.23.|...." data-mode="notext" data-edge-style="dots" data-validators="edge-count-in-text" data-drag-draw-edge="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="edge-single-loop">
+            <p>Validates whether there is a single edge group that is a loop, not a chain or a web.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-edge-style="dots" data-validators="edge-single-loop" data-drag-draw-edge="true"></div>
+            </div>
+        </div>
+        
         <div class="item" data-name="fill-group-size-in-text">
             <p>Validates whether a contiguously-connected group of cells, all with the same fill, has the size of its group in a single text field. Highlights errors if the size is too large, and only reports success if there are no unresolved neighbors.</p>
             <ul>
@@ -205,12 +219,29 @@
             <div class="example with-validation logic">
                 <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-connects-size" data-drag-draw-path="true"></div>
             </div>
-        </div>
+        </div>        
         
+        <div class="item" data-name="path-count-from-outer-clues">
+            <p>Validates whether outer clues match the number of cells with paths.</p>
+            <ul>
+                <li><code>param</code>: Which fill index (within <a href="reference-options.html#data-fill-classes"><code>data-fill-classes</code></a>) to count as a marker denoting a path will eventually go here.</li>
+            </ul>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="path-count-from-outer-clues" data-left-clues="2|4|4|2" data-top-clues="2|4|4|2" data-outer-clue-checks="true" data-drag-draw-path="true"></div>
+            </div>
+        </div>
+
         <div class="item" data-name="path-interior-no-text">
             <p>Validates whether all paths avoid any interior text other than at their endpoints.</p>
             <div class="example with-validation logic">
                 <div class="puzzle-entry" data-show-commands="true" data-text="1..1|2..2|3..3|4..4" data-mode="notext" data-validators="path-interior-no-text" data-drag-draw-path="true"></div>
+            </div>
+        </div>
+        
+        <div class="item" data-name="path-single-chain">
+            <p>Validates whether there is a single path group that is a chain, not a loop or a web.</p>
+            <div class="example with-validation logic">
+                <div class="puzzle-entry" data-show-commands="true" data-text="4x4" data-mode="notext" data-validators="path-single-chain" data-drag-draw-path="true"></div>
             </div>
         </div>
         

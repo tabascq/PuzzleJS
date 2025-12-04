@@ -179,8 +179,9 @@ puzzleModes["pathpaint-all"] = {
 puzzleModes["trains"] = {
     "data-path-style": "track",
     "data-drag-paint-fill": false,
-    "data-fill-cycle": false,
-    "data-drag-draw-path": true
+    "data-drag-draw-path": true,
+    "data-outer-clue-checks": true,
+    "data-validators": "path-single-chain path-count-from-outer-clues"
 }
 
 puzzleModes["slitherlink"] = {
@@ -2272,9 +2273,9 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.hasCandidates = function() { return cell.classList.contains("small-text") && puzzleGrid.options["data-text-shift-key"] == "candidates"; }
         this.clueLabel = function() { var label = cell.querySelector(".clue-label"); return label ? label.innerText.trim() : ""; }
         this.fillClass = function() { return puzzleGrid.puzzleEntry.findClassInList(cell, puzzleGrid.fillClasses); }
-        this.fillIndex = function() { return puzzleGrid.fillClasses.indexOf(this.fillClass()); }
+        this.fillIndex = function() { return puzzleGrid.fillClasses ? puzzleGrid.fillClasses.indexOf(this.fillClass()) : 0; }
         this.extraStyleClass = function() { return puzzleGrid.puzzleEntry.findClassInList(cell, puzzleGrid.extraStyleClasses); }
-        this.extraStyleIndex = function() { return puzzleGrid.extraStyleClasses.indexOf(this.extraStyleClass()); }
+        this.extraStyleIndex = function() { return puzzleGrid.extraStyleClasses ? puzzleGrid.extraStyleClasses.indexOf(this.extraStyleClass()) : 0; }
         this.edgeDirections = function() {
             var result = [];
             var parts = cell.id.split("-");
@@ -2323,9 +2324,9 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     }
 
     function OuterCheckWrapper(puzzleGrid, validatorState, outerCheck) {
-        this.fail = function() { validatorState.result = -1; outerCheck.classList.remove("validate-pass"); outerCheck.classList.add("validate-fail"); }
-        this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { outerCheck.classList.remove("validate-pass"); validatorState.result = Math.min(0, validatorState.result); } }
-        this.pass = function() { outerCheck.classList.add("validate-pass"); }
+        this.fail = function() { validatorState.result = -1; if (outerCheck) { outerCheck.classList.remove("validate-pass"); outerCheck.classList.add("validate-fail"); } }
+        this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { if (outerCheck) { outerCheck.classList.remove("validate-pass"); } validatorState.result = Math.min(0, validatorState.result); } }
+        this.pass = function() { if (outerCheck) { outerCheck.classList.add("validate-pass"); } }
     }
 
     // TODO: Finish
@@ -2443,9 +2444,18 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
 
         this.getPathGroups = function() {
-            var linksFromCode = function(pathCode) {
+            var linksFromCode = function(puzzleGrid, pathCode, findingChain, row, col) {
                 var numLinks = 0;
                 pathCode = pathCode ? parseInt(pathCode) : 0;
+
+                if (findingChain) {
+                    // remove path segments that head off the grid from link count - keeps a spanning chain from being read as a loop
+                    if (row == 0) { pathCode &= ~1; }
+                    if (row == puzzleGrid.numRows - 1) { pathCode &= ~2; }
+                    if (col == 0) { pathCode &= ~4; }
+                    if (col == puzzleGrid.numCols - 1) { pathCode &= ~8; }
+                }
+
                 while (pathCode) { numLinks++; pathCode &= (pathCode - 1); }
                 return numLinks;
             }
@@ -2471,7 +2481,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                     for (var col = 0; col < puzzleGrid.numCols; col++) {
                         var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
                         if (!cell) continue;
-                        var links = linksFromCode(cell.getAttribute("data-path-code"));
+                        var links = linksFromCode(puzzleGrid, cell.getAttribute("data-path-code"), leastLinks == 1, row, col);
                         if (links < leastLinks || links > mostLinks) continue;
                         var path = { type: groupType, cells: [] };
                         floodAndCollectPathGroup(puzzleGrid, row, col, path);
@@ -2568,9 +2578,18 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
 
         this.getSpokeGroups = function() {
-            var linksFromCode = function(spokeCode) {
+            var linksFromCode = function(puzzleGrid, spokeCode, findingChain, row, col) {
                 var numLinks = 0;
                 spokeCode = spokeCode ? parseInt(spokeCode) : 0;
+
+                if (findingChain) {
+                    // remove spokes that head off the grid from link count - keeps a spanning chain from being read as a loop
+                    if (row == 0) { spokeCode &= ~131; }
+                    if (row == puzzleGrid.numRows - 1) { spokeCode &= ~56; }
+                    if (col == 0) { spokeCode &= ~224; }
+                    if (col == puzzleGrid.numCols - 1) { spokeCode &= ~14; }
+                }
+
                 while (spokeCode) { numLinks++; spokeCode &= (spokeCode - 1); }
                 return numLinks;
             }
@@ -2601,7 +2620,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                         var cell = puzzleGrid.lookup[`cell-${row}-${col}`];
                         if (!cell) continue;
                         var spokeCodeName = (level == 1) ? "data-spoke-code" : `data-spoke-${level}-code`;
-                        var links = linksFromCode(cell.getAttribute(spokeCodeName));
+                        var links = linksFromCode(puzzleGrid, cell.getAttribute(spokeCodeName), leastLinks == 1, row, col);
                         if (links < leastLinks || links > mostLinks) continue;
                         var spokeGroup = { level: level, type: groupType, cells: [] };
                         floodAndCollectSpokeGroup(puzzleGrid, spokeCodeName, row, col, spokeGroup);
@@ -2637,7 +2656,6 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
             for (var i = 0; i < ((side == "left" || side == "right") ? puzzleGrid.numRows : puzzleGrid.numCols); i++) {
                 var outerCheck = puzzleGrid.lookup[`check-${side}-${i}`];
-                if (!outerCheck) return null;
                 result.push(new OuterCheckWrapper(puzzleGrid, validatorState, outerCheck));
             }
 
