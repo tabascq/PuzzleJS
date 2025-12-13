@@ -2038,6 +2038,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
     this.isRootGrid = isRootGrid;
     this.jsonOptions = this.puzzleEntry.extractJsonOptions(this.container);
     this.dotZones = [];
+    this.validatorDataCache = {};
+    this.ephemeralDictionary = {};
 
     this.parseOuterClues = function(clues) {
         var clueDepth = 0;
@@ -2140,6 +2142,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
         changedGrids.forEach(g => { g.stateDirty = true; g.saveState(); });
         this.dotZones.forEach(dz => { dz.prepareToReset(); });
+        this.validatorDataCache = {};
+        this.ephemeralDictionary = {};
     }
 
     this.saveState = function() {
@@ -2318,6 +2322,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             }
             return result;
         }
+        this.setEphemeralClass = function(className) { puzzleGrid.setEphemeralClass(cell, className); }
         this.fail = function() { validatorState.result = -1; cell.classList.remove("validate-pass"); cell.classList.add("validate-fail"); }
         this.incomplete = function() { if (validatorState.strict) { this.fail(); } else { validatorState.result = Math.min(0, validatorState.result); } }
         this.pass = function() { if (!cell.classList.contains("validate-fail")) { cell.classList.add("validate-pass"); } }
@@ -2354,7 +2359,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.pass = function() { }
     }
 
-    function PuzzleGridWrapper(puzzleGrid, validatorState) {
+    function PuzzleGridWrapper(puzzleGrid, validatorState, dataCache) {
         this.getColumns = function() {
             var result = [];
             for (var c = 0; c < puzzleGrid.numCols; c++) {
@@ -2371,6 +2376,14 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
                 var row = [];
                 for (var c = 0; c < puzzleGrid.numCols; c++) { row.push(new CellWrapper(puzzleGrid, validatorState, puzzleGrid.lookup[`cell-${r}-${c}`])); }
                 result.push(row);
+            }
+            return result;
+        }
+
+        this.getCells = function() {
+            var result = [];
+            for (var r = 0; r < puzzleGrid.numRows; r++) {
+                for (var c = 0; c < puzzleGrid.numCols; c++) { result.push(new CellWrapper(puzzleGrid, validatorState, puzzleGrid.lookup[`cell-${r}-${c}`])); }
             }
             return result;
         }
@@ -2672,6 +2685,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.getEdgeHash = function(secondary) { return puzzleGrid.getEdgeHash(secondary); }
         this.getPathHash = function(secondary) { return puzzleGrid.getPathHash(secondary); }
         this.getSpokeHash = function(secondary) { return puzzleGrid.getSpokeHash(secondary); }
+
+        this.getCache = function() { return dataCache; }
     }
 
     this.addEdgeToSvg = function(svg, edgeName, given, validateFail) {
@@ -2948,6 +2963,12 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         }
     }
 
+    this.setEphemeralClass = function(cell, className) {
+        if (!this.ephemeralDictionary[cell.id]) { this.ephemeralDictionary[cell.id] = [className]; }
+        else if (!this.ephemeralDictionary[cell.id].includes(className)) { this.ephemeralDictionary[cell.id].push(className); }        
+        cell.classList.add(className);
+    }
+
     this.loadValidators = function() {
         this.hasLogicValidation = this.options["data-validators"];
         this.hasHashValidation = this.options["data-text-hashes"] || this.options["data-fill-hashes"] || this.options["data-edge-hashes"] || this.options["data-path-hashes"] || this.options["data-spoke-hashes"];
@@ -2978,13 +2999,16 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         this.container.querySelectorAll(".validate-pass").forEach(c => { c.classList.remove("validate-pass"); });
         this.container.querySelectorAll(".inner-cell").forEach(c => { c.removeAttribute("data-edge-validate-fail-code"); });
         var validatorState = { result: 1, strict: true };
-        var puzzleGridWrapper = new PuzzleGridWrapper(this, validatorState);
+        if (!this.validatorDataCache[validator.key]) { this.validatorDataCache[validator.key] = {}; }
+        var puzzleGridWrapper = new PuzzleGridWrapper(this, validatorState, this.validatorDataCache[validator.key]);
         puzzleValidators[validator.key].validate(puzzleGridWrapper, validator.param);
     }
 
     this.validate = async function() {
         var oldValidationState = this.validationState;
+        var oldEphemeralDictionary = this.ephemeralDictionary;
         this.validationState = 0;
+        this.ephemeralDictionary = {};
 
         if (this.validators) {
             this.container.querySelectorAll(".validate-fail").forEach(c => { c.classList.remove("validate-fail"); });
@@ -3005,7 +3029,8 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
             if (fullResult == 1) {
                 this.validators.forEach(v => {
                     var validatorState = { result: 1, strict: false };
-                    var puzzleGridWrapper = new PuzzleGridWrapper(this, validatorState);
+                    if (!this.validatorDataCache[v.key]) { this.validatorDataCache[v.key] = {}; }
+                    var puzzleGridWrapper = new PuzzleGridWrapper(this, validatorState, this.validatorDataCache[v.key]);
                     if (!v.description) { v.description = puzzleValidators[v.key].getDescription(puzzleGridWrapper, v.param); }
                     puzzleValidators[v.key].validate(puzzleGridWrapper, v.param);
                     if (v.marker) {
@@ -3063,6 +3088,13 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
         if (this.puzzleEntry.selectedValidator && this.puzzleEntry.selectedValidator.puzzleGrid == this) {
             this.validateStrict(this.puzzleEntry.selectedValidator);
+        }
+
+        for (const [key, value] of Object.entries(oldEphemeralDictionary)) {
+            var newValue = this.ephemeralDictionary[key];
+            var cell = this.lookup[key];
+            if (!newValue) newValue = [];
+            for (const className of value) { if (!newValue.includes(className)) cell.classList.remove(className); }
         }
     }
 

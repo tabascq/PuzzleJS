@@ -358,6 +358,9 @@ puzzleValidators["reference-set-all-outer-checks"] = {
         <div class="item" data-name="getColumns">
             <p>Gets all cells in the grid, grouped into columns.</p>
         </div>
+        <div class="item" data-name="getCells">
+            <p>Gets all cells in the grid.</p>
+        </div>
         <div class="item" data-name="getFillGroups">
             <p>Gets all connected groups of cells with the same fill.</p>
             <p>A fill group has the following properties:</p>
@@ -436,6 +439,9 @@ puzzleValidators["reference-set-all-outer-checks"] = {
                 <li><code>secondary</code>: if false, uses the same hashing scheme that <a href="reference-options.html#data-spoke-hashes"><code>data-spoke-hashes</code></a> would use. If true, uses a different hashing scheme to produce a value not seen elsewhere in markup, and thus good for use in filenames on the server that can be accessed as a reward.</li>
             </ul>
         </div>
+        <div class="item" data-name="getCache">
+            <p>Gets a cache object that can be used to store data between validations. The cache object begins as an empty object, and any data added to it will still be present the next time the validator is called. If the puzzle is reset, the cache will be cleared. The cache is only meant to be used as a performance enhancement; it is not saved to local storage.</p>
+        </div>
         <h2>Validator API: cell</h2>
         <p style="color: red">Many more functions will be written here, covering the full functionality of PuzzleJS.</p>
         <div class="item" data-name="id">
@@ -475,6 +481,12 @@ puzzleValidators["reference-set-all-outer-checks"] = {
             <p>Gets an array with a value for each direction a spoke takes within the cell. Values can be <code>"top"</code>, <code>"bottom"</code>, <code>"left"</code>, <code>"right"</code>, <code>"top-left"</code>, <code>"top-right"</code>, <code>"bottom-left"</code>, or <code>"bottom-right"</code>.</p>
             <ul>
                 <li><code>level</code>: if specified, a level of spoke (see <a href="reference-options.html#data-spoke-levels"><code>data-spoke-levels</code></a>). If unspecified, spokes of all levels are returned.</li>
+            </ul>
+        </div>
+        <div class="item" data-name="setEphemeralClass">
+            <p>Sets a CSS class on the cell, used for visual presentation. This class will be automatically cleared the next time validation runs, unless set again.</p>
+            <ul>
+                <li><code>className</code>: the name of the CSS class to set on the cell.</li>
             </ul>
         </div>
         <div class="item" data-name="pass">
