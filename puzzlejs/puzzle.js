@@ -973,8 +973,8 @@ function PuzzleEntry(p, index) {
         var givenEdgeCode = edgeState.cell.getAttribute("data-given-edge-code");
         if ((givenEdgeCode & edgeState.edgeCode) && !this.recordingProperties["data-edges"]) return;
         
-        var curEdgeCode = edgeState.cell.getAttribute("data-edge-code");
-        var curXEdgeCode = edgeState.cell.getAttribute("data-x-edge-code");
+        var curEdgeCode = edgeState.cell.getAttribute("data-edge-code") ?? 0;
+        var curXEdgeCode = edgeState.cell.getAttribute("data-x-edge-code") ?? 0;
         var curEdgeVal = (curEdgeCode & edgeState.edgeCode) ? 1 : ((curXEdgeCode & edgeState.edgeCode) ? -1 : 0);
 
         if (!this.lastEdgeState) {
@@ -1605,6 +1605,19 @@ function PuzzleEntry(p, index) {
             this.container.dispatchEvent(new CustomEvent("puzzlereset", { detail: resetIds, bubbles: true }));
         }
         this.puzzleGrids.forEach(g => { g.prepareToReset(); });
+    }
+
+    this.delayedValidations = null;
+
+    this.validateDelayed = function(grid) {
+        if (!this.delayedValidations) {
+            this.delayedValidations = [];
+            setTimeout(function(entry) {
+                for (var g of entry.delayedValidations) { g.validate(); }
+                entry.delayedValidations = null;
+            }, 0, this);
+        }
+        if (!this.delayedValidations.includes(grid)) { this.delayedValidations.push(grid); }
     }
 
     this.checkValidationStates = function() {
@@ -2265,7 +2278,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
         svgChangedElems.forEach(el => { this.puzzleEntry.puzzleGridFromCell(el).updateSvg(el); });
         changedElems.forEach(el => { if (el.classList.contains("cell")) { this.puzzleEntry.puzzleGridFromCell(el).processTdForCopyjack(el); this.updateLabel(el); } });
 
-        changedGrids.forEach(g => { g.stateDirty = true; g.validate(); });
+        changedGrids.forEach(g => { g.stateDirty = true; this.puzzleEntry.validateDelayed(g); });
         if (!this.puzzleEntry.pointerIsDown) { changedGrids.forEach(g => { g.saveState(); }) }
     }
 
