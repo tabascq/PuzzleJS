@@ -2704,6 +2704,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
     this.addEdgeToSvg = function(svg, edgeName, given, validateFail) {
         var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.classList.add(edgeName.startsWith("x") ? "x-edge" : "edge");
         use.classList.add(edgeName);
         if (given) { use.classList.add("given"); }
         if (validateFail) { use.classList.add("validate-fail"); }

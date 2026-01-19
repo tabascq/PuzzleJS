@@ -221,7 +221,7 @@
     color: #ff0000;
 }
 
-.puzzle-entry .edge-top.validate-fail, .puzzle-entry .edge-bottom.validate-fail, .puzzle-entry .edge-left.validate-fail, .puzzle-entry .edge-right.validate-fail {
+.puzzle-entry .edge.validate-fail {
     stroke: #ff0000;
 }
 
@@ -410,6 +410,10 @@
 .puzzle-entry use {
     fill: black;
     stroke: black;
+}
+
+.puzzle-entry .edge {
+    stroke-width: 1.5;
 }
 
 .puzzle-entry .reticle-back {
