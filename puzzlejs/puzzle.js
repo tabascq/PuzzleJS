@@ -430,8 +430,8 @@ function PuzzleEntry(p, index) {
         var dx = 0;
         var dy = 0;
         if (grid.options["data-text-advance-on-type"]) {
-            if (grid.numCols > 1) { dx = 1; }        
-            else if (grid.numRows > 1) { dy = 1; }        
+            if (grid.numRows > 1 && grid.numCols <= 1) { dy = 1; }
+            else { dx = 1; }      
         }
         this.setDxDy(dx, dy);
 
