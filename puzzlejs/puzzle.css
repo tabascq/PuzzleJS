@@ -416,6 +416,14 @@
     stroke-width: 1.5;
 }
 
+.puzzle-entry .path {
+    stroke-width: 2;
+}
+
+.puzzle-entry .spoke {
+    stroke-width: 2;
+}
+
 .puzzle-entry .reticle-back {
     stroke-width: 2px;
     stroke: blue;

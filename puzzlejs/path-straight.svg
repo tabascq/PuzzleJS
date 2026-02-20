@@ -3,9 +3,9 @@
 <!-- This code is licensed under the MIT License. -->
 <!-- https://github.com/tabascq/PuzzleJS -->
 <svg viewBox="-10 -10 20 20" xmlns="http://www.w3.org/2000/svg">
-    <path id="path-i" fill="none" stroke-width="2" d="M0,10 V0"></path>
-    <path id="path-l" fill="none" stroke-width="2" d="M0,10 V-10"></path>
-    <path id="path-r" fill="none" stroke-width="2" d="M0,10 V0 H10"></path>
-    <path id="path-t" fill="none" stroke-width="2" d="M0,10 V0 M10,0 H-10"></path>
-    <path id="path-x" fill="none" stroke-width="2" d="M0,10 V-10 M10,0 H-10"></path>
+    <path id="path-i" fill="none" d="M0,10 V0"></path>
+    <path id="path-l" fill="none" d="M0,10 V-10"></path>
+    <path id="path-r" fill="none" d="M0,10 V0 H10"></path>
+    <path id="path-t" fill="none" d="M0,10 V0 M10,0 H-10"></path>
+    <path id="path-x" fill="none" d="M0,10 V-10 M10,0 H-10"></path>
 </svg>
