@@ -173,7 +173,7 @@
 <div class="puzzle-entry" data-show-commands="true">
     <div style="min-width: 400px; background-color: white; padding: 10px;">
         <div class="puzzle-grid"  data-mode="crostic-grid" data-text=".....@.|......."
-            data-links="1|C 2|A 3|C 4|C 5|C 6|B 7|C 8|B 9|B 10|B 11|A 12|C 13|A" data-text-hashes="6614090ab53658ce0e7817ba2af9647b5def8e32630dc1574aad9c18f2d63b49"></div>
+            data-links="1|C 2|A 3|C 4|C 5|C 6|B 7|C 8|B 9|B 10|B 11|A 12|C 13|A" data-text-hashes="3f8eea8e37290d70866f4938aa7f379aa539ab0f6a08e4554c829c38ca08b8df"></div>
         <br>
         <div style="display: grid; grid-template-columns: 160px auto; row-gap: 20px; align-items: center;">
             <div>A. Not new</div>
@@ -960,5 +960,6 @@
         </div>
         <h2>Breaking Changes</h2>
         <p><code>data-state-key</code> has been renamed to <a href="#data-puzzle-id"><code>data-puzzle-id</code></a> since it is now used for multiple scenarios.</p>
+        <p><a href="#data-text-hashes"><code>data-text-hashes</code></a> had an algorithm tweak in March 2026 that changed the resulting hash values. Regenerate your hashes if you generated them prior to March 2026 and have updated your copy of PuzzleJS.</p>
     </body>
 </html>

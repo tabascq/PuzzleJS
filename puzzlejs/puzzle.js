@@ -3126,7 +3126,7 @@ function PuzzleGrid(puzzleEntry, index, container, doGrid, isRootGrid) {
 
     this.getTextHash = async function(secondary) {
         var data = "";
-        container.querySelectorAll(".inner-cell .text").forEach(t => { data += t.innerText; });
+        container.querySelectorAll(".inner-cell .text").forEach(t => { data += t.innerText + '|'; });
         return await this.getSHA256Hash(data, secondary);
     }
 
