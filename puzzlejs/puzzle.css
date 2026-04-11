@@ -405,6 +405,7 @@
     top: -25%;
     width: 150%;
     height: 150%;
+    pointer-events: none;
 }
 
 .puzzle-entry use {
