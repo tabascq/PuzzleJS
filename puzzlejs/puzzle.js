@@ -1793,7 +1793,9 @@ function PuzzleDotZone(container, puzzleGrid, index) {
 
     this.createProvisionalLine = function(dot) {
         var c = this.getDotCenter(dot);
-        this.lineLayer.insertAdjacentHTML("beforeend", `<line class="provisional" x1="${c.x}" y1="${c.y}" x2="${c.x}" y2="${c.y}"/>`);
+        var scaleX = this.lineLayer.viewBox.baseVal.width / (this.dotZone.offsetWidth ?? 1);
+        var scaleY = this.lineLayer.viewBox.baseVal.height / (this.dotZone.offsetHeight ?? 1);
+        this.lineLayer.insertAdjacentHTML("beforeend", `<line class="provisional" x1="${c.x * scaleX}" y1="${c.y * scaleY}" x2="${c.x * scaleX}" y2="${c.y * scaleY}"/>`);
         this.provisionalLine = this.lineLayer.lastChild;
         this.anchorDot = dot;
         dot.classList.add("anchor-dot");
@@ -1801,8 +1803,8 @@ function PuzzleDotZone(container, puzzleGrid, index) {
 
     this.updateProvisionalLineEndpoint = function(dot) {
         var center = this.getDotCenter(dot);
-        this.provisionalLine.setAttributeNS(null, "x2", center.x);
-        this.provisionalLine.setAttributeNS(null, "y2", center.y);
+        this.provisionalLine.setAttributeNS(null, "x2", center.x * this.lineLayer.viewBox.baseVal.width / (this.dotZone.offsetWidth ?? 1));
+        this.provisionalLine.setAttributeNS(null, "y2", center.y * this.lineLayer.viewBox.baseVal.height / (this.dotZone.offsetHeight ?? 1));
     }
 
     this.finishProvisionalLine = function(dot) {
@@ -1912,8 +1914,8 @@ function PuzzleDotZone(container, puzzleGrid, index) {
 
         if (e.target.classList.contains("puzzle-dot")) { this.updateProvisionalLineEndpoint(e.target); }
         else {
-            this.provisionalLine.setAttributeNS(null, "x2", e.layerX);
-            this.provisionalLine.setAttributeNS(null, "y2", e.layerY);
+            this.provisionalLine.setAttributeNS(null, "x2", e.layerX * this.lineLayer.viewBox.baseVal.width / (this.dotZone.offsetWidth ?? 1));
+            this.provisionalLine.setAttributeNS(null, "y2", e.layerY * this.lineLayer.viewBox.baseVal.height / (this.dotZone.offsetHeight ?? 1));
         }
     }
 
@@ -1922,7 +1924,7 @@ function PuzzleDotZone(container, puzzleGrid, index) {
 
         const listLength = list.children.length;
         for (var i = 0; i < listLength; i++) {
-            this.dotZone.insertAdjacentHTML("beforeend", `<button class='puzzle-dot' tabindex='0' style='left: ${x}px; top: ${this.dotZone.offsetHeight * (listLength ? ((2 * i + 1) / (2 * listLength)): 0)}px'></button>`);
+            this.dotZone.insertAdjacentHTML("beforeend", `<button class='puzzle-dot' tabindex='0' style='left: ${x}%; top: ${100 * (listLength ? ((2 * i + 1) / (2 * listLength)): 0)}%'></button>`);
         }
 
         list.style.justifyItems = (x === 0) ? "end" : "begin";
@@ -1962,6 +1964,8 @@ function PuzzleDotZone(container, puzzleGrid, index) {
         this.lineLayer.innerHTML = "";
         this.linesPerDot = {};
 
+        this.lineLayer.setAttribute("viewBox", `0 0 ${this.dotZone.offsetWidth} ${this.dotZone.offsetHeight}`);
+
         for (const[key, value] of Object.entries(this.lineData)) {
             if (!value) continue;
 
@@ -1992,13 +1996,13 @@ function PuzzleDotZone(container, puzzleGrid, index) {
         this.lineData = {};
         this.linesPerDot = {};
     
-        var xScale = 1;
-        var yScale = 1;
+        var zoneWidth = this.dotZone.offsetWidth ?? 1;
+        var zoneHeight = this.dotZone.offsetHeight ?? 1;
         var viewBox = this.container.getAttribute("data-dots-view-box");
         if (viewBox) {
             viewBox = viewBox.split("|");
-            xScale = this.dotZone.offsetWidth/Number(viewBox[0]);
-            yScale = this.dotZone.offsetHeight/Number(viewBox[1]);
+            zoneWidth = Number(viewBox[0]);
+            zoneHeight = Number(viewBox[1]);
         }
 
         var dotsText = this.container.getAttribute("data-dots");
@@ -2006,7 +2010,7 @@ function PuzzleDotZone(container, puzzleGrid, index) {
             dotsText.split(" ").forEach(part => {
                 var coords = part.split("|");
                 if (coords.length >= 2) {
-                    this.dotZone.insertAdjacentHTML("beforeend", `<button class='puzzle-dot' tabindex='0' style='left: ${Number(coords[0]) * xScale}px; top: ${Number(coords[1]) * yScale}px'></button>`);
+                    this.dotZone.insertAdjacentHTML("beforeend", `<button class='puzzle-dot' tabindex='0' style='left: ${Number(coords[0]) / zoneWidth * 100}%; top: ${Number(coords[1]) / zoneHeight * 100}%'></button>`);
                     if (coords[2]) { this.dotZone.lastChild.setAttribute("data-dot-label", coords[2]); }
                 }
             });
@@ -2014,7 +2018,7 @@ function PuzzleDotZone(container, puzzleGrid, index) {
     
         if (this.dotZone.classList.contains("puzzle-dot-list-center")) {
             this.addDotList(this.dotZone.previousElementSibling, 0);
-            this.addDotList(this.dotZone.nextElementSibling, this.dotZone.offsetWidth);
+            this.addDotList(this.dotZone.nextElementSibling, 100);
         }
     
         this.dotZone.querySelectorAll(".puzzle-dot").forEach((d, index) => {
