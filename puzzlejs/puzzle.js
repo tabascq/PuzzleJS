@@ -1914,8 +1914,11 @@ function PuzzleDotZone(container, puzzleGrid, index) {
 
         if (e.target.classList.contains("puzzle-dot")) { this.updateProvisionalLineEndpoint(e.target); }
         else {
-            this.provisionalLine.setAttributeNS(null, "x2", e.layerX * this.lineLayer.viewBox.baseVal.width / (this.dotZone.offsetWidth ?? 1));
-            this.provisionalLine.setAttributeNS(null, "y2", e.layerY * this.lineLayer.viewBox.baseVal.height / (this.dotZone.offsetHeight ?? 1));
+            var bounds = this.lineLayer.getBoundingClientRect();
+            var x = event.clientX - bounds.left;
+            var y = event.clientY - bounds.top;
+            this.provisionalLine.setAttributeNS(null, "x2", x * this.lineLayer.viewBox.baseVal.width / (this.dotZone.offsetWidth ?? 1));
+            this.provisionalLine.setAttributeNS(null, "y2", y * this.lineLayer.viewBox.baseVal.height / (this.dotZone.offsetHeight ?? 1));
         }
     }
 
