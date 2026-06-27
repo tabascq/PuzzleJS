@@ -143,7 +143,7 @@ function PuzzleBox(puzzleBox) {
         if (!this.flip) { this.flip = false; }
         else { this.flip = (this.flip === true || this.flip.toLowerCase() === "true"); }
 
-        this.container.querySelector(".puzzle-box-rotate-direction a").innerText = this.flip ? "against" : "along";
+        this.container.querySelector(".puzzle-box-rotate-direction input").checked = this.flip;
     }
 
     this.buildLinks = function() {
@@ -187,7 +187,7 @@ function PuzzleBox(puzzleBox) {
     this.perspective.insertAdjacentHTML("beforebegin", "<div class='puzzle-rotation-pair rotation-pair-lr'><div class='puzzle-rotation-button rotate-back'></div><div class='puzzle-rotation-button rotate-forward'></div></div>");
     this.perspective.insertAdjacentHTML("beforebegin", "<div class='puzzle-rotation-pair rotation-pair-fb'><div class='puzzle-rotation-button rotate-back'></div><div class='puzzle-rotation-button rotate-forward'></div></div>");
     this.puzzleContent.insertAdjacentHTML("beforebegin", "<div class='puzzle-box-instructions'>Print for a constructible version</div>");
-    this.puzzleContent.insertAdjacentHTML("afterend", "<div class='puzzle-box-rotate-direction'>Rotate <a>along</a> clicked arrows</div>");
+    this.puzzleContent.insertAdjacentHTML("afterend", "<div class='puzzle-box-rotate-direction'><input type='checkbox' id='rotate-flip' name='rotate-flip'><label for='rotate-flip'>Reverse arrow commands</label></div>");
     this.container.querySelector(".rotation-pair-ud .rotate-back").addEventListener("click", e => { this.rotate(this.flip ? "D" : "U"); })
     this.container.querySelector(".rotation-pair-ud .rotate-forward").addEventListener("click", e => { this.rotate(this.flip ? "U" : "D"); })
     this.container.querySelector(".rotation-pair-lr .rotate-back").addEventListener("click", e => { this.rotate(this.flip ? "R" : "L"); })
@@ -196,7 +196,7 @@ function PuzzleBox(puzzleBox) {
     this.container.querySelector(".rotation-pair-fb .rotate-forward").addEventListener("click", e => { this.rotate(this.flip ? "B" : "F"); })
 
     this.updateFlipText();
-    this.container.querySelector(".puzzle-box-rotate-direction a").addEventListener("click", e => { this.toggleFlipDirection(); });
+    this.container.querySelector(".puzzle-box-rotate-direction input").addEventListener("change", e => { this.toggleFlipDirection(); });
     
     this.buildLinks();
 

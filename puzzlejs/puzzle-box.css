@@ -106,8 +106,8 @@
 
     .puzzle-rotation-button {
         position: relative;
-        width: var(--puzzle-cell-size);
-        height: var(--puzzle-cell-size);
+        width: calc(var(--puzzle-cell-size) * 0.80);
+        height: calc(var(--puzzle-cell-size) * 0.80);
         font-size: calc(var(--puzzle-cell-size) * 0.60);
     }
 
