@@ -1585,7 +1585,7 @@ function PuzzleEntry(p, index) {
             lines.push("<tr><td>Mark an external clue as 'satisfied'</td><td>N/A</td><td>Right+Click</td></tr>");
         }
         lines.push("</table></div>");
-        lines.push("<div class='puzzle-about-credits'>Made with <a href='https://github.com/tabascq/PuzzleJS' target='_blank'>Puzzle.js</a></div>")
+        lines.push("<div class='puzzle-about-credits'>Made with <a href='https://tabascq.github.io/PuzzleJS/' target='_blank'>Puzzle.js</a></div>")
         lines.push("<button type='button' class='puzzle-about-close'>Close</button>")
         lines.push("</div>");
         this.container.insertAdjacentHTML("beforeend", lines.join(""));
